@@ -10,3 +10,8 @@ experiments/toolchain/root/
 /tmp/
 *.tmp
 *.swp
+
+# python cache and compiled experiment helpers
+__pycache__/
+*.pyc
+experiments/00-a-shell-hooks/harness/li_emit
