@@ -1,0 +1,4 @@
+MARK case=t06 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+RUN t06f() { echo t06-in-function; }
+RUN t06f

@@ -39,7 +39,7 @@
   "procfs": {
     "self_stat_fields": 52,
     "pid_max": 4194304,
-    "ns_last_pid": 50,
+    "ns_last_pid": 56,
     "visible_numeric_proc_entries": 4
   },
   "inotify_limits": {

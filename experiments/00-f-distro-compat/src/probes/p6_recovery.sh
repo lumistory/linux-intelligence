@@ -30,6 +30,20 @@ if command -v pacman >/dev/null 2>&1; then printf 'pacman -Q: %s\n' "$(pacman -Q
 if command -v dpkg >/dev/null 2>&1; then printf 'dpkg -l ii: %s\n' "$(dpkg -l 2>/dev/null | grep -c '^ii')"; fi
 if command -v rpm >/dev/null 2>&1; then printf 'rpm -qa: %s\n' "$(rpm -qa 2>/dev/null | wc -l)"; fi
 
+echo "--- package DB can answer 'is X installed' WITHOUT network?"
+echo "    (this is what a provider would do to decide if recovery tooling is present)"
+for pkg in btrfs-progs snapper lvm2 git; do
+    r="no-pkg-manager"
+    if command -v pacman >/dev/null 2>&1; then
+        pacman -Q "$pkg" >/dev/null 2>&1 && r=installed || r=absent
+    elif command -v dpkg >/dev/null 2>&1; then
+        dpkg -s "$pkg" >/dev/null 2>&1 && r=installed || r=absent
+    elif command -v rpm >/dev/null 2>&1; then
+        rpm -q "$pkg" >/dev/null 2>&1 && r=installed || r=absent
+    fi
+    printf '    %-12s %s\n' "$pkg" "$r"
+done
+
 echo "--- can we even SEE a block device?"
 ls -l /dev/sd* /dev/nvme* /dev/vd* 2>&1 | head -n 4
 echo "--- /sys/block"

@@ -1,0 +1,4 @@
+MARK case=t06 shell=fish
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+RUN function t06f; echo t06-in-function; end
+RUN t06f

@@ -1,0 +1,10 @@
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-bash-ps0-vs-promptcommand.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-bash-ps0-subshell.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-bash-sigpipe.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-bash-trap-pipe-inherit.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-fork-cost.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-zsh-overflow.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-fish-term.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-unix-socket-open.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-bash-debugtrap.log
+wrote <WORKSPACE>/experiments/00-a-shell-hooks/results/probe-bash-ps0-count.log

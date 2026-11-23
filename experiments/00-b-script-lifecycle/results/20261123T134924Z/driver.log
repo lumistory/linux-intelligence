@@ -1,0 +1,123 @@
+=== experiment 0-B driver ===
+timestamp      : 20261123T134924Z
+kernel         : 7.2.8-zen1-2-zen
+bash           : GNU bash，版本 5.3.20(1)-release (x86_64-pc-linux-gnu)
+rustc          : rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+binary         : <WORKSPACE>/experiments/00-b-script-lifecycle/target/release/li-run-proto
+results dir    : <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T134924Z
+tmp dir        : /tmp/li-phase0-b-20261123T134924Z
+
+=== build ===
+
+=== case: single (single.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":0.919396,"procs":1,"survivors":[]}
+
+=== case: nested (nested.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":207.151948,"procs":5,"survivors":[]}
+
+=== case: background (background.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.170123,"procs":2,"survivors":[163299]}
+
+=== case: execrepl (execrepl.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":502.866348,"procs":2,"survivors":[]}
+
+=== case: execrepl-fast (execrepl-fast.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.654989,"procs":1,"survivors":[]}
+
+=== case: exit3 (exit3.sh) ===
+supervisor exit status: 3
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":3,"term_signal":null,"duration_ms":0.996464,"procs":1,"survivors":[]}
+
+=== case: ctrlc (sleeper.sh) ===
+supervisor exit status: 130
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGINT (2)","duration_ms":400.5208,"procs":2,"survivors":[]}
+
+=== case: kill9 (sleeper.sh) ===
+supervisor exit status: 137
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGKILL (9)","duration_ms":400.389186,"procs":2,"survivors":[]}
+
+=== case: bigoutput (bigoutput.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1177.915903,"procs":2,"survivors":[]}
+
+=== case: boundary (boundary.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":9.669799,"procs":1,"survivors":[]}
+
+=== detection-rate sweep: short-lived external commands ===
+Each row: N identical external commands of a given lifetime, run under a
+sampler with a fixed period. 'detected' counts distinct recorded processes
+whose comm is that command. The point is P(detected) vs lifetime/period.
+
+=== assertions ===
+ASSERT OK   single.exit_code                               0
+ASSERT OK   single.leader_recorded                         true
+ASSERT OK   single.leader_is_bash                          bash
+ASSERT OK   single.exit_mono_ns                            11188814779904
+ASSERT OK   single.duration_positive                       true
+ASSERT OK   single.program                                 /bin/bash
+ASSERT OK   single.pid_is_sid_and_pgid                     true
+ASSERT OK   single.cwd_recorded                            /tmp/li-phase0-b-20261123T134924Z
+ASSERT OK   single.monotonic_ordering                      true
+ASSERT OK   single.exit_matches_status                     0
+ASSERT OK   nested.bash_procs>=3                           true
+ASSERT OK   nested.sleep_procs>=1                          true
+ASSERT OK   nested.max_chain_depth>=3                      true
+ASSERT OK   background.survivor_is_sleep                   true
+ASSERT OK   background.survivor_pid                        163299
+ASSERT OK   background.orphan_reparented                   1
+ASSERT OK   execrepl.image_changed_to_sleep                1
+ASSERT OK   execrepl.leader_pid_preserved                  1
+ASSERT OK   execrepl.leader_had_two_images                 true
+ASSERT OK   execrepl-fast.no_image_change                  0
+ASSERT OK   exit3.exit_code                                3
+ASSERT OK   exit3.term_signal                              null
+ASSERT OK   exit3.status_match                             3
+ASSERT OK   ctrlc.exit_code_null                           null
+ASSERT OK   ctrlc.term_signal_sigint                       true
+ASSERT OK   ctrlc.signal_injection_ok                      ok
+ASSERT OK   ctrlc.sleep_did_not_finish                     0
+ASSERT OK   ctrlc.supervisor_status_130                    130
+ASSERT OK   kill9.term_signal_sigkill                      true
+ASSERT OK   kill9.exit_code_null                           null
+ASSERT OK   kill9.supervisor_status_137                    137
+ASSERT OK   bigoutput.stdout_lines_4000                    4000
+ASSERT OK   bigoutput.stdout_bytes_gt_30k                  true
+ASSERT OK   bigoutput.procs_far_below_lines                true
+ASSERT OK   boundary.stdout_lines                          6
+ASSERT OK   boundary.stdout_first_line                     BOUNDARY-ECHO-1
+ASSERT OK   boundary.zero_command_events                   0
+ASSERT OK   boundary.event_count_is_2                      2
+boundary.external_cmds_detected=0 of 3
+boundary.process_count=1
+boundary.process_list:
+  pid=165597 ppid=165595 comm=bash samples=1 src=sampled
+ASSERT OK   event.sequence_started                         1
+ASSERT OK   event.sequence_finished                        2
+
+=== schema conformance (protocol §2) ===
+ASSERT OK   schema.checked_files                           22
+
+=== summary table ===
+
+=== boundary detail: what the supervisor saw inside boundary.sh ===
+--- the 6 text lines the supervisor received (aggregate, unattributed): ---
+--- redirected content the supervisor never saw at all: ---
+
+RESULT: all assertions passed
+results: <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T134924Z

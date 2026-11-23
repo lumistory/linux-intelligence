@@ -1,0 +1,8 @@
+
+⟦LI-P⟧ 
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ source ⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ function ⟦LI-P⟧ function t06f;⟦LI-P⟧ function t06f; ⟦LI-P⟧ function t06f; echo ⟦LI-P⟧ function t06f; echo t06-in-function;⟦LI-P⟧ function t06f; echo t06-in-function; ⟦LI-P⟧ function t06f; echo t06-in-function; end⟦LI-P⟧ function t06f; echo t06-in-function; end
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ t06f
+t06-in-function
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ exit
+

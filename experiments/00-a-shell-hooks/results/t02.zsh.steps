@@ -1,0 +1,5 @@
+MARK case=t02 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+SEND echo t02-one \
+SEND two
+RUN printf 't02-ml\n'

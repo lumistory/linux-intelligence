@@ -1,0 +1,6 @@
+MARK case=t04 shell=fish
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+RUN true; and echo t04-and
+RUN false; or echo t04-or
+RUN echo t04-a; echo t04-b
+RUN false

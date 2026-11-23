@@ -1,0 +1,4 @@
+MARK case=t06 shell=bash
+RUN . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+RUN t06f() { echo t06-in-function; }
+RUN t06f

@@ -1,0 +1,8 @@
+
+[?2004h⟦LI-P⟧ 
+[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l[?2004h⟦LI-P⟧ t06f() { echo t06-in-function; }
+[?2004l[?2004h⟦LI-P⟧ t06f
+[?2004lt06-in-function
+[?2004h⟦LI-P⟧ exit
+[?2004lexit

@@ -1,5 +1,5 @@
 ### image:  docker.io/library/archlinux:latest
-### utc:    2026-11-23T13:46:37Z
+### utc:    2026-11-23T13:49:13Z
 ### script: src/probes/p7_init.sh
 ### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/archlinux:latest sh /probe/p7_init.sh
 ### ---

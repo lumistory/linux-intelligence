@@ -1,0 +1,5 @@
+MARK case=t02 shell=fish
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+SEND echo t02-one \
+SEND two
+RUN printf 't02-ml\n'

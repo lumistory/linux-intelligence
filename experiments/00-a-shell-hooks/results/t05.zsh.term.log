@@ -1,0 +1,10 @@
+
+[1m[7m%[27m[1m[0m                                                                                zsh: failed to load module `zsh/zle': /usr/lib/zsh/5.9.2/zsh/zle.so: cannot open shared object file: No such file or directory
+⟦LI-P⟧ [1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ cd /tmp && echo t05-cd-ok
+t05-cd-ok
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ export LI_T05=1
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t05-export-$LI_T05
+t05-export-1
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ cd /
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ exit

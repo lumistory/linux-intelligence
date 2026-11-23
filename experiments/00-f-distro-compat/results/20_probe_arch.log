@@ -1,5 +1,5 @@
 ### image: docker.io/library/archlinux:latest
-### utc:   2026-11-23T13:46:46Z
+### utc:   2026-11-23T13:49:22Z
 ### ---
 {
   "probe_schema": "li-cap/1",
@@ -42,7 +42,7 @@
   "procfs": {
     "self_stat_fields": 52,
     "pid_max": 4194304,
-    "ns_last_pid": 50,
+    "ns_last_pid": 56,
     "visible_numeric_proc_entries": 4
   },
   "inotify_limits": {

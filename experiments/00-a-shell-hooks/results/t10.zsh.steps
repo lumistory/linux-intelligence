@@ -1,0 +1,7 @@
+MARK case=t10 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+RUN echo t10-before
+SEND sleep 30
+WAIT 0.5
+CTRLC
+RUN echo t10-after

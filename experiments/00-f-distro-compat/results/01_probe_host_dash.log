@@ -40,14 +40,14 @@
   },
   "procfs": {
     "self_stat_fields": 52,
-    "pid_max": null,
-    "ns_last_pid": null,
-    "visible_numeric_proc_entries": 650
+    "pid_max": 4194304,
+    "ns_last_pid": 157718,
+    "visible_numeric_proc_entries": 682
   },
   "inotify_limits": {
-    "max_user_watches": null,
-    "max_user_instances": null,
-    "max_queued_events": null
+    "max_user_watches": 524288,
+    "max_user_instances": 1024,
+    "max_queued_events": 16384
   },
   "recovery_tools": {
     "btrfs": "/usr/bin/btrfs",

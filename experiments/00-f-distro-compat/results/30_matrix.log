@@ -15,10 +15,10 @@ shells.bash_version              5.3.20(1)-release 5.2.21(1)-release 5.2.37(1)-r
 probe_under_bash                 true          false         false         true          true         
 libc.glibc_version               2.44          2.39          2.41          2.41          2.44         
 procfs.self_stat_fields          52            52            52            52            52           
-procfs.pid_max                   4194304       -             -             4194304       4194304      
-inotify_limits.max_user_watches  524288        -             -             524288        524288       
-inotify_limits.max_user_instances 1024          -             -             1024          1024         
-inotify_limits.max_queued_events 16384         -             -             16384         16384        
+procfs.pid_max                   4194304       4194304       4194304       4194304       4194304      
+inotify_limits.max_user_watches  524288        524288        524288        524288        524288       
+inotify_limits.max_user_instances 1024          1024          1024          1024          1024         
+inotify_limits.max_queued_events 16384         16384         16384         16384         16384        
 recovery_tools.btrfs                                                                     /usr/bin/btrfs
 recovery_tools.snapper                                                                   /usr/bin/snapper
 recovery_tools.lvm                                                                                    
@@ -38,10 +38,10 @@ DIFFERS  shells.bash_version            arch=5.3.20(1)-release ubuntu=5.2.21(1)-
 DIFFERS  probe_under_bash               arch=true ubuntu=false debian=false fedora=true
 DIFFERS  libc.glibc_version             arch=2.44 ubuntu=2.39 debian=2.41 fedora=2.41
 SAME     procfs.self_stat_fields        = 52
-DIFFERS  procfs.pid_max                 arch=4194304 ubuntu=- debian=- fedora=4194304
-DIFFERS  inotify_limits.max_user_watches arch=524288 ubuntu=- debian=- fedora=524288
-DIFFERS  inotify_limits.max_user_instances arch=1024 ubuntu=- debian=- fedora=1024
-DIFFERS  inotify_limits.max_queued_events arch=16384 ubuntu=- debian=- fedora=16384
+SAME     procfs.pid_max                 = 4194304
+SAME     inotify_limits.max_user_watches = 524288
+SAME     inotify_limits.max_user_instances = 1024
+SAME     inotify_limits.max_queued_events = 16384
 SAME     recovery_tools.btrfs           = 
 SAME     recovery_tools.snapper         = 
 SAME     recovery_tools.lvm             = 

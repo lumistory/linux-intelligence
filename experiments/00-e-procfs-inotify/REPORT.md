@@ -129,11 +129,15 @@ across rows.
 | 30 | 14 | 120 | 88.33 | 83.69 | +4.64 |
 | 60 | 34 | 120 | 71.67 | 68.65 | +3.02 |
 | 120 | 70 | 120 | 41.67 | 38.64 | +3.03 |
-| 250 | 120 | 120 | 0.00 | 0 (censored) | 0.00 |
+| 250 | 120 | 120 | 0.00 | 0 (raw −26.35, clamped: capture probability >1) | 0.00 |
 
 The model column is the pre-registered formula from `README.md` §3 with the
 row's own `scan_latency_ns_p50`; it is arithmetic, not a measurement. It tracks
-the curve within 0.46–4.64 pp.
+the curve within 0.46–4.64 pp for lifetimes 0–120 ms. At 250 ms the formula's
+capture probability `(250+2.69)/200 = 1.26` exceeds 1, so it is clamped to 1 and
+predicts loss 0.00 — which is what was measured. So the formula holds across the
+full range provided the capture probability is clamped at 1; the raw arithmetic
+value for that row is −26.35 and is meaningless without the clamp.
 
 ### 4.3 A2/A3 — scan cost, both depths (`A2-poll-depth`, `A3-scan-latency`)
 
@@ -397,8 +401,9 @@ broken observer. The zombie control row (identical pattern, `--no-reap`, loss
 0.00 %, 500/500, mean 701.3 procs/scan) proves the observer is fine and the
 target is simply not alive at any sample instant. A1b then shows the loss is a
 smooth function of lifetime, and the pre-registered model
-`1-(life+scan_p50)/interval` reproduces it within 0.46–4.64 pp across the whole
-measured range from 100 % to 0 % loss. Phase 1 can therefore *declare* its blind
+`1-(life+scan_p50)/interval`, with the capture probability clamped at 1,
+reproduces it within 0.46–4.64 pp across the whole measured range from 100 % to
+0 % loss. Phase 1 can therefore *declare* its blind
 spot numerically instead of hand-waving: at 200 ms, anything living ≲60 ms is mostly invisible
 (71.67 % lost), and only ≥250 ms lifetimes are captured reliably (0.00 % lost).
 
@@ -474,10 +479,10 @@ wrong here — the correct test is "ppid changed away from the recorded parent".
 | fanotify privilege requirement (`EPERM` on `FAN_CLASS_NOTIF` / `FAN_REPORT_PIDFD`) | **NOT TESTED** | The probe in B10 failed to *compile* (`O_LARGEFILE` undeclared), so `fanotify_init` was never called and **no errno was observed**. The claim "fanotify needs privilege" in this report is from documentation, not measurement. What *is* measured: the inotify ABI has no pid field. |
 | eBPF / audit-based file attribution | **NOT TESTED** | Out of scope for 0-E; requires `CAP_BPF`/`CAP_PERFMON` or root-installed audit rules. Recorded only as the named escape hatch. |
 | inotify on network filesystems (NFS/CIFS/sshfs) | **NOT TESTED** | No such mount was available or created; all watches were tmpfs or btrfs. |
-| btrfs-specific behaviour (snapshots, subvolumes, `send`/`receive`) | **NOT TESTED** | Only plain files on btrfs were tested (B2 target). Snapshot creation and subvolume moves emit nothing we characterised. |
+| btrfs-specific behaviour (snapshots, subvolumes, `send`/`receive`) | **NOT TESTED** | Only plain file writes on btrfs were tested (B2 target). What a snapshot or subvolume operation emits was never characterised. |
 | more than a handful of inotify instances / `max_user_instances=1024` exhaustion | **NOT TESTED** | Only 1 instance at a time was used; `max_user_watches` was computed (60 dirs → 61 watches) but never approached. |
 | nano / other editors' rename-over-target save pattern | **NOT TESTED** | nano was driven with `</dev/null` and produced only the creating shell's events; the pattern was never exercised (B7). |
-| behaviour above ~500 processes and under real load | **NOT TESTED** | Host had 500–510 processes; scans were measured on an otherwise idle machine. Loss under contention (scan latency 150 ms on a loaded box) is unmeasured — and since loss depends on scan duration as well as interval (§4.2 model), the published loss curve is an *idle-host* curve. |
+| behaviour above ~500 processes and under real load | **NOT TESTED** | Host had 500–510 processes; scans were measured on an otherwise idle machine. Loss under contention is unmeasured — and since loss depends on scan duration as well as interval (§4.2 model), the published loss curve is an *idle-host* curve and will be worse on a loaded machine. No loaded-machine figure was taken. |
 | poll stability over hours (drift, fd leaks, RSS growth) | **NOT TESTED** | Longest run was 60.038 s (A4). |
 | `pidfd` across pid namespaces, `pidfd_getfd`, `PIDFD_THREAD` | **NOT TESTED** | A5 covers same-namespace open/exit only. |
 | connector under load / `ENOBUFS` on the netlink socket | **NOT TESTED** | A9 saw no visible asymmetry at 500 spawns on an idle host; the socket's own buffer limit was never probed and no drop counter was read. |
@@ -535,8 +540,8 @@ machine-readable capability record (protocol §3), not hidden.**
 | parameter | recommended | basis |
 |---|---|---|
 | default process poll interval | **200 ms** | 3.93 % of one core, p99 scan 7.82 ms, 2.7 MB RSS (A4). Worst scan 11.1 ms leaves 94 % of the period idle. |
-| never go below | **100 ms** (the 50 ms row is the measured warning; nothing between 50 and 200 ms was measured) | At 50 ms, 2.28× the CPU of 200 ms (6.72 % vs 2.95 %, both A1 rows including the in-process spawner) while 0 ms-lifetime loss stays 100 % — no accuracy is bought. |
-| idle / battery profile | 500–1000 ms | 1000 ms cost 1.84 % (A1 row 3); acceptable only where sub-second process history is not promised. |
+| going faster than 200 ms | not recommended; no interval below 200 ms was justified by data | Only 50 ms and 200 ms were measured. At 50 ms, CPU is 2.28× the 200 ms figure (6.72 % vs 2.95 %, both A1 rows including the in-process spawner) while 0 ms-lifetime loss stays 100 % — no accuracy is bought. Intervals between 50 and 200 ms were **NOT MEASURED**; do not interpolate. |
+| idle / battery profile | 1000 ms | 1000 ms cost 1.84 % (A1 row 3); acceptable only where sub-second process history is not promised. 500 ms was **NOT MEASURED**. |
 | scan depth | `Stat` for the poll loop, `Full` on demand for a specific pid | 1.53 ms vs 4.17 ms p50 per scan (A3) for the same 501 processes. |
 | inotify read buffer | ≥ 64 KiB, drain always, never block in business logic | B5: a fast reader never overflowed at 50000 files; a 300 ms stall truncated 50000 files to 16384 records. |
 | watch budget | one watch per directory, computed up front | B4 tree: 60 directories → 61 watches counting the root, against `max_user_watches=524288`; the failure mode is a *missing* watch, not exhaustion. |

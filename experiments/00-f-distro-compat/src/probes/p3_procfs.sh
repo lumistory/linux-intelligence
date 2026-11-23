@@ -17,11 +17,19 @@ for f in kernel/pid_max kernel/ns_last_pid kernel/threads-max kernel/hostname \
          fs/inotify/max_user_watches fs/inotify/max_user_instances \
          fs/inotify/max_queued_events fs/file-max fs/nr_open; do
     if [ -r "/proc/sys/$f" ]; then
-        printf '%s = %s\n' "$f" "$(cat "/proc/sys/$f")"
+        printf '%s = %s\n' "$f" "$(cat "/proc/sys/$f" 2>/dev/null)"
     else
         printf '%s = UNREADABLE\n' "$f"
     fi
 done
+
+echo "--- KNOWN TRAP: 'read < procfile' under dash truncates to 1 byte"
+echo "    (st_size of a procfs file is 0; dash trusts it, bash does not)"
+printf '    read-into-var from /proc/sys/kernel/pid_max = ['
+read -r _trap_pidmax </proc/sys/kernel/pid_max 2>/dev/null || true
+printf '%s]\n' "${_trap_pidmax:-<empty>}"
+printf '    cat of the same file                     = [%s]\n' \
+    "$(cat /proc/sys/kernel/pid_max 2>/dev/null)"
 
 echo "--- ulimits"
 printf 'ulimit -n = %s\n' "$(ulimit -n)"

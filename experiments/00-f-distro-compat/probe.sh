@@ -28,11 +28,17 @@ have() {
     command -v "$1" 2>/dev/null || true
 }
 
-# rd <file> -> first line of file, or empty string if unreadable
+# rd <file> -> first line of file, or empty string if unreadable.
+#
+# MUST NOT use `read < file` directly: dash (Debian/Ubuntu /bin/sh) truncates
+# the read to ONE BYTE when the source is a procfs/sysfs file, because the
+# kernel reports st_size == 0 and dash trusts it. Measured in 0-F:
+#     dash:  read -r p </proc/sys/kernel/pid_max   ->  "4"        (wrong)
+#     bash:  read -r p </proc/sys/kernel/pid_max   ->  "4194304"  (right)
+# `cat` reads until EOF and is therefore correct under both shells.
 rd() {
     if [ -r "$1" ]; then
-        { IFS= read -r _line <"$1"; } 2>/dev/null || _line=""
-        printf '%s' "$_line"
+        cat "$1" 2>/dev/null | sed -n '1p'
     else
         printf ''
     fi

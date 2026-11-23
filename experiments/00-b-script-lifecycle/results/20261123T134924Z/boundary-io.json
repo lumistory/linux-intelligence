@@ -1,0 +1,9 @@
+null
+{
+  "attribution": "aggregate stream only; no per-command attribution",
+  "stderr_bytes": 0,
+  "stdout_bytes": 96,
+  "stdout_first_line": "BOUNDARY-ECHO-1",
+  "stdout_has_cr": false,
+  "stdout_lines": 6
+}

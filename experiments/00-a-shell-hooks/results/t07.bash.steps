@@ -1,0 +1,4 @@
+MARK case=t07 shell=bash
+RUN . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+RUN alias t06alias='echo t07-alias-body'
+RUN t06alias

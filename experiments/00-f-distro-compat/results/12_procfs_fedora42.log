@@ -1,14 +1,14 @@
 ### image:  docker.io/library/fedora:42
-### utc:    2026-11-23T13:46:44Z
+### utc:    2026-11-23T13:49:20Z
 ### script: src/probes/p3_procfs.sh
 ### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/fedora:42 sh /probe/p3_procfs.sh
 ### ---
 --- uname (container shares the host kernel)
-Linux 1a1580bbc968 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
+Linux 7e2fc035de79 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
 --- /proc/self/stat field count
 52
 --- /proc/self/stat first 200 chars
-9 (cut) R 1 1 1 0 -1 4194304 83 0 0 0 0 0 0 0 20 0 1 0 1102889 2641920 370 18446744073709551615 93929808510976 93929808538337 140733057408624 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 93929808554416 9392980855
+9 (cut) R 1 1 1 0 -1 4194304 86 0 1 0 0 0 0 0 20 0 1 0 1118474 2641920 367 18446744073709551615 94722989547520 94722989574881 140722736971344 0 0 0 0 0 0 0 0 0 17 3 0 0 0 0 0 94722989590960 9472298959
 --- /proc/self/status selected fields
 Name:	grep
 State:	R (running)
@@ -21,14 +21,18 @@ NoNewPrivs:	0
 Seccomp:	2
 --- kernel tunables
 kernel/pid_max = 4194304
-kernel/ns_last_pid = 12
+kernel/ns_last_pid = 14
 kernel/threads-max = 123598
-kernel/hostname = 1a1580bbc968
+kernel/hostname = 7e2fc035de79
 fs/inotify/max_user_watches = 524288
 fs/inotify/max_user_instances = 1024
 fs/inotify/max_queued_events = 16384
 fs/file-max = 9223372036854775807
 fs/nr_open = 2147483584
+--- KNOWN TRAP: 'read < procfile' under dash truncates to 1 byte
+    (st_size of a procfs file is 0; dash trusts it, bash does not)
+    read-into-var from /proc/sys/kernel/pid_max = [4194304]
+    cat of the same file                     = [4194304]
 --- ulimits
 ulimit -n = 524288
 ulimit -u = 61799
@@ -36,7 +40,7 @@ ulimit -s = 8192
 --- visible numeric /proc entries (PID namespace size)
 3
 --- /proc/1 exe and cmdline
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 /proc/1/exe -> /usr/bin/bash
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 /proc/1/exe -> /usr/bin/bash
 cmdline: sh /probe/p3_procfs.sh 
 --- cgroup version and limits as seen inside
 cgroup_version = v2
@@ -46,14 +50,14 @@ cpu.max        = max 100000
 pids.max       = 2048
 --- namespaces
 total 0
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 cgroup -> cgroup:[4026534252]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 ipc -> ipc:[4026534250]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 mnt -> mnt:[4026534248]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 net -> net:[4026534253]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 pid -> pid:[4026534251]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 pid_for_children -> pid:[4026534251]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 time -> time:[4026531834]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 time_for_children -> time:[4026531834]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 user -> user:[4026533172]
-lrwxrwxrwx 1 root root 0 Nov 23 13:46 uts -> uts:[4026534249]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 cgroup -> cgroup:[4026534252]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 ipc -> ipc:[4026534250]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 mnt -> mnt:[4026534248]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 net -> net:[4026534253]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 pid -> pid:[4026534251]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 pid_for_children -> pid:[4026534251]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 time -> time:[4026531834]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 time_for_children -> time:[4026531834]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 user -> user:[4026533172]
+lrwxrwxrwx 1 root root 0 Nov 23 13:49 uts -> uts:[4026534249]
 ### done

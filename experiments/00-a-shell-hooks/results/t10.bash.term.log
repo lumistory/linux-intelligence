@@ -1,0 +1,11 @@
+
+[?2004h⟦LI-P⟧ 
+[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l[?2004h⟦LI-P⟧ echo t10-before
+[?2004lt10-before
+[?2004h⟦LI-P⟧ sleep 30
+[?2004l^C
+[?2004h⟦LI-P⟧ echo t10-after
+[?2004lt10-after
+[?2004h⟦LI-P⟧ exit
+[?2004lexit

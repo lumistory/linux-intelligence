@@ -1,0 +1,4 @@
+processes_in_table=689
+kernel=7.2.8-zen1-2-zen
+nproc=20
+naive_proctable_read_mean_ms=3.56

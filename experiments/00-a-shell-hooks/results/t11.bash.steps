@@ -1,0 +1,6 @@
+MARK case=t11 shell=bash
+RUN . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+RUN echo t11-before
+SEND sleep 30
+WAIT 0.5
+KILL

@@ -1,5 +1,5 @@
 ### image:  docker.io/library/ubuntu:24.04
-### utc:    2026-11-23T13:46:39Z
+### utc:    2026-11-23T13:49:15Z
 ### script: src/probes/p6_recovery.sh
 ### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/ubuntu:24.04 sh /probe/p6_recovery.sh
 ### ---
@@ -30,9 +30,15 @@ Filesystem      Size  Used Avail Use% Mounted on
 overlay         932G  717G  210G  78% /
 /dev/nvme1n1p3  932G  717G  210G  78% /probe
 tmpfs            64M     0   64M   0% /dev
-shm              63M     0   63M   0% /dev/shm
+tmpfs           1.6G  1.6M  1.6G   1% /etc/hosts
 --- installed package count (metadata only, no network)
 dpkg -l ii: 92
+--- package DB can answer 'is X installed' WITHOUT network?
+    (this is what a provider would do to decide if recovery tooling is present)
+    btrfs-progs  absent
+    snapper      absent
+    lvm2         absent
+    git          absent
 --- can we even SEE a block device?
 ls: cannot access '/dev/sd*': No such file or directory
 ls: cannot access '/dev/nvme*': No such file or directory

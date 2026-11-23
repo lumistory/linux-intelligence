@@ -1,0 +1,4 @@
+MARK case=t07 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+RUN alias t07alias='echo t07-alias-body'
+RUN t07alias
