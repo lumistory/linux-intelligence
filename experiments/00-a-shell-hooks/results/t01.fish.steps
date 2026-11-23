@@ -1,0 +1,3 @@
+MARK case=t01 shell=fish
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+RUN echo t01-normal

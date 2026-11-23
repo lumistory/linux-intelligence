@@ -1,0 +1,6 @@
+MARK case=t04 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+RUN true && echo t04-and
+RUN false || echo t04-or
+RUN echo t04-a; echo t04-b
+RUN false

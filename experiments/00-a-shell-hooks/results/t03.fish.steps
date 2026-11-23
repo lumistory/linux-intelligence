@@ -1,0 +1,3 @@
+MARK case=t03 shell=fish
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+RUN printf 'x\ny\nz\n' | wc -l

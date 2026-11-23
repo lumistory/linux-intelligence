@@ -79,3 +79,72 @@ E2 non-interactive, E3 DEBUG trap, E4 pipe-block).
 - Shell *internal* command coverage (what a command does inside) is out of
   scope; only the command line as the shell sees it.
 - nushell is not installed and is not tested.
+
+---
+
+## Measured findings (appended after the first measurement round)
+
+These were discovered while building the adapters. Each one has raw evidence
+under `results/`; they are recorded here so the design is not re-derived.
+
+**F1 — PS0 lags by one command.** `PS0` expands *before* the command runs, so
+`$?` and `$BASH_COMMAND` inside it describe the *previous* command line.
+Evidence: `results/probe-bash-ps0-vs-promptcommand.log`.
+Consequence: `PROMPT_COMMAND` + `history 1` is the only bash source of the real
+command text and real exit status.
+
+**F2 — PS0 runs in a subshell, and only some assignments survive.** `$( )` and
+`${v:=word}` used as a plain expansion do **not** persist to the next
+`PROMPT_COMMAND`; an assignment performed *inside an arithmetic subscript*
+does, and still expands to the empty string. Evidence:
+`results/probe-bash-ps0-subshell.log`. Consequence: bash gets a free start tick
+via `PS0='${_LI_DUMMY[$((_LI_PEND+=1,_LI_T0=${EPOCHREALTIME/./}))]}'`.
+
+**F3 — a write to a dead pipe kills the shell.** With a pipe whose reader has
+exited, `printf >&3` terminates the interactive bash with SIGPIPE (signal 13).
+`trap '' PIPE` around the write, writing from a subshell, or a failing
+`connect()` all survive. Evidence: `results/probe-bash-sigpipe.log`.
+Consequence: a hook must never be able to take the user's shell down with the
+daemon. This is the single most important engineering constraint found.
+
+**F4 — `trap '' PIPE` leaks into children.** After installing it, `SigIgn`
+becomes `0x1000` for the shell *and* for every child and grandchild. Evidence:
+`results/probe-bash-trap-pipe-inherit.log`. Consequence: install it only around
+the write and restore the default immediately (`trap - PIPE`).
+
+**F5 — any `$( )` costs ~200-250 us.** Parameter expansion is ~1 us and
+`builtin history 1 >/dev/null` ~3-7 us, but every command substitution forks
+and costs ~200 us in bash and ~250 us in zsh. Evidence:
+`results/probe-fork-cost.log`, `results/probe-fork-cost-extclock.log`.
+Consequence: at most **one** fork per command in the finish hook; a start *event*
+must be opt-in, not default.
+
+**F6 — fish needs `TERM=dumb` under a bare pty.** With `TERM=xterm-256color`
+fish 4.9.3 queries the terminal (DA1, OSC11, keyboard protocol) at startup and
+never paints a prompt when nobody answers, which stalls any pty harness.
+Evidence: `results/probe-fish-term.log`. This is a harness constraint, not a
+hook limitation.
+
+**F7 — no shell can open an AF_UNIX socket by redirection.** Pointing `> path`
+at a listening socket fails with ENXIO ("no such device or address") in bash,
+zsh and fish alike; only zsh's optional `zsh/net/socket` module can dial.
+Evidence: `results/probe-unix-socket-open.log`. Consequence: the sink FD must be
+inherited from the launcher; the adapter never dials anything itself.
+
+**F8 — zsh `EPOCHREALTIME` has a 10-digit fraction.** The naive
+`${EPOCHREALTIME/./}` subtraction overflows signed 64-bit and yields garbage
+(a 0 ms command reported as 115 ms; `sleep 0.3` reported as 302394 ms).
+A microsecond integer must be built explicitly. Evidence:
+`results/probe-zsh-overflow.log`. This produced a real bug in the first adapter
+draft, caught by the `sleep 0.25 -> 253 ms` check.
+
+**F9 — the DEBUG trap is rejected.** Full reasoning and counts in
+`results/probe-bash-debugtrap.log` and REPORT.md section 5.
+
+**F10 — the harness itself had to be fixed twice.** CPython ignores SIGPIPE and
+the ignore flag survives `exec`, so every pty child started with SIGPIPE already
+ignored and the first "dead pipe" measurements were measuring the harness, not
+the shell; the child now resets SIGPIPE/SIGXFSZ to `SIG_DFL`. Also, `os.pipe()`
+returns close-on-exec fds, so `dup2(w, 3)` was a no-op when the write end
+already *was* fd 3 and FD 3 then vanished at `exec` (symptom: `bash: 3: Bad file
+descriptor`). Both fixes are in `harness/drive.py` and `harness/probes.py`.

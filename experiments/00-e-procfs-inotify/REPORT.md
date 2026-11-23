@@ -31,10 +31,10 @@ Hypotheses as pre-registered in `README.md` §2, with the measured verdict.
 | H1 | 50 ms polling misses a non-trivial fraction of `/bin/true`; 1000 ms misses essentially all. | **PASS-PARTIAL** | Measured loss was 100.00 % at 50 ms, 200 ms **and** 1000 ms — the predicted gradient with interval did not appear, because process lifetime (0 ms) was below every interval tested. The "non-trivial fraction" half held absolutely; the implied "less loss when polling faster" was not observable in the tested range. The gradient is real but lives in *lifetime*, not *interval* (A1b). |
 | H2 | `pid` alone is not a valid identity; `pid + starttime` is. | **FAIL** (second half) | `pid` alone is confirmed invalid (A6a: pid 4242 reused, `starttime` changed). But the stated falsifier — a reused pid with an *identical* starttime — was found: A6b produced `pid_starttime_key_collides=true` in **20 of 20** trials. `(pid,starttime)` is **not** a unique key; it is only a strong probabilistic one. |
 | H3 | `pidfd_open` + poll cannot detect new processes, only exit of an opened pid. | **PASS** | A5: 50 opened, 0 readable while alive, 50 readable after exit, 0 of 50 short-lived processes observable. |
-| H4 | inotify needs one watch per directory; a new subtree without an explicit watch loses events silently. | **PASS** | B4 case 1: 0 events from three files created before the new directory was watched; 6 events from the top-level equivalents. B4 case 2: `auto_add` recovers later events but 0 of the files created inside the add-watch window were seen. |
+| H4 | inotify needs one watch per directory; a new subtree without an explicit watch loses events silently. | **PASS** | B4 case 1: `case1_events_in_newdir 0` — three files created in an unwatched new directory produced nothing, while 6 events arrived for the top-level equivalents. B4 case 2: auto-add recovers later events but `case2_immediate_seen 0` for the file created inside the add-watch gap. |
 | H5 | The queue overflows at `max_queued_events=16384`; then only one `IN_Q_OVERFLOW` is reported and the lost events are unrecoverable. | **PASS** | B5 slow consumer: 16385 records delivered (8192 CREATE + 8192 CLOSE_WRITE + 1 `IN_Q_OVERFLOW`), from 50000 files created; no per-event loss indication; no way to identify what was lost. |
 | H6 | A single large `write()` produces *multiple* `IN_MODIFY`, so `IN_MODIFY` is not a count of writes. | **FAIL** | B3: one 100 MB `write` → **1** `IN_MODIFY`; 100 × 1 MB writes → **100** `IN_MODIFY`. `IN_MODIFY` counts `write()` syscalls, not bytes, and does not fan out per page. |
-| H7 | inotify events carry no pid; two writers in one directory are indistinguishable. | **PASS** | B8: 17 event records for four writer processes, none carrying pid or uid; `shared.txt` written by two processes yields 7 indistinguishable records. B10: `struct inotify_event` has no pid field. |
+| H7 | inotify events carry no pid; two writers in one directory are indistinguishable. | **PASS** | B8: 17 event records from four writer processes, none carrying pid or uid; `shared.txt` written by two processes yields 11 indistinguishable records. B10: `struct inotify_event` has no pid field. |
 
 ## 3. Method
 
@@ -57,12 +57,12 @@ Hypotheses as pre-registered in `README.md` §2, with the measured verdict.
 
 | file | lines | role |
 |---|---|---|
-| `run.sh` | 797 | The only driver. `set -euo pipefail`. Functions: `detect_env`, `build`, `proc_scan_latency` (A3), `proc_pidfd` (A5), `proc_reuse` (A6), `proc_orphan` (A7), `proc_readability` (A8), `proc_connector` (A9), `proc_poll_loss` (A1), `proc_life_threshold` (A1b), `proc_poll_depth` (A2), `proc_overhead_60s` (A4), `fs_event_sequences` (B1), `fs_cross_fs_move` (B2), `fs_large_write` (B3), `fs_recursion` (B4), `fs_overflow` (B5), `fs_permissions` (B6), `fs_editor_save` (B7), `fs_attribution` (B8), `fs_cost` (B9), `fs_attribution_limits` (B10), `summarise`. Every label writes `results/<label>-STAMP.log` via `2>&1 | tee`. |
+| `run.sh` | 797 | The only driver. `set -euo pipefail`. Functions: `detect_env`, `build`, `proc_scan_latency` (A3), `proc_pidfd` (A5), `proc_reuse` (A6), `proc_orphan` (A7), `proc_readability` (A8), `proc_connector` (A9), `proc_poll_loss` (A1), `proc_life_threshold` (A1b), `proc_poll_depth` (A2), `proc_overhead_60s` (A4), `fs_event_sequences` (B1), `fs_cross_fs_move` (B2), `fs_large_write` (B3), `fs_recursion` (B4), `fs_overflow` (B5), `fs_permissions` (B6), `fs_editor_save` (B7), `fs_attribution` (B8), `fs_cost` (B9), `fs_attribution_limits` (B10), `summarise`. Every label captures both streams into `results/<label>-STAMP.log` with `tee`. |
 | `src/lib.rs` | 797 | Shared crate. `parse_stat`/`read_stat`/`read_status_field`/`list_pids` (procfs parsing, field 22 = `starttime`); `scan(ScanDepth)` implementing the two scan depths, `ScanDepth::Stat` (stat only) vs `Full` (stat + status + cmdline); `percentile`/`mean`; `mod ino` (raw `inotify_init1`/`inotify_add_watch`/`read` over `libc`, so the read buffer size and raw mask are under our control — the `nix` wrapper is deliberately bypassed); `mod connector` (netlink `CN_IDX_PROC` client: subscribe ack, fork/exec/exit decode). |
-| `src/bin/proc_observer.rs` | 1035 | Subcommands `poll` (interval/lifetime/rate/jitter/life-ms/depth, ground truth from the launcher's own `Child::id()`, `getrusage(RUSAGE_SELF)` + `VmHWM` at exit), `scan-once`, `pidfd`, `reuse` (writes `ns_last_pid` inside `unshare -Urpf`), `wrap` (`pid_max` shrink inside a private pidns), `orphan`, `readability`, `connector`. |
+| `src/bin/proc_observer.rs` | 1035 | Subcommands `poll` (interval/lifetime/rate/jitter/life-ms/depth, ground truth from the launcher's own `Child::id()`, `getrusage(RUSAGE_SELF)` for utime/stime and `ru_maxrss` reported as `max_rss_kb`), `scan-once`, `pidfd`, `reuse` (writes `ns_last_pid` inside `unshare -Urpf`), `wrap` (`pid_max` shrink inside a private pidns), `orphan`, `readability`, `connector`. |
 | `src/bin/fs_observer.rs` | 440 | Subcommands `watch` (print `monots_ns wd dir mask_raw mask_names cookie isdir name` for every raw event; optional recursive manual add), `overflow` (writer thread + drain thread, configurable read buffer and pre-drain stall), `cost`, `watch-count`. |
 | `Cargo.toml` | — | Two bins, `panic = "abort"` in release; built with `cargo build --offline --release` (`results/build-STAMP.log`). |
-| `results/` | — | 20 raw logs + `env`, `build`, `SUMMARY-STAMP.md`. Never edited by hand. |
+| `results/` | — | 20 probe logs (A1, A1b, A2–A9, B1–B10) + `env`, `build`, `SUMMARY-STAMP.md`. Never edited by hand. |
 
 ### 3.3 Measurement design notes
 
@@ -231,8 +231,8 @@ So: all 504 processes had readable `stat`, `status` and `cmdline`. Only
 
 | metric | host netns | fresh netns (`unshare -Urn`) |
 |---|---|---|
-| connector_open | ok | **FAILED: `sendto(connector)` errno 111 (ECONNREFUSED)** |
-| spawned | 500 | 10 (never observed) |
+| connector_open | ok | **FAILED**: `sendto(connector) failed: errno 111 (Connection refused (os error 111))` |
+| spawned | 500 | not reached — the binary returns immediately after a failed open, so no child was spawned and no event field exists |
 | spawn_errors | 0 | — |
 | fork_events | 505 | — |
 | exec_events | 501 | — |
@@ -240,9 +240,16 @@ So: all 504 processes had readable `stat`, `status` and `cmdline`. Only
 | other_events | 3 | — |
 | exec_vs_spawn_ratio | 1.0020 | — |
 | status | available | `NOT AVAILABLE` |
+| log lines | 7 counters | 3 lines only (`connector_open`, `errno`, `status`) |
 
-Host: 500 spawns produced 505 fork events (extra forks are the test's own helper
-processes) with exec/exit matching; `exec/spawn = 1.0020`. Nothing was dropped.
+Host: 500 spawns produced 501 exec events (`exec_vs_spawn_ratio 1.0020`), 505
+fork and 505 exit events, and 3 events of other kinds. The 5-event fork/exit
+excess is **not attributed** by the log — it is most plausibly the test's own
+helper processes, but nothing in the file identifies them, so that is an
+inference, not a measurement. What the counts do establish: exec ≈ spawns
+(+0.2 %), fork ≈ exit (505 = 505), so there is no *visible* asymmetry that would
+indicate dropped events. Bulk loss under a full netlink buffer remains
+`NOT TESTED` (§6.1).
 Inside a fresh network namespace no connector client is registered and the
 kernel returns `ECONNREFUSED` (111) — the route is simply absent there.
 
@@ -417,7 +424,7 @@ sequence from the observer, or `pidfd` for anything it holds open).
 
 **5.4 The event-driven alternative exists but is fragile.**
 A9 is a clean result on the host: 505 fork / 501 exec / 505 exit for 500 spawns,
-nothing lost, `CONFIG_PROC_EVENTS=y`. It is also a route that vanishes inside a
+no visible asymmetry, `CONFIG_PROC_EVENTS=y`. It is also a route that vanishes inside a
 network namespace (`ECONNREFUSED` 111) — which is precisely the environment a
 sandboxed or containerized Phase 1 daemon will run in. Connector is therefore an
 *optional accelerator*, never the load-bearing source.
@@ -473,7 +480,7 @@ wrong here — the correct test is "ppid changed away from the recorded parent".
 | behaviour above ~500 processes and under real load | **NOT TESTED** | Host had 500–510 processes; scans were measured on an otherwise idle machine. Loss under contention (scan latency 150 ms on a loaded box) is unmeasured — and since loss depends on scan duration as well as interval (§4.2 model), the published loss curve is an *idle-host* curve. |
 | poll stability over hours (drift, fd leaks, RSS growth) | **NOT TESTED** | Longest run was 60.038 s (A4). |
 | `pidfd` across pid namespaces, `pidfd_getfd`, `PIDFD_THREAD` | **NOT TESTED** | A5 covers same-namespace open/exit only. |
-| connector under load / `ENOBUFS` on the netlink socket | **NOT TESTED** | A9 saw 0 drops at 500 spawns on an idle host; the socket's own buffer limit was never probed. |
+| connector under load / `ENOBUFS` on the netlink socket | **NOT TESTED** | A9 saw no visible asymmetry at 500 spawns on an idle host; the socket's own buffer limit was never probed and no drop counter was read. |
 | connector in a *pid* namespace with a working netns | **NOT TESTED** | Only the combined `unshare -Urn` case was run; it failed at `sendto` before any pid-namespace semantics could matter. |
 | cross-distro / containerised filesystem event semantics | **NOT TESTED** | Single host, single kernel (7.2.8-zen). |
 | multi-writer ordering guarantees between two inotify readers | **NOT TESTED** | Only one reader instance existed. |
@@ -496,7 +503,7 @@ wrong here — the correct test is "ppid changed away from the recorded parent".
 Measured answers to the four questions:
 
 1. **Short-lived processes are invisible to polling, and it is quantified.**
-   At 200 ms with a 5.84 ms scan, a 0 ms process is lost 100.00 % of the time,
+   At 200 ms with a 2.57–2.73 ms scan, a 0 ms process is lost 100.00 % of the time,
    a 5 ms one 96.67 %, a 60 ms one 71.67 %, a 120 ms one 41.67 %, and only at
    250 ms does loss reach 0.00 % (A1b). Interval buys almost nothing while the
    interval exceeds the lifetime: 50 ms, 200 ms and 1000 ms all lost 500/500
@@ -511,7 +518,8 @@ Measured answers to the four questions:
    unquantifiable remainder (B5), zero events from unwatched subdirectories
    (B4), no cookie pair for a cross-filesystem move (B2), no pid ever (B8/B10).
 4. **The proc connector works on the host and is absent in a fresh netns**
-   (505/501/505 events for 500 spawns vs `ECONNREFUSED` 111) (A9).
+   (505 fork / 501 exec / 505 exit for 500 spawns, vs `ECONNREFUSED` 111 on
+   `sendto`) (A9).
 5. Hypothesis score: 4 PASS (H3, H4, H5, H7), 1 PASS-PARTIAL (H1), **2 FAIL
    (H2, H6)**. Both failures are useful: `(pid,starttime)` is not unique at tick
    granularity, and `IN_MODIFY` counts syscalls, not bytes.
@@ -547,8 +555,8 @@ Must be `known-lossy`, not silently degraded:
 | file create/modify/close/delete/attrib | `true`, `observed` | B1 |
 | file rename (same fs) | `true` when both sides watched; `partial` otherwise | B1: `MOVED_FROM` with no `MOVED_TO` into an unwatched dir |
 | file rename across filesystems | `false` — reported as create+write | B2: `move_pairs_seen 0` |
-| events in newly created subtrees | `partial:lost until watch is added` | B4: 0 events in `newdir`, 0 `immediate.txt` even with `auto_add` |
-| event delivery completeness | `partial:IN_Q_OVERFLOW is data loss` | B5: 16385 of 50000+ records |
+| events in newly created subtrees | `partial:lost until watch is added` | B4: 0 events in `newdir`; 0 for `immediate.txt` even with auto-add |
+| event delivery completeness | `partial:IN_Q_OVERFLOW is data loss` | B5: 16385 records delivered of ≥50000 expected (50000 files, one CREATE each minimum) |
 | **file → writer attribution** | **`false`** | B8, B10: no pid/uid in the ABI |
 | watching paths owned by other uids | `false` (EACCES) | B6: errno 13 |
 | `hidepid`-restricted hosts | `unknown` | NOT TESTED |

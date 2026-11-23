@@ -1,0 +1,16 @@
+PID      PPID     SID      TTY        COMMAND
+    PID    PPID     SID TT       COMMAND
+   3683    3666    3683 pts/0    fish
+   3815    3683    3683 pts/0    miyu
+   3909    3897    3909 pts/1    fish
+   4058    3909    3909 pts/1    miyu
+   4549    3815    3683 pts/0    canberra-gtk-pl <defunct>
+  50211     940   50211 pts/2    fish
+  51652     940   51652 pts/3    bash
+  52084     940   52084 pts/4    zsh
+  52529     940   52529 pts/5    fish
+  54448     940   54448 pts/6    bash
+  55166     940   55166 pts/7    zsh
+  55426     940   55426 pts/8    fish
+  59095     940   59095 pts/9    bash
+  59698     940   59698 pts/10   zsh

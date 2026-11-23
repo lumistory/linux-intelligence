@@ -1,0 +1,58 @@
+{
+ "runs": {
+  "t01.bash": {
+   "case": "t01",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.bash.events.jsonl",
+   "rc": 0,
+   "shell": "bash",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.bash.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.bash.term.log"
+  },
+  "t01.fish": {
+   "case": "t01",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.fish.events.jsonl",
+   "rc": 0,
+   "shell": "fish",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.fish.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.fish.term.log"
+  },
+  "t01.zsh": {
+   "case": "t01",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.zsh.events.jsonl",
+   "rc": 0,
+   "shell": "zsh",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.zsh.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t01.zsh.term.log"
+  },
+  "t03.bash": {
+   "case": "t03",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.bash.events.jsonl",
+   "rc": 0,
+   "shell": "bash",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.bash.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.bash.term.log"
+  },
+  "t03.fish": {
+   "case": "t03",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.fish.events.jsonl",
+   "rc": 0,
+   "shell": "fish",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.fish.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.fish.term.log"
+  },
+  "t03.zsh": {
+   "case": "t03",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.zsh.events.jsonl",
+   "rc": 0,
+   "shell": "zsh",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.zsh.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t03.zsh.term.log"
+  }
+ }
+}

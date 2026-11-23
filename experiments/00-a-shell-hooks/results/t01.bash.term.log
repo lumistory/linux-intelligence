@@ -1,10 +1,7 @@
 
 [?2004h⟦LI-P⟧ 
 [?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
-[?2004l[?2004h⟦LI-P⟧ echo plain-command
-[?2004lplain-command
-[?2004h⟦LI-P⟧ false
-[?2004l[?2004h⟦LI-P⟧ echo $((6*7))
-[?2004l42
+[?2004l[?2004h⟦LI-P⟧ echo t01-normal
+[?2004lt01-normal
 [?2004h⟦LI-P⟧ exit
 [?2004lexit

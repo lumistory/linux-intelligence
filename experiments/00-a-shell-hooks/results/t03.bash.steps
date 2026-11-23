@@ -1,0 +1,3 @@
+MARK case=t03 shell=bash
+RUN . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+RUN printf 'x\ny\nz\n' | wc -l
