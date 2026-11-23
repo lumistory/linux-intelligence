@@ -1,0 +1,818 @@
+{
+ "t01.bash": {
+  "case": "t01",
+  "cmds": [
+   [
+    "echo t01-normal",
+    0
+   ]
+  ],
+  "n_events": 1,
+  "n_user": 1,
+  "shell": "bash"
+ },
+ "t01.fish": {
+  "case": "t01",
+  "cmds": [
+   [
+    "echo t01-normal",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 2,
+  "shell": "fish"
+ },
+ "t01.zsh": {
+  "case": "t01",
+  "cmds": [
+   [
+    "echo t01-normal",
+    0
+   ]
+  ],
+  "n_events": 1,
+  "n_user": 1,
+  "shell": "zsh"
+ },
+ "t02.bash": {
+  "case": "t02",
+  "cmds": [
+   [
+    "echo t02-one two",
+    0
+   ],
+   [
+    "printf 't02-ml\\n'",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "bash"
+ },
+ "t02.fish": {
+  "case": "t02",
+  "cmds": [
+   [
+    "echo t02-one \\two",
+    0
+   ],
+   [
+    "printf 't02-ml\\n'",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 3,
+  "shell": "fish"
+ },
+ "t02.zsh": {
+  "case": "t02",
+  "cmds": [
+   [
+    "echo t02-one \\\ntwo",
+    0
+   ],
+   [
+    "printf 't02-ml\\n'",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "zsh"
+ },
+ "t03.bash": {
+  "case": "t03",
+  "cmds": [
+   [
+    "printf 'x\\ny\\nz\\n' | wc -l",
+    0
+   ]
+  ],
+  "n_events": 1,
+  "n_user": 1,
+  "shell": "bash"
+ },
+ "t03.fish": {
+  "case": "t03",
+  "cmds": [
+   [
+    "printf 'x\\ny\\nz\\n' | wc -l",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 2,
+  "shell": "fish"
+ },
+ "t03.zsh": {
+  "case": "t03",
+  "cmds": [
+   [
+    "printf 'x\\ny\\nz\\n' | wc -l",
+    0
+   ]
+  ],
+  "n_events": 1,
+  "n_user": 1,
+  "shell": "zsh"
+ },
+ "t04.bash": {
+  "case": "t04",
+  "cmds": [
+   [
+    "true && echo t04-and",
+    0
+   ],
+   [
+    "false || echo t04-or",
+    0
+   ],
+   [
+    "echo t04-a; echo t04-b",
+    0
+   ],
+   [
+    "false",
+    1
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 4,
+  "shell": "bash"
+ },
+ "t04.fish": {
+  "case": "t04",
+  "cmds": [
+   [
+    "true; and echo t04-and",
+    0
+   ],
+   [
+    "false; or echo t04-or",
+    0
+   ],
+   [
+    "echo t04-a; echo t04-b",
+    0
+   ],
+   [
+    "false",
+    1
+   ],
+   [
+    "exit",
+    1
+   ]
+  ],
+  "n_events": 6,
+  "n_user": 5,
+  "shell": "fish"
+ },
+ "t04.zsh": {
+  "case": "t04",
+  "cmds": [
+   [
+    "true && echo t04-and",
+    0
+   ],
+   [
+    "false || echo t04-or",
+    0
+   ],
+   [
+    "echo t04-a; echo t04-b",
+    0
+   ],
+   [
+    "false",
+    1
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 4,
+  "shell": "zsh"
+ },
+ "t05.bash": {
+  "case": "t05",
+  "cmds": [
+   [
+    "cd /tmp && echo t05-cd-ok",
+    0
+   ],
+   [
+    "export LI_T05=1",
+    0
+   ],
+   [
+    "echo t05-export-$LI_T05",
+    0
+   ],
+   [
+    "cd /",
+    0
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 4,
+  "shell": "bash"
+ },
+ "t05.fish": {
+  "case": "t05",
+  "cmds": [
+   [
+    "cd /tmp; and echo t05-cd-ok",
+    0
+   ],
+   [
+    "set -gx LI_T05 1",
+    0
+   ],
+   [
+    "echo t05-export-$LI_T05",
+    0
+   ],
+   [
+    "cd /",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 6,
+  "n_user": 5,
+  "shell": "fish"
+ },
+ "t05.zsh": {
+  "case": "t05",
+  "cmds": [
+   [
+    "cd /tmp && echo t05-cd-ok",
+    0
+   ],
+   [
+    "export LI_T05=1",
+    0
+   ],
+   [
+    "echo t05-export-$LI_T05",
+    0
+   ],
+   [
+    "cd /",
+    0
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 4,
+  "shell": "zsh"
+ },
+ "t06.bash": {
+  "case": "t06",
+  "cmds": [
+   [
+    "t06f() { echo t06-in-function; }",
+    0
+   ],
+   [
+    "t06f",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "bash"
+ },
+ "t06.fish": {
+  "case": "t06",
+  "cmds": [
+   [
+    "function t06f; echo t06-in-function; end",
+    0
+   ],
+   [
+    "t06f",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 3,
+  "shell": "fish"
+ },
+ "t06.zsh": {
+  "case": "t06",
+  "cmds": [
+   [
+    "t06f() { echo t06-in-function; }",
+    0
+   ],
+   [
+    "t06f",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "zsh"
+ },
+ "t07.bash": {
+  "case": "t07",
+  "cmds": [
+   [
+    "alias t06alias='echo t07-alias-body'",
+    0
+   ],
+   [
+    "t06alias",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "bash"
+ },
+ "t07.fish": {
+  "case": "t07",
+  "cmds": [
+   [
+    "alias t07alias='echo t07-alias-body'",
+    0
+   ],
+   [
+    "t07alias",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 3,
+  "shell": "fish"
+ },
+ "t07.zsh": {
+  "case": "t07",
+  "cmds": [
+   [
+    "alias t07alias='echo t07-alias-body'",
+    0
+   ],
+   [
+    "t07alias",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "zsh"
+ },
+ "t08.bash": {
+  "case": "t08",
+  "cmds": [
+   [
+    "sleep 0.3 &",
+    0
+   ],
+   [
+    "echo t08-after-bg",
+    0
+   ],
+   [
+    "wait",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 3,
+  "shell": "bash"
+ },
+ "t08.fish": {
+  "case": "t08",
+  "cmds": [
+   [
+    "sleep 0.3 &",
+    0
+   ],
+   [
+    "echo t08-after-bg",
+    0
+   ],
+   [
+    "wait",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 5,
+  "n_user": 4,
+  "shell": "fish"
+ },
+ "t08.zsh": {
+  "case": "t08",
+  "cmds": [
+   [
+    "sleep 0.3 &",
+    0
+   ],
+   [
+    "echo t08-after-bg",
+    0
+   ],
+   [
+    "wait",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 3,
+  "shell": "zsh"
+ },
+ "t09.bash": {
+  "case": "t09",
+  "cmds": [
+   [
+    "( echo t09-subshell )",
+    0
+   ],
+   [
+    "echo t09-cmdsub-$(echo substituted)",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "bash"
+ },
+ "t09.fish": {
+  "case": "t09",
+  "cmds": [
+   [
+    "begin; echo t09-subshell; end",
+    0
+   ],
+   [
+    "echo t09-cmdsub-(echo substituted)",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 4,
+  "n_user": 3,
+  "shell": "fish"
+ },
+ "t09.zsh": {
+  "case": "t09",
+  "cmds": [
+   [
+    "( echo t09-subshell )",
+    0
+   ],
+   [
+    "echo t09-cmdsub-$(echo substituted)",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 2,
+  "shell": "zsh"
+ },
+ "t10.bash": {
+  "case": "t10",
+  "cmds": [
+   [
+    "echo t10-before",
+    0
+   ],
+   [
+    "sleep 30",
+    130
+   ],
+   [
+    "echo t10-after",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 3,
+  "shell": "bash"
+ },
+ "t10.fish": {
+  "case": "t10",
+  "cmds": [
+   [
+    "echo t10-before",
+    0
+   ],
+   [
+    "sleep 30",
+    130
+   ],
+   [
+    "echo t10-after",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 5,
+  "n_user": 4,
+  "shell": "fish"
+ },
+ "t10.zsh": {
+  "case": "t10",
+  "cmds": [
+   [
+    "echo t10-before",
+    0
+   ],
+   [
+    "sleep 30",
+    130
+   ],
+   [
+    "echo t10-after",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 3,
+  "shell": "zsh"
+ },
+ "t11.bash": {
+  "case": "t11",
+  "cmds": [
+   [
+    "echo t11-before",
+    0
+   ]
+  ],
+  "n_events": 1,
+  "n_user": 1,
+  "shell": "bash"
+ },
+ "t11.fish": {
+  "case": "t11",
+  "cmds": [
+   [
+    "echo t11-before",
+    0
+   ]
+  ],
+  "n_events": 2,
+  "n_user": 1,
+  "shell": "fish"
+ },
+ "t11.zsh": {
+  "case": "t11",
+  "cmds": [
+   [
+    "echo t11-before",
+    0
+   ]
+  ],
+  "n_events": 1,
+  "n_user": 1,
+  "shell": "zsh"
+ },
+ "t12.bash": {
+  "case": "t12",
+  "cmds": [
+   [
+    "seq 1 20000 | wc -l",
+    0
+   ],
+   [
+    "seq 1 3000 > /dev/null; echo t12-redirect-ok",
+    0
+   ],
+   [
+    "echo t12-after-big",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 3,
+  "shell": "bash"
+ },
+ "t12.fish": {
+  "case": "t12",
+  "cmds": [
+   [
+    "seq 1 20000 | wc -l",
+    0
+   ],
+   [
+    "seq 1 3000 > /dev/null; echo t12-redirect-ok",
+    0
+   ],
+   [
+    "echo t12-after-big",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 5,
+  "n_user": 4,
+  "shell": "fish"
+ },
+ "t12.zsh": {
+  "case": "t12",
+  "cmds": [
+   [
+    "seq 1 20000 | wc -l",
+    0
+   ],
+   [
+    "seq 1 3000 > /dev/null; echo t12-redirect-ok",
+    0
+   ],
+   [
+    "echo t12-after-big",
+    0
+   ]
+  ],
+  "n_events": 3,
+  "n_user": 3,
+  "shell": "zsh"
+ },
+ "t13.bash": {
+  "case": "t13",
+  "cmds": [
+   [
+    "echo t13-01",
+    0
+   ],
+   [
+    "echo t13-02",
+    0
+   ],
+   [
+    "echo t13-03",
+    0
+   ],
+   [
+    "echo t13-04",
+    0
+   ],
+   [
+    "echo t13-05",
+    0
+   ],
+   [
+    "echo t13-06",
+    0
+   ],
+   [
+    "echo t13-07",
+    0
+   ],
+   [
+    "echo t13-08",
+    0
+   ],
+   [
+    "echo t13-09",
+    0
+   ],
+   [
+    "echo t13-10",
+    0
+   ]
+  ],
+  "n_events": 10,
+  "n_user": 10,
+  "shell": "bash"
+ },
+ "t13.fish": {
+  "case": "t13",
+  "cmds": [
+   [
+    "echo t13-01",
+    0
+   ],
+   [
+    "echo t13-02",
+    0
+   ],
+   [
+    "echo t13-03",
+    0
+   ],
+   [
+    "echo t13-04",
+    0
+   ],
+   [
+    "echo t13-05",
+    0
+   ],
+   [
+    "echo t13-06",
+    0
+   ],
+   [
+    "echo t13-07",
+    0
+   ],
+   [
+    "echo t13-08",
+    0
+   ],
+   [
+    "echo t13-09",
+    0
+   ],
+   [
+    "echo t13-10",
+    0
+   ],
+   [
+    "exit",
+    0
+   ]
+  ],
+  "n_events": 12,
+  "n_user": 11,
+  "shell": "fish"
+ },
+ "t13.zsh": {
+  "case": "t13",
+  "cmds": [
+   [
+    "echo t13-01",
+    0
+   ],
+   [
+    "echo t13-02",
+    0
+   ],
+   [
+    "echo t13-03",
+    0
+   ],
+   [
+    "echo t13-04",
+    0
+   ],
+   [
+    "echo t13-05",
+    0
+   ],
+   [
+    "echo t13-06",
+    0
+   ],
+   [
+    "echo t13-07",
+    0
+   ],
+   [
+    "echo t13-08",
+    0
+   ],
+   [
+    "echo t13-09",
+    0
+   ],
+   [
+    "echo t13-10",
+    0
+   ]
+  ],
+  "n_events": 10,
+  "n_user": 10,
+  "shell": "zsh"
+ }
+}

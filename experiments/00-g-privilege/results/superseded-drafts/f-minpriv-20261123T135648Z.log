@@ -1,0 +1,10 @@
+read /proc/self/stat                               AVAILABLE (unprivileged)
+read /proc/1/stat (root process)                   AVAILABLE (unprivileged)
+read /proc/1/cmdline                               AVAILABLE (unprivileged)
+bind AF_UNIX socket in /tmp                        AVAILABLE (unprivileged)
+sqlite write in own dir                            AVAILABLE (unprivileged)
+read /root (another uid's directory)               DENIED
+read /etc/shadow                                   DENIED
+btrfs subvolume snapshot /                         DENIED
+mount a tmpfs                                      DENIED
+unshare a user namespace                           AVAILABLE (unprivileged)

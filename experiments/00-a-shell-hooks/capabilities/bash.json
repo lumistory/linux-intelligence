@@ -1,0 +1,61 @@
+{
+  "adapter": "bash",
+  "version": "5.3.20(1)-release",
+  "hook_combination": "PROMPT_COMMAND + history 1 (finish), PS0 counter (start tick)",
+  "measured_on": "2026-11-23",
+  "protocol_schema_version": 1,
+  "capabilities": {
+    "command_text": true,
+    "command_text_source": "history 1",
+    "command_text_multiline": "partial:joined_with_single_space_backslash_removed",
+    "start_time": "partial:wall_clock_only_no_monotonic",
+    "end_time": true,
+    "exit_status": true,
+    "duration": "partial:wall_clock_microseconds_from_PS0",
+    "cwd": true,
+    "pid": true,
+    "sid": true,
+    "new_session": true,
+    "multi_line": "partial:backslash_continuation_joined_into_one_line",
+    "pipelines": "single-event",
+    "builtins": true,
+    "functions": "single-event:only_the_typed_call_is_reported",
+    "aliases": "true:alias_name_is_reported_not_expansion",
+    "background": "partial:the_&_line_is_reported_immediately_completion_not_observed",
+    "subshell": "single-event:the_whole_line_is_reported_once",
+    "ctrl_c_reported": true,
+    "ctrl_c_exit_status": 130,
+    "internal_script_commands": false,
+    "event_on_kill9": false,
+    "unclosed_event_on_kill9": false,
+    "fires_in_noninteractive": false,
+    "fires_in_dash_c": false,
+    "sink_can_be_unix_socket_redirection": false,
+    "sink_requires_launcher_supplied_fd": true,
+    "monotonic_clock": false,
+    "per_command_fork_required": 1,
+    "hook_can_kill_shell_if_sink_dies": "true_without_trap_guard"
+  },
+  "evidence": {
+    "cases": "results/t01..t13.bash.{term.log,events.jsonl}",
+    "analysis": "results/analysis.json",
+    "latency": "results/latency/latency.json",
+    "sigpipe": "results/probe-bash-sigpipe.log",
+    "ps0_semantics": "results/probe-bash-ps0-vs-promptcommand.log",
+    "ps0_subshell": "results/probe-bash-ps0-subshell.log",
+    "debug_trap_rejected": "results/probe-bash-debugtrap.log",
+    "fork_cost": "results/probe-fork-cost.log",
+    "noninteractive": "results/noninteractive.log"
+  },
+  "known_gaps": [
+    "The `source adapters/bash.sh` line itself is not reported: PS0 only starts counting after the adapter installed its hooks.",
+    "`exit` is never reported: PROMPT_COMMAND does not run when the shell exits.",
+    "A command that ends the shell (exec, kill -9 of the shell) produces no CommandFinished.",
+    "Duration uses wall clock, so an NTP step or suspend/resume skews it.",
+    "Background jobs report the launch line, never the job's completion."
+  ],
+  "rejected_alternatives": {
+    "DEBUG_trap": "fires per simple command (pipelines, && chains, loop iterations, subshells) and interleaves with set -x; counts do not match typed lines -- results/probe-bash-debugtrap.log",
+    "PS0_as_event_source": "sees the previous command's $? and $BASH_COMMAND, i.e. lags one command -- results/probe-bash-ps0-vs-promptcommand.log"
+  }
+}

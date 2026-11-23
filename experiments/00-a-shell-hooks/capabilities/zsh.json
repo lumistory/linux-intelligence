@@ -1,0 +1,60 @@
+{
+  "adapter": "zsh",
+  "version": "5.9.2 (unpacked local copy, not installed system-wide)",
+  "hook_combination": "precmd + preexec via add-zsh-hook",
+  "measured_on": "2026-11-23",
+  "protocol_schema_version": 1,
+  "capabilities": {
+    "command_text": true,
+    "command_text_source": "preexec $1",
+    "command_text_multiline": "true:newlines_preserved_verbatim",
+    "start_time": "partial:wall_clock_only_no_monotonic",
+    "end_time": true,
+    "exit_status": true,
+    "duration": "partial:wall_clock_microseconds_from_preexec",
+    "cwd": true,
+    "pid": true,
+    "sid": true,
+    "new_session": true,
+    "multi_line": "true:literal_newlines_kept",
+    "pipelines": "single-event",
+    "builtins": true,
+    "functions": "single-event:only_the_typed_call_is_reported",
+    "aliases": "true:alias_name_is_reported_not_expansion",
+    "background": "partial:the_&_line_is_reported_immediately_completion_not_observed",
+    "subshell": "single-event:the_whole_line_is_reported_once",
+    "ctrl_c_reported": true,
+    "ctrl_c_exit_status": 130,
+    "internal_script_commands": false,
+    "event_on_kill9": false,
+    "unclosed_event_on_kill9": false,
+    "fires_in_noninteractive": false,
+    "fires_in_dash_c": false,
+    "sink_can_be_unix_socket_redirection": false,
+    "sink_requires_launcher_supplied_fd": true,
+    "zsh_can_dial_unix_socket_via_zsocket": "unknown:not_exercised",
+    "monotonic_clock": false,
+    "per_command_fork_required": 0,
+    "hook_can_kill_shell_if_sink_dies": "true_without_guard",
+    "needs_module_path_fix_when_unpacked": true,
+    "needs_fpath_fix_for_add_zsh_hook": true
+  },
+  "evidence": {
+    "cases": "results/t01..t13.zsh.{term.log,events.jsonl}",
+    "analysis": "results/analysis.json",
+    "latency": "results/latency/latency.json",
+    "epochrealtime_overflow": "results/probe-zsh-overflow.log",
+    "unix_socket": "results/probe-unix-socket-open.log",
+    "noninteractive": "results/noninteractive.log"
+  },
+  "known_gaps": [
+    "The `source adapters/zsh.zsh` line itself is not reported (hooks install during it).",
+    "`exit` is never reported: precmd does not run on exit.",
+    "EPOCHREALTIME on this build carries a 10-digit nanosecond fraction; naive ${EPOCHREALTIME/./} arithmetic overflows 64-bit and silently produces garbage durations -- the adapter truncates explicitly.",
+    "zsh is not installed on this host: the adapter must set module_path and fpath itself, or zsh/datetime and add-zsh-hook fail to load.",
+    "Wall clock only; no CLOCK_MONOTONIC."
+  ],
+  "rejected_alternatives": {
+    "PS1_command_substitution": "runs in a subshell per prompt and cannot see preexec state or hold a start timestamp"
+  }
+}

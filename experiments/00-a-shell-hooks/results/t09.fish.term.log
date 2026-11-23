@@ -1,0 +1,9 @@
+
+⟦LI-P⟧ 
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ source ⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ begin;⟦LI-P⟧ begin; ⟦LI-P⟧ begin; echo ⟦LI-P⟧ begin; echo t09-subshell;⟦LI-P⟧ begin; echo t09-subshell; ⟦LI-P⟧ begin; echo t09-subshell; end⟦LI-P⟧ begin; echo t09-subshell; end
+t09-subshell
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ echo ⟦LI-P⟧ echo t09-cmdsub-(echo ⟦LI-P⟧ echo t09-cmdsub-(echo substituted)
+t09-cmdsub-substituted
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ exit
+

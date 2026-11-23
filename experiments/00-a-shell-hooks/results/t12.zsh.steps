@@ -1,0 +1,5 @@
+MARK case=t12 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+RUN seq 1 20000 | wc -l
+RUN seq 1 3000 > /dev/null; echo t12-redirect-ok
+RUN echo t12-after-big

@@ -1,0 +1,12 @@
+MARK case=t13 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+RUN echo t13-01
+RUN echo t13-02
+RUN echo t13-03
+RUN echo t13-04
+RUN echo t13-05
+RUN echo t13-06
+RUN echo t13-07
+RUN echo t13-08
+RUN echo t13-09
+RUN echo t13-10

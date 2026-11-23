@@ -1,0 +1,8 @@
+semicolon in arg                     {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+pipe in arg                          {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+command substitution                 {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+100 KB path                          {"ok":false,"opcode":"<frame>","code":"frame_too_large","message":"frame exceeds 65536 bytes"}
+opcode named exec                    {"ok":false,"opcode":"<none>","code":"bad_opcode","message":"opcode must be numeric, not a string"}
+
+## static check: any exec/system/posix_spawn/fork in the helper crate?
+NONE FOUND

@@ -1,0 +1,92 @@
+## 1. Deduplication (SYNTHETIC streams, ground truth by construction)
+
+population: 1050 events = 500 origins + 300 duplicates + 250 near-miss negatives
+
+### 1.1 Scheme A — exact `event_id` only (baseline)
+
+| metric | value |
+|---|---|
+| duplicates found (TP) | 150 |
+| false merges (FP) | 0 |
+| missed duplicates (FN) | 150 |
+| precision | 1.0000 |
+| recall | 0.5000 |
+| false-merge rate FP/(TP+FP) | 0.0000 |
+| undetected-duplicate rate FN/(TP+FN) | 0.5000 |
+
+Ground truth is built in, and the population contains one class that is
+**undecidable by content** (D1: same command text, same session, inside the
+window — a human double-tap or a genuine double-report). D1 merges are
+reported in their own column and are NOT counted as false positives, because
+no content-based scheme can separate them. Every other negative is decidable.
+
+### 1.2 Scheme B — semantic fingerprint, parameter sweep
+
+key = `type_class | session? | subject | ts_bucket`; `session?` is `-`
+unless `require_same_session`. Every row is a full re-run of the stream.
+precision is TP/(TP+decidable FP); `D1 merged` is the irreducible residue.
+
+| window | mode | session in key | TP | FP (decidable) | FN | precision | recall | false-merge | FN rate | D1 merged |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 50 ms | single | false | 246 | 61 | 54 | 0.8013 | 0.8200 | 0.1987 | 0.1800 | 58/63 |
+| 50 ms | single | true | 246 | 0 | 54 | 1.0000 | 0.8200 | 0.0000 | 0.1800 | 58/63 |
+| 50 ms | triple | false | 300 | 63 | 0 | 0.8264 | 1.0000 | 0.1736 | 0.0000 | 63/63 |
+| 50 ms | triple | true | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 0.0000 | 63/63 |
+| 100 ms | single | false | 271 | 61 | 29 | 0.8163 | 0.9033 | 0.1837 | 0.0967 | 59/63 |
+| 100 ms | single | true | 271 | 0 | 29 | 1.0000 | 0.9033 | 0.0000 | 0.0967 | 59/63 |
+| 100 ms | triple | false | 300 | 63 | 0 | 0.8264 | 1.0000 | 0.1736 | 0.0000 | 63/63 |
+| 100 ms | triple | true | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 0.0000 | 63/63 |
+| 250 ms | single | false | 289 | 62 | 11 | 0.8234 | 0.9633 | 0.1766 | 0.0367 | 60/63 |
+| 250 ms | single | true | 289 | 0 | 11 | 1.0000 | 0.9633 | 0.0000 | 0.0367 | 60/63 |
+| 250 ms | triple | false | 300 | 63 | 0 | 0.8264 | 1.0000 | 0.1736 | 0.0000 | 63/63 |
+| 250 ms | triple | true | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 0.0000 | 63/63 |
+| 500 ms | single | false | 295 | 62 | 5 | 0.8263 | 0.9833 | 0.1737 | 0.0167 | 61/63 |
+| 500 ms | single | true | 295 | 0 | 5 | 1.0000 | 0.9833 | 0.0000 | 0.0167 | 61/63 |
+| 500 ms | triple | false | 300 | 63 | 0 | 0.8264 | 1.0000 | 0.1736 | 0.0000 | 63/63 |
+| 500 ms | triple | true | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 0.0000 | 63/63 |
+| 1000 ms | single | false | 297 | 62 | 3 | 0.8273 | 0.9900 | 0.1727 | 0.0100 | 62/63 |
+| 1000 ms | single | true | 297 | 0 | 3 | 1.0000 | 0.9900 | 0.0000 | 0.0100 | 62/63 |
+| 1000 ms | triple | false | 300 | 63 | 0 | 0.8264 | 1.0000 | 0.1736 | 0.0000 | 63/63 |
+| 1000 ms | triple | true | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 0.0000 | 63/63 |
+| 2000 ms | single | false | 298 | 62 | 2 | 0.8278 | 0.9933 | 0.1722 | 0.0067 | 63/63 |
+| 2000 ms | single | true | 298 | 0 | 2 | 1.0000 | 0.9933 | 0.0000 | 0.0067 | 63/63 |
+| 2000 ms | triple | false | 300 | 63 | 0 | 0.8264 | 1.0000 | 0.1736 | 0.0000 | 63/63 |
+| 2000 ms | triple | true | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 0.0000 | 63/63 |
+
+### 1.3 False merges by trap class (chosen: 200 ms, triple, session in key vs dropped)
+
+| trap class | n | merged, session in key | merged, session dropped |
+|---|---|---|---|
+| D1 same cmd+session+window (UNDECIDABLE) | 63 | 63 | 63 |
+| D2 same cmd, other session, same window | 63 | 0 | 63 |
+| D3 same cmd, far in time | 62 | 0 | 0 |
+| D4 other cmd, same window | 62 | 0 | 0 |
+| origin (decidable) | 500 | 0 | 0 |
+
+chosen, session in key : TP 300 FP 63 FN 0 precision 0.8264 recall 1.0000
+chosen, session dropped: TP 300 FP 126 FN 0 precision 0.7042 recall 1.0000
+
+Dropping the session from the key is what turns a safe fingerprint into a
+dangerous one: every D2 row becomes a merge, and D2 is decidable.
+
+### 1.4 Stability across three seeds (chosen config)
+
+| seed | events | exact recall | fingerprint precision | fingerprint recall | false-merge |
+|---|---|---|---|---|---|
+| 0xc011ea | 1050 | 0.5000 | 0.8264 | 1.0000 | 0.1736 |
+| 0x5ec011 | 1050 | 0.5000 | 0.8264 | 1.0000 | 0.1736 |
+| 0x11ea | 1050 | 0.5000 | 0.8264 | 1.0000 | 0.1736 |
+
+### 1.5 Fingerprint blind spot: same fact, different subject text
+
+hook `make -j8`           -> Fresh
+proc `/usr/bin/make -j8`  -> Fresh
+The subject is normalized command text; a `/proc/<pid>/cmdline` absolute
+path does not hash equal to the typed command. Measured miss, not a bug to
+hide: basename-stripping is a Phase 1 decision, not a Phase 0 result.
+
+### 1.6 Verdict
+
+Exact `event_id` is necessary and free, but recall 0.5000 on a population where
+50.0% of all duplicates carry a fresh id. The fingerprint is what recovers them,
+and it costs 0.1736 false merges on the chosen config.

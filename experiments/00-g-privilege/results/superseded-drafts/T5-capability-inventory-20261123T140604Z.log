@@ -1,0 +1,38 @@
+# T5 — capability inventory as a plain user (uid 1000).
+# Every row is a command that was actually run; the right column is what
+# happened, not what the documentation claims.
+
+## A. expected to work unprivileged
+  read /proc/self/stat                           ALLOWED  (unprivileged)
+  read /proc/self/status                         ALLOWED  (unprivileged)
+  list /proc for all pids                        ALLOWED  (unprivileged)
+  read another uid's /proc/1/stat (partial ok)   ALLOWED  (unprivileged)
+  read /proc/1/cmdline (root, same-ns)           ALLOWED  (unprivileged)
+  inotify watch on an owned directory            ALLOWED  (CREATE observed)
+  AF_UNIX socket bind+connect+reply              ALLOWED  (socket 600)
+  sqlite write in an owned directory             ALLOWED  (sum=42 journal_mode=delete)
+  hardlink + rename in an owned dir              ALLOWED  (unprivileged)
+
+## B. expected to require privilege
+  read /etc/shadow                               DENIED   (needs privilege)
+  list /root                                     DENIED   (needs privilege)
+  read /proc/1/environ (root process)            DENIED   (needs privilege)
+  read /proc/1/stack                             DENIED   (needs privilege)
+  read /proc/1/mem                               DENIED   (needs privilege)
+  read /proc/1/root                              DENIED   (needs privilege)
+  inotify watch on /root                         DENIED   (needs privilege)
+  inotify watch on /var/lib/private              DENIED   (needs privilege)
+  btrfs subvolume snapshot /                     DENIED   (needs privilege)
+  mount -t tmpfs                                 DENIED   (needs privilege)
+  umount                                         DENIED   (needs privilege)
+
+## C. NO_NEW_PRIVS suppresses a setuid gain (read-only probe)
+# /usr/bin/passwd is setuid root; 'passwd -S <user>' only READS the
+# status field. Nothing is modified. It is used solely to observe
+# whether a setuid bit is still honoured under PR_SET_NO_NEW_PRIVS.
+$ passwd -S USER
+  USER P 2026-03-01 -1 99999 7 -1
+$ setpriv --no-new-privs passwd -S USER
+  USER P
+# The second run cannot read the shadow status field: the setuid gain was
+# suppressed by the kernel, not refused by the file mode.

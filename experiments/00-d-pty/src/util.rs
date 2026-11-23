@@ -137,7 +137,10 @@ pub fn printed_lines(s: &str) -> Vec<String> {
 /// Used to prove a command's own output arrived: the terminal echo of a typed
 /// command line never forms such a line, but `echo TOKEN` always does.
 pub fn count_bare_lines(s: &str, token: &str) -> usize {
-    printed_lines(s).iter().filter(|l| l.as_str() == token).count()
+    printed_lines(s)
+        .iter()
+        .filter(|l| l.as_str() == token)
+        .count()
 }
 
 #[cfg(test)]

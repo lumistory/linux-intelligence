@@ -14,9 +14,31 @@ DEBUG fired 2 time(s):
 DEBUG fired 2 time(s):
    DEBUG cmd=[true] rc=0
    DEBUG cmd=[echo chained] rc=0
+=== typed: echo A; echo B; echo C ===
+DEBUG fired 3 time(s):
+   DEBUG cmd=[echo A] rc=0
+   DEBUG cmd=[echo B] rc=0
+   DEBUG cmd=[echo C] rc=0
+=== typed: for i in 1 2 3; do echo L$i; done ===
+DEBUG fired 6 time(s):
+   DEBUG cmd=[for i in 1 2 3] rc=0
+   DEBUG cmd=[echo L$i] rc=0
+   DEBUG cmd=[for i in 1 2 3] rc=0
+   DEBUG cmd=[echo L$i] rc=0
+   DEBUG cmd=[for i in 1 2 3] rc=0
+   DEBUG cmd=[echo L$i] rc=0
+=== typed: ( echo S1; echo S2 ) ===
+DEBUG fired 0 time(s):
 === typed: f() { echo in-f; }; f ===
 DEBUG fired 1 time(s):
    DEBUG cmd=[f] rc=0
+=== typed: set -T; g() { echo in-g; }; g; set +T ===
+DEBUG fired 5 time(s):
+   DEBUG cmd=[set -T] rc=0
+   DEBUG cmd=[g] rc=0
+   DEBUG cmd=[g] rc=0
+   DEBUG cmd=[echo in-g] rc=0
+   DEBUG cmd=[set +T] rc=0
 === typed: echo x=$(echo sub) ===
 DEBUG fired 1 time(s):
    DEBUG cmd=[echo x=$(echo sub)] rc=0
@@ -33,10 +55,11 @@ DEBUG fired 3 time(s) during xtrace
 CONCLUSION: REJECTED.
   1. It fires once per *simple* command, not per command line: a pipeline
      or an && chain or a function call yields several events for one line,
-     and a shell loop yields one per iteration. There is no way to tell
+     and a shell loop yields one per iteration (6 for the 3-iteration
+     loop above). There is no way to tell
      which firings belong to one user command without extra state.
-  2. It fires inside functions and subshells, i.e. in code the user never
-     typed, so event counts depend on implementation details of whatever
+  2. It fires inside subshells, and inside function bodies as soon as
+     `set -T` (functrace) is in effect, so event counts depend on whether
      runs -- the source becomes noisy exactly when commands are complex.
   3. It is not run inside $( ) at all, so command substitutions are
      invisible, while the enclosing line is visible: counts do not match.

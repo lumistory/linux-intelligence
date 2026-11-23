@@ -1,5 +1,5 @@
 ### image: docker.io/library/ubuntu:24.04
-### utc:   2026-11-23T13:49:23Z
+### utc:   2026-11-23T14:00:25Z
 ### ---
 {
   "probe_schema": "li-cap/1",

@@ -94,8 +94,7 @@ fn main() {
 
 fn run() -> Result<i32> {
     let args = parse_args()?;
-    std::fs::create_dir_all(&args.workdir)
-        .map_err(|e| Error::io(args.workdir.clone(), e))?;
+    std::fs::create_dir_all(&args.workdir).map_err(|e| Error::io(args.workdir.clone(), e))?;
     match args.mode.as_str() {
         "matrix" => matrix(&args),
         "concurrent" => concurrent(&args),
@@ -107,7 +106,10 @@ fn run() -> Result<i32> {
 }
 
 fn emit(v: &serde_json::Value) {
-    println!("{}", serde_json::to_string(v).unwrap_or_else(|_| "{}".into()));
+    println!(
+        "{}",
+        serde_json::to_string(v).unwrap_or_else(|_| "{}".into())
+    );
 }
 
 /// Run the full matrix for every shell, sequentially, one PTY each.
@@ -177,11 +179,15 @@ fn concurrent(args: &Args) -> Result<i32> {
         let workdir = args.workdir.clone();
         let shell_id = spec.id.to_string();
         handles.push(std::thread::spawn(move || -> Result<serde_json::Value> {
-            let winsize = Winsize { ws_row: 24 + id as u16, ws_col: 80 + id as u16, ws_xpixel: 0, ws_ypixel: 0 };
+            let winsize = Winsize {
+                ws_row: 24 + id as u16,
+                ws_col: 80 + id as u16,
+                ws_xpixel: 0,
+                ws_ypixel: 0,
+            };
             let mut argv = vec![shell_path];
             argv.extend(shell_args);
             let mut s = Session::spawn(SpawnSpec {
-                name: &format!("conc-{id}"),
                 argv: &argv,
                 env: &env,
                 winsize,
@@ -242,7 +248,10 @@ fn concurrent(args: &Args) -> Result<i32> {
     for h in handles {
         match h.join() {
             Ok(Ok(v)) => {
-                if v["foreign_tokens_seen"].as_array().map(|a| !a.is_empty()).unwrap_or(true)
+                if v["foreign_tokens_seen"]
+                    .as_array()
+                    .map(|a| !a.is_empty())
+                    .unwrap_or(true)
                     || !v["winsize_isolated"].as_bool().unwrap_or(false)
                 {
                     ok = false;
@@ -323,17 +332,29 @@ fn takeover(args: &Args) -> Result<i32> {
     }
 
     // Our own PTY, for the negative side of the comparison.
-    let winsize = Winsize { ws_row: 24, ws_col: 80, ws_xpixel: 0, ws_ypixel: 0 };
+    let winsize = Winsize {
+        ws_row: 24,
+        ws_col: 80,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
     let mut argv = vec!["/bin/bash".to_string(), "--norc".into(), "-i".into()];
     let env = vec![
         ("TERM".to_string(), args.term.clone()),
-        ("HOME".to_string(), args.workdir.to_string_lossy().into_owned()),
+        (
+            "HOME".to_string(),
+            args.workdir.to_string_lossy().into_owned(),
+        ),
         ("PS1".to_string(), "LI-OWN> ".to_string()),
     ];
     argv.insert(0, "/bin/bash".to_string());
     let mut own = Session::spawn(SpawnSpec {
-        name: "own-probe",
-        argv: &["/bin/bash".to_string(), "--norc".into(), "--noprofile".into(), "-i".into()],
+        argv: &[
+            "/bin/bash".to_string(),
+            "--norc".into(),
+            "--noprofile".into(),
+            "-i".into(),
+        ],
         env: &env,
         winsize,
         cwd: &args.workdir,
@@ -370,25 +391,42 @@ fn takeover(args: &Args) -> Result<i32> {
 /// Diagnostic mode: run one command in a bash PTY and dump exactly what the
 /// master side received. Used to debug the read path and quoted in the report.
 fn probe(args: &Args) -> Result<i32> {
-    let winsize = Winsize { ws_row: 40, ws_col: 120, ws_xpixel: 0, ws_ypixel: 0 };
+    let winsize = Winsize {
+        ws_row: 40,
+        ws_col: 120,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
     let env = vec![
         ("TERM".to_string(), args.term.clone()),
-        ("HOME".to_string(), args.workdir.to_string_lossy().into_owned()),
+        (
+            "HOME".to_string(),
+            args.workdir.to_string_lossy().into_owned(),
+        ),
         ("PS1".to_string(), "LI-BASH> ".to_string()),
         ("LC_ALL".to_string(), "C".to_string()),
-        ("PATH".to_string(), "/usr/local/bin:/usr/bin:/bin".to_string()),
+        (
+            "PATH".to_string(),
+            "/usr/local/bin:/usr/bin:/bin".to_string(),
+        ),
     ];
     let mut s = Session::spawn(SpawnSpec {
-        name: "probe",
-        argv: &["/bin/bash".into(), "--norc".into(), "--noprofile".into(), "-i".into()],
+        argv: &[
+            "/bin/bash".into(),
+            "--norc".into(),
+            "--noprofile".into(),
+            "-i".into(),
+        ],
         env: &env,
         winsize,
         cwd: &args.workdir,
     })?;
     let m0 = s.mark();
     let _ = s.wait_quiet(300, 4_000);
-    emit(&json!({ "record": "probe", "phase": "startup", "bytes": s.bytes_read(),
-                  "escaped": s.since_escaped(m0) }));
+    emit(
+        &json!({ "record": "probe", "phase": "startup", "bytes": s.bytes_read(),
+                  "escaped": s.since_escaped(m0) }),
+    );
 
     let m1 = s.mark();
     s.send_line("top -b -n1 -o %MEM")?;
@@ -401,8 +439,10 @@ fn probe(args: &Args) -> Result<i32> {
     let m2 = s.mark();
     s.send_line("echo PROBE-AFTER-TOP")?;
     let r = s.read_until_any("PROBE-AFTER-TOP", Duration::from_secs(8))?;
-    emit(&json!({ "record": "probe", "phase": "after_top", "matched": r.matched,
-                  "escaped": s.since_escaped(m2).chars().take(2000).collect::<String>() }));
+    emit(
+        &json!({ "record": "probe", "phase": "after_top", "matched": r.matched,
+                  "escaped": s.since_escaped(m2).chars().take(2000).collect::<String>() }),
+    );
     s.send_line("exit")?;
     let _ = s.reap(Duration::from_secs(3));
     Ok(0)
@@ -434,9 +474,13 @@ fn responder_off(args: &Args) -> Result<i32> {
             v
         };
         for responder in [true, false] {
-            let winsize = Winsize { ws_row: 40, ws_col: 120, ws_xpixel: 0, ws_ypixel: 0 };
+            let winsize = Winsize {
+                ws_row: 40,
+                ws_col: 120,
+                ws_xpixel: 0,
+                ws_ypixel: 0,
+            };
             let spec_spawn = SpawnSpec {
-                name: &spec.id,
                 argv: &argv,
                 env: &env,
                 winsize,
@@ -457,7 +501,11 @@ fn responder_off(args: &Args) -> Result<i32> {
                     continue;
                 }
             };
-            let token = format!("{}-CMP-{}", spec.sentinel, if responder { "ON" } else { "OFF" });
+            let token = format!(
+                "{}-CMP-{}",
+                spec.sentinel,
+                if responder { "ON" } else { "OFF" }
+            );
             let t_ready = std::time::Instant::now();
             let mut waited = 0u64;
             while session.bytes_read() == 0 && waited < 8_000 {
@@ -475,9 +523,6 @@ fn responder_off(args: &Args) -> Result<i32> {
                 .unwrap_or(pty::ReadOutcome {
                     matched: false,
                     elapsed: Duration::from_secs(0),
-                    bytes: 0,
-                    occurrences_raw: 0,
-                    occurrences_debackspaced: 0,
                 });
             // Prove the *command's* output arrived, not just the tty echo.
             let bare = util::count_bare_lines(&session.since(0), &token);
@@ -494,9 +539,11 @@ fn responder_off(args: &Args) -> Result<i32> {
                 "read_until_matched": out.matched,
                 "queries_seen": queries_seen,
                 "queries_answered": answered,
+                "answers": session.answers_json(),
                 "first_output_ms": first_output_ms,
                 "quiet_settle_ms": quiet_ms,
                 "handshake_ms": ms,
+                "read_until_elapsed_ms": out.elapsed_ms(),
                 "bytes_before_command": before,
                 "bytes_total": bytes,
             }));

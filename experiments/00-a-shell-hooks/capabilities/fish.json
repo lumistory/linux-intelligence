@@ -1,0 +1,59 @@
+{
+  "adapter": "fish",
+  "version": "4.9.3",
+  "hook_combination": "fish_preexec + fish_postexec (fish_postexec is authoritative)",
+  "measured_on": "2026-11-23",
+  "protocol_schema_version": 1,
+  "capabilities": {
+    "command_text": true,
+    "command_text_source": "fish_postexec $argv[1]",
+    "command_text_multiline": "partial:backslash_continuation_concatenated_without_separator",
+    "start_time": "partial:wall_clock_via_date_fork_or_postexec_only",
+    "end_time": true,
+    "exit_status": true,
+    "duration": "true:CMD_DURATION_provided_by_fish",
+    "cwd": true,
+    "pid": true,
+    "sid": true,
+    "new_session": true,
+    "multi_line": "partial:continuation_joined_as_echo_t02-one\\two",
+    "pipelines": "single-event",
+    "builtins": true,
+    "functions": "single-event:only_the_typed_call_is_reported",
+    "aliases": "true:alias_name_is_reported_not_expansion",
+    "background": "partial:the_&_line_is_reported_immediately_completion_not_observed",
+    "subshell": "single-event:begin/end_reported_once",
+    "ctrl_c_reported": true,
+    "ctrl_c_exit_status": 130,
+    "internal_script_commands": false,
+    "event_on_kill9": false,
+    "unclosed_event_on_kill9": false,
+    "fires_in_noninteractive": false,
+    "fires_in_dash_c": false,
+    "sink_can_be_unix_socket_redirection": false,
+    "sink_requires_launcher_supplied_fd": true,
+    "monotonic_clock": false,
+    "per_command_fork_required": 1,
+    "needs_term_dumb_under_bare_pty": true,
+    "reports_exit_keyword": true,
+    "hook_can_kill_shell_if_sink_dies": "unknown:fish_is_not_killed_by_SIGPIPE_in_this_setup_untested"
+  },
+  "evidence": {
+    "cases": "results/t01..t13.fish.{term.log,events.jsonl}",
+    "analysis": "results/analysis.json",
+    "latency": "results/latency/latency.json",
+    "term_dumb": "results/probe-fish-term.log",
+    "unix_socket": "results/probe-unix-socket-open.log",
+    "noninteractive": "results/noninteractive.log"
+  },
+  "known_gaps": [
+    "fish reports the `source adapters/fish.fish` line itself, unlike bash/zsh, because the hooks exist as soon as the file is sourced.",
+    "fish also reports `exit`, which bash and zsh never do -- so event counts are not comparable across shells without filtering.",
+    "Multi-line continuation loses information: `echo one \\` + `two` is reported as `echo one \\two`.",
+    "SIGPIPE resilience of the fish hook was NOT tested: fish may install its own SIGPIPE handling, which would change the dead-sink behaviour.",
+    "requires TERM=dumb in a bare pty, otherwise fish blocks on terminal capability queries."
+  ],
+  "rejected_alternatives": {
+    "fish_prompt_hook": "fires on every repaint (autosuggestion redraw), not once per command"
+  }
+}

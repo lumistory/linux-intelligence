@@ -1,0 +1,19 @@
+# T2 — what uid 0 inside `unshare -Ur` actually holds.
+# Host uid is 1000; inside the namespace uid 0 maps to it.
+
+## (a) identity and mapping inside the namespace
+\$ unshare -Ur sh -c 'cat /proc/self/uid_map; id'
+         0       1000          1
+uid=0(root) gid=0(root) 组=0(root),65534(nobody)
+
+## (b) can namespace-root read a host root-only file?
+\$ cat /etc/shadow                  # as the host user
+  READ_DENIED (EACCES)
+\$ unshare -Ur cat /etc/shadow      # as namespace root
+  READ_DENIED (EACCES)
+
+## (c) can namespace-root read a file owned by a DIFFERENT uid?
+# A second uid from /etc/subuid (host 100000) is mapped into a fresh
+# namespace; it creates a 0600 file, then namespace-root tries to read it.
+# Both processes belong to the same host user, so this isolates kernel
+# ownership checks from the host user's own rights.

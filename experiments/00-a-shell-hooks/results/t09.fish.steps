@@ -1,0 +1,4 @@
+MARK case=t09 shell=fish
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+RUN begin; echo t09-subshell; end
+RUN echo t09-cmdsub-(echo substituted)

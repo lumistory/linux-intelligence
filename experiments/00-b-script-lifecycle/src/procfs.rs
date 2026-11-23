@@ -152,7 +152,8 @@ mod tests {
         // Field layout: pid (comm) state ppid pgrp session tty_nr tpgid flags
         // minflt cminflt majflt cmajflt utime stime cutime cstime priority
         // nice num_threads itrealvalue starttime ...
-        let raw = "1234 (a) b (c) S 12 34 56 34816 -1 4194304 100 0 0 0 7 8 0 0 20 0 1 0 999888 123 456";
+        let raw =
+            "1234 (a) b (c) S 12 34 56 34816 -1 4194304 100 0 0 0 7 8 0 0 20 0 1 0 999888 123 456";
         let p = parse_stat(raw).expect("parse");
         assert_eq!(p.pid, 1234);
         assert_eq!(p.comm, "a) b (c");

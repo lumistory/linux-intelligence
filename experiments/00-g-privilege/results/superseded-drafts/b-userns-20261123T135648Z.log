@@ -1,0 +1,28 @@
+## uid_map / gid_map inside unshare -Ur
+uid_map:          0       1000          1;
+gid_map:          0       1000          1;
+id -u: 0
+
+## read /etc/shadow as namespace-root
+head: 无法以读模式打开 '/etc/shadow': 权限不够
+rc=0
+
+## mount tmpfs inside a user+mount namespace
+MOUNT_OK
+created_owner=0:0
+rc=0
+
+## is that mount visible on the host?
+entries=0
+
+## signal host root process (pid 1)
+sh: 第 1 行：kill: (1) - 不允许的操作
+rc=0
+
+## ownership of a file the namespace wrote to SHARED storage
+inside=0:0
+on_host=1000:1000
+
+## write into a root-owned directory
+touch: 无法 touch '/etc/li-ns-test': 权限不够
+rc=0

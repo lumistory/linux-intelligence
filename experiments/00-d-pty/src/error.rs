@@ -18,8 +18,6 @@ pub enum Error {
         #[source]
         source: nix::errno::Errno,
     },
-    #[error("scene definition error: {0}")]
-    Scene(String),
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
 }

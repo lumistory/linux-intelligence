@@ -1,0 +1,19 @@
+   Compiling li-run-proto v0.1.0 (<WORKSPACE>/experiments/00-b-script-lifecycle)
+    Finished `release` profile [optimized] target(s) in 0.97s
+mbx[cache]: 0 hits, 0 misses, 1 incremental; 0 B downloaded, 0 B uploaded, 0 B stored locally
+mbx[savings]: every checkout believes it owns 544.1 GiB of outputs. the disk keeps one copy and says nothing.
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/main.rs (target/debug/deps/li_run_proto-51093d662028098e)
+
+running 7 tests
+test events::tests::epoch_formats ... ok
+test events::tests::mono_is_nonzero ... ok
+test events::tests::uuid_shape ... ok
+test procfs::tests::parses_comm_with_parens_and_spaces ... ok
+test procfs::tests::own_process_is_visible ... ok
+test procfs::tests::rejects_garbage ... ok
+test sampler::tests::sampler_sees_its_own_leader ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+

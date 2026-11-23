@@ -1,0 +1,11 @@
+== f unprivileged vs privileged capability checklist
+read own /proc/self/stat                             OK (unprivileged)
+read other uid 0 process /proc/1/stat                OK (unprivileged)
+read /proc/1/cmdline                                 OK (unprivileged)
+inotify watch own dir                                OK (unprivileged)
+bind AF_UNIX socket in tmp                           OK (unprivileged)
+sqlite write in own dir                              OK (unprivileged)
+watch /root (other uid dir)                          DENIED
+read /etc/shadow                                     DENIED
+btrfs subvolume snapshot /                           DENIED
+mount tmpfs                                          DENIED

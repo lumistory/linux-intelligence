@@ -1,0 +1,2 @@
+== a2 same-tick (pid,starttime) collision
+credprobe: ns_last_pid not writable; run inside `unshare -Urpf --mount-proc`

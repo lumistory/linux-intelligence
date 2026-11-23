@@ -1,0 +1,4 @@
+== a1 SO_PEERCRED TOCTOU (client exits at connect)
+{"case":"toctou_snapshot","client_fork_pid":186258,"client_zombie_state":"Z","clk_tck":100,"cmdline_at_accept":null,"cmdline_now":null,"cred_after_delay":{"gid":1000,"pid":186258,"uid":1000},"cred_at_accept":{"gid":1000,"pid":186258,"uid":1000},"cred_is_frozen":true,"delay_ms":1000,"elapsed_between_probes_ns":1000134390,"pid_dir_exists_after_delay":true,"pid_liveness_after_delay":"alive_same_process","pid_namespace":"pid:[4026531836]","starttime_at_accept":1142932,"starttime_now":1142932}
+{"case":"toctou_after_reap","client_pid":186258,"liveness_after_reap":"gone","note":"the socket is still open; SO_PEERCRED still reports this pid","pid_dir_exists_after_reap":false,"reaped_by_server":true}
+{"case":"toctou_impostor","detail":{"attempted":false}}

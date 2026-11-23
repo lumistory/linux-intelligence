@@ -82,7 +82,11 @@ _li_sess() { # facts that never change during the session
   fi
   [[ $_LI_SID == "$$" ]] && _LI_NEW_SESSION=true || _LI_NEW_SESSION=false
   _LI_SESSION_ID=${LI_SESSION_ID:-li-bash-$$}
-  _LI_TTY=$(tty 2>/dev/null) || _LI_TTY=none
+  # `tty` (no -s) opens the terminal by name and BLOCKS forever when an
+  # inherited FD (3) is not a tty -- it hung the shell during adapter load.
+  # `tty -s` only queries and returns a status, so it never blocks.
+  if tty -s 2>/dev/null; then _LI_TTY=$(tty 2>/dev/null || echo tty); else
+    _LI_TTY=none; fi
 }
 
 # --- finish side: authoritative --------------------------------------------

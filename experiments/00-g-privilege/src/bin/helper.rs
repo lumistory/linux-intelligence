@@ -33,6 +33,14 @@ struct Config {
     allow_uids: Vec<u32>,
     max_requests: Option<u64>,
     ready_file: Option<PathBuf>,
+    /// Mode applied to the socket's parent directory. 0o700 by default: a
+    /// world-reachable directory around a privileged socket is a mistake.
+    ///
+    /// This used to be an unconditional `set_permissions(parent, 0o700)`, which
+    /// silently rewrote a directory the caller had deliberately made 0777 and
+    /// made the "non-authorised uid" test look like a socket-mode rejection.
+    /// It is now explicit and logged, so the test can tell the two apart.
+    socket_dir_mode: u32,
 }
 
 fn parse_args() -> Result<Config, String> {
@@ -43,6 +51,7 @@ fn parse_args() -> Result<Config, String> {
         allow_uids: Vec::new(),
         max_requests: None,
         ready_file: None,
+        socket_dir_mode: 0o700,
     };
     let mut it = std::env::args().skip(1);
     while let Some(a) = it.next() {
@@ -61,8 +70,13 @@ fn parse_args() -> Result<Config, String> {
                 cfg.max_requests = Some(v.parse::<u64>().map_err(|_| format!("bad count {v}"))?);
             }
             "--ready-file" => cfg.ready_file = Some(PathBuf::from(val()?)),
+            "--socket-dir-mode" => {
+                let v = val()?;
+                cfg.socket_dir_mode = u32::from_str_radix(v.trim_start_matches("0o"), 8)
+                    .map_err(|_| format!("bad octal mode {v}"))?;
+            }
             "-h" | "--help" => {
-                println!("helper --socket P --root D --audit P [--allow-uid N] [--max-requests N] [--ready-file P]");
+                println!("helper --socket P --root D --audit P [--allow-uid N] [--max-requests N] [--ready-file P] [--socket-dir-mode 0700]");
                 std::process::exit(0);
             }
             other => return Err(format!("unknown argument {other}")),
@@ -210,7 +224,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(parent) = cfg.socket.parent() {
         std::fs::create_dir_all(parent)?;
-        let _ = std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700));
+        std::fs::set_permissions(parent, std::fs::Permissions::from_mode(cfg.socket_dir_mode))?;
     }
     let _ = std::fs::remove_file(&cfg.socket);
     let listener = UnixListener::bind(&cfg.socket)?;
@@ -298,7 +312,11 @@ fn handle_conn(
         }));
         let _ = write_response(
             &mut stream,
-            &proto::Response::err("<connection>", proto::CODE_NOT_AUTHORIZED, "peer uid not allowed"),
+            &proto::Response::err(
+                "<connection>",
+                proto::CODE_NOT_AUTHORIZED,
+                "peer uid not allowed",
+            ),
         );
         return;
     }
@@ -333,7 +351,11 @@ fn handle_conn(
                 }));
                 let _ = write_response(
                     &mut stream,
-                    &proto::Response::err("<frame>", proto::CODE_DISCARD_EXCEEDED, "frame never terminated"),
+                    &proto::Response::err(
+                        "<frame>",
+                        proto::CODE_DISCARD_EXCEEDED,
+                        "frame never terminated",
+                    ),
                 );
                 break;
             }

@@ -189,6 +189,60 @@
    "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t07.zsh.steps",
    "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t07.zsh.term.log"
   },
+  "t08.bash": {
+   "case": "t08",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.bash.events.jsonl",
+   "rc": 0,
+   "shell": "bash",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.bash.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.bash.term.log"
+  },
+  "t08.fish": {
+   "case": "t08",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.fish.events.jsonl",
+   "rc": 0,
+   "shell": "fish",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.fish.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.fish.term.log"
+  },
+  "t08.zsh": {
+   "case": "t08",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.zsh.events.jsonl",
+   "rc": 0,
+   "shell": "zsh",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.zsh.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t08.zsh.term.log"
+  },
+  "t09.bash": {
+   "case": "t09",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.bash.events.jsonl",
+   "rc": 0,
+   "shell": "bash",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.bash.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.bash.term.log"
+  },
+  "t09.fish": {
+   "case": "t09",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.fish.events.jsonl",
+   "rc": 0,
+   "shell": "fish",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.fish.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.fish.term.log"
+  },
+  "t09.zsh": {
+   "case": "t09",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.zsh.events.jsonl",
+   "rc": 0,
+   "shell": "zsh",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.zsh.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t09.zsh.term.log"
+  },
   "t10.bash": {
    "case": "t10",
    "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t10.bash.events.jsonl",
@@ -242,6 +296,60 @@
    "stderr": "",
    "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t11.zsh.steps",
    "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t11.zsh.term.log"
+  },
+  "t12.bash": {
+   "case": "t12",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.bash.events.jsonl",
+   "rc": 0,
+   "shell": "bash",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.bash.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.bash.term.log"
+  },
+  "t12.fish": {
+   "case": "t12",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.fish.events.jsonl",
+   "rc": 0,
+   "shell": "fish",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.fish.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.fish.term.log"
+  },
+  "t12.zsh": {
+   "case": "t12",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.zsh.events.jsonl",
+   "rc": 0,
+   "shell": "zsh",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.zsh.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t12.zsh.term.log"
+  },
+  "t13.bash": {
+   "case": "t13",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.bash.events.jsonl",
+   "rc": 0,
+   "shell": "bash",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.bash.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.bash.term.log"
+  },
+  "t13.fish": {
+   "case": "t13",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.fish.events.jsonl",
+   "rc": 0,
+   "shell": "fish",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.fish.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.fish.term.log"
+  },
+  "t13.zsh": {
+   "case": "t13",
+   "events": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.zsh.events.jsonl",
+   "rc": 0,
+   "shell": "zsh",
+   "stderr": "",
+   "steps": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.zsh.steps",
+   "term": "<WORKSPACE>/experiments/00-a-shell-hooks/results/t13.zsh.term.log"
   }
  }
 }

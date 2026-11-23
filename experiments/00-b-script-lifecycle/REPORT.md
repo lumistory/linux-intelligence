@@ -4,6 +4,15 @@ Run of record: `results/20261123T133700Z/` (driver log:
 `results/20261123T133700Z/driver.log`). 10 cases, **41 assertions passed,
 0 failed**, `run.sh` exited 0.
 
+Reproducibility: the same driver was run again as
+`results/20261123T134924Z/` — again **41 assertions passed, 0 failed**. Case
+verdicts and process counts reproduced exactly. Wall-clock durations and the
+per-scan cost did not: that later run measured ~4.75 ms per `/proc` scan instead
+of ~2.4 ms, because the machine was carrying 659 processes instead of 522. All
+numbers quoted below come from the run of record. This is itself a finding: the
+sampling floor is load-dependent, so §4.5 must be read as "on this host, at this
+load".
+
 ## 1. Objective
 
 Determine what a supervisor process can observe about a script it launches with

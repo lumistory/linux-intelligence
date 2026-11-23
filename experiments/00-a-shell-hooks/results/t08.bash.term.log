@@ -1,0 +1,11 @@
+
+[?2004h⟦LI-P⟧ 
+[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l[?2004h⟦LI-P⟧ sleep 0.3 &
+[?2004l[1] 167536
+[?2004h⟦LI-P⟧ echo t08-after-bg
+[?2004lt08-after-bg
+[1]+  Done                       sleep 0.3
+[?2004h⟦LI-P⟧ wait
+[?2004l[?2004h⟦LI-P⟧ exit
+[?2004lexit

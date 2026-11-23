@@ -34,7 +34,7 @@ DEFAULT_ZSH = os.path.expanduser(
 
 def shell_argv(shell):
     if shell == "bash":
-        return ["/usr/bin/bash", "--norc", "--noprofile", "-i"]
+        return ["/usr/bin/bash", "--noprofile", "--rcfile", "/tmp/li-phase0-a/rc/bashrc", "-i"]
     if shell == "zsh":
         return [os.environ.get("LI_ZSH", DEFAULT_ZSH), "-f", "-i"]
     if shell == "fish":

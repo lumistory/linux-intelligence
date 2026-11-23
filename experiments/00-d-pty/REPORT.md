@@ -1,7 +1,7 @@
 # 0-D — PTY across bash / zsh / fish: report
 
-Run of record: `results/20261123T134647Z/` (driver log:
-`results/20261123T134647Z/driver.log`). **49 assertions passed, 0 failed**,
+Run of record: `results/20261123T135441Z/` (driver log:
+`results/20261123T135441Z/driver.log`). **49 assertions passed, 0 failed**,
 `run.sh` exited 0. Three shells x ten steps = 30/30 steps green.
 
 ## 1. Objective
@@ -48,7 +48,7 @@ attach to a terminal that already exists.
 
 ### 4.1 The matrix: 30/30 steps pass
 
-Source: `results/20261123T134647Z/matrix-table.txt`
+Source: `results/20261123T135441Z/matrix-table.txt`
 
 | step | bash | zsh | fish |
 |---|---|---|---|
@@ -115,9 +115,13 @@ to the slave's foreground process group when `TIOCSWINSZ` changes the geometry.
 | fish | yes / yes | yes | yes | yes | yes |
 
 `vi` produced 5042 bytes of screen writes for a one-line file
-(`07_fullscreen_vi.screen_bytes`), and `less` 2585 bytes: `ESC[?1049h`, cursor
-addressing, `ESC[2J`, `ESC[K`. `top -b -n1` produced 57 208 bytes of **ordinary
-line output** with a real `PID ... COMMAND` header row.
+(`07_fullscreen_vi.screen_bytes`; 5044 for zsh, 5250 for fish — the byte count
+depends on the prompt redraws interleaved with the screen), and `less` 2585
+bytes: `ESC[?1049h`, cursor
+addressing, `ESC[2J`, `ESC[K`. `top -b -n1` produced 55 306 bytes of **ordinary
+line output** with a real `PID ... COMMAND` header row (byte counts vary run to
+run with process load, and so do the `/dev/pts/N` numbers; the format, the
+assertions and the verdicts do not).
 
 `vi` was started as `vi -n <workdir>/vi-target.txt`. `-n` matters: without it a
 stale `/tmp/.li-phase0-vi.txt.swp` from an earlier interrupted run made `vim`
@@ -127,15 +131,15 @@ subsequent keystroke went to that dialog instead of to the shell. Recorded in
 
 ### 4.6 Four concurrent sessions, no cross-talk
 
-`results/20261123T134647Z/concurrent.jsonl`, 4 sessions in one process, mixed
+`results/20261123T135441Z/concurrent.jsonl`, 4 sessions in one process, mixed
 shells, each with its own token and its own window size:
 
 | session | shell | pty | own token seen | window size | foreign tokens |
 |---|---|---|---|---|---|
 | 0 | bash | `/dev/pts/23` | 2 | 24 80 | none |
-| 1 | zsh | `/dev/pts/22` | 2 | 25 81 | none |
+| 1 | zsh | `/dev/pts/25` | 2 | 25 81 | none |
 | 2 | fish | `/dev/pts/24` | 4 | 26 82 | none |
-| 3 | bash | `/dev/pts/25` | 2 | 27 83 | none |
+| 3 | bash | `/dev/pts/26` | 2 | 27 83 | none |
 
 - 4 distinct slave paths, 4 distinct pids, 4 distinct geometries, each
   confirmed by `stty size` inside the session.
@@ -148,7 +152,7 @@ shells, each with its own token and its own window size:
 
 ### 4.7 The responder: measured necessity
 
-Source: `results/20261123T134647Z/responder-compare.txt`. Same handshake, same
+Source: `results/20261123T135441Z/responder-compare.txt`. Same handshake, same
 environment; the only variable is whether terminal queries are answered.
 
 | shell | responder | queries seen | queries answered | sentinel output arrives | handshake ms |
@@ -158,11 +162,11 @@ environment; the only variable is whether terminal queries are answered.
 | zsh | ON | 0 | 0 | yes | 49 |
 | zsh | OFF | 0 | 0 | yes | 49 |
 | fish | ON | **12** | **12** | yes | **49** |
-| fish | OFF | **12** | 0 | yes | **10 074** |
+| fish | OFF | **12** | 0 | yes | **10 064** |
 
 ### 4.8 The takeover boundary, with evidence
 
-`results/20261123T134647Z/takeover.jsonl`:
+`results/20261123T135441Z/takeover.jsonl`:
 
 ```json
 {"foreign_terminals_found": 12,
@@ -197,7 +201,7 @@ reach the other session's foreground process is refused.
 
 ### 4.9 Leak check
 
-`results/20261123T134647Z/leaks.txt`: no session, no `vim`, and no child of our
+`results/20261123T135441Z/leaks.txt`: no session, no `vim`, and no child of our
 work directory survived the run.
 
 ## 5. Analysis
@@ -264,7 +268,7 @@ PTY is a byte pipe: nothing on the other end answers them.
 My first hypothesis was that fish would **block forever** without a responder.
 **That was wrong, and the measurement says so.** With the responder disabled
 fish still ran the command (`sentinel_output_seen: true`) — it simply took
-**10 074 ms** instead of **49 ms** (4.7), i.e. it times out and proceeds.
+**10 064 ms** instead of **49 ms** (4.7), i.e. it times out and proceeds.
 
 What the responder actually buys is therefore *latency and determinism*, not
 correctness: 200x faster startup, and — the part that matters — no dependence on
@@ -318,7 +322,7 @@ alternate-screen sequence appeared, the process exited, and the shell was usable
 afterwards. The *content* is not recoverable without a terminal emulator: 5042
 bytes of cursor-addressed writes for a file containing one line. `top -b -n1` is
 the control that proves the difference is the program's behaviour (line output,
-57 208 bytes, readable header) and not the PTY.
+55 306 bytes, readable header) and not the PTY.
 
 ## 6. Known limitations
 
@@ -384,7 +388,7 @@ fish redrawing its input line character by character, (b) zsh's `PROMPT_SP`
 joining the prompt to the previous output, (c) the need to resync a shell's
 editing buffer between commands, and (d) fish's startup terminal queries. H-D6
 was **added and corrected** mid-experiment: the responder is required for speed
-and determinism (10 074 ms → 49 ms), not for correctness, because my "it blocks
+and determinism (10 064 ms → 49 ms), not for correctness, because my "it blocks
 forever" hypothesis was falsified by measurement.
 
 The takeover boundary is confirmed as a mechanism limit with three independent

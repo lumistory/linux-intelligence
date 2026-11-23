@@ -103,7 +103,7 @@ chmod +x "$BIN/dash" 2>/dev/null || true
 
 {
   echo "### build host: $(uname -n) kernel $(uname -r)"
-  echo "### gcc: $(gcc --version | head -1)"
+  echo "### gcc: $(gcc --version | sed -n '1p')"
   echo "### rustc: $(rustc --version)"
   echo
   for f in capcheck hello_dyn hello_static hello_newer dash; do
@@ -116,8 +116,8 @@ chmod +x "$BIN/dash" 2>/dev/null || true
     echo
     printf '    exec on host: '
     case "$f" in
-      dash) "$BIN/dash" -c 'echo dash-runs' 2>&1 | head -1 ;;
-      *)     "$BIN/$f" 2>&1 | head -1 ;;
+      dash) "$BIN/dash" -c 'echo dash-runs' 2>&1 | sed -n '1p' ;;
+      *)     "$BIN/$f" 2>&1 | sed -n '1p' ;;
     esac
   done
 } >"$RAW/00_build_artefacts.log" 2>&1
@@ -215,6 +215,7 @@ for image in "${IMAGES[@]}"; do
   run_step "$image" p6_recovery.sh 15_recovery
   run_step "$image" p7_init.sh 16_initdetect
   run_step "$image" p8_dist.sh 17_distbins
+  run_step "$image" p9_shtrap.sh 18_shtrap
 done
 
 # ---------------------------------------------------------------------------
@@ -349,7 +350,7 @@ tail -n "$TAIL_LINES" "$RAW/30_matrix.log"
 echo
 echo "=== stage 5: binary distribution summary"
 
-HOST_GLIBC="$(ldd --version 2>/dev/null | head -1 | awk '{print $NF}')"
+HOST_GLIBC="$(ldd --version 2>/dev/null | sed -n '1p' | awk '{print $NF}')"
 
 {
   echo "### Can one binary built on Arch (glibc $HOST_GLIBC) run everywhere?"
@@ -361,10 +362,10 @@ HOST_GLIBC="$(ldd --version 2>/dev/null | head -1 | awk '{print $NF}')"
     label="$(label_for "$image")"
     f="$RAW/17_distbins_${label}.log"
     [ -f "$f" ] || continue
-    dyn="$(sed -n 's/^hello_dyn exit = //p' "$f" | head -1)"
-    sta="$(sed -n 's/^hello_static exit = //p' "$f" | head -1)"
-    new="$(sed -n 's/^hello_newer exit = //p' "$f" | head -1)"
-    lic="$(sed -n 's/^ldd .* \([0-9][0-9.]*\)$/\1/p' "$f" | head -1)"
+    dyn="$(sed -n 's/^hello_dyn exit = //p' "$f" | sed -n '1p')"
+    sta="$(sed -n 's/^hello_static exit = //p' "$f" | sed -n '1p')"
+    new="$(sed -n 's/^hello_newer exit = //p' "$f" | sed -n '1p')"
+    lic="$(sed -n 's/^ldd .* \([0-9][0-9.]*\)$/\1/p' "$f" | sed -n '1p')"
     [ -n "$lic" ] || lic="$(jget "$RAW/20_probe_${label}.json" '.libc.glibc_version')"
     printf '%-12s %-9s %-12s %-13s %-9s\n' \
       "$label" "${lic:--}" "${dyn:--}" "${sta:--}" "${new:--}"
@@ -379,7 +380,7 @@ HOST_GLIBC="$(ldd --version 2>/dev/null | head -1 | awk '{print $NF}')"
   echo
   echo "### GLIBC version nodes each artefact requires (host-side, from build log):"
   sed -n '/GLIBC version nodes required/,$p' "$RAW/00_build_artefacts.log" |
-    grep -E '^--- (hello|capcheck)' -A3 | head -30
+    grep -E '^--- (hello|capcheck)' -A3 | sed -n '1,30p'
 } >"$RAW/31_dist_matrix.log" 2>&1
 echo "-> 31_dist_matrix.log"
 tail -n "$TAIL_LINES" "$RAW/31_dist_matrix.log"
@@ -404,7 +405,7 @@ echo "=== stage 6: init detection evidence"
 
     if grep -q 'systemctl: PRESENT' "$f"; then a=PRESENT; else a=ABSENT; fi
 
-    b="$(sed -n 's/^is-system-running -> //p' "$f" | head -1)"
+    b="$(sed -n 's/^is-system-running -> //p' "$f" | sed -n '1p')"
     if [ -z "$b" ]; then
       if grep -q 'skipped (no systemctl binary)' "$f"; then b="n/a"; else b="error"; fi
     fi
@@ -417,8 +418,8 @@ echo "=== stage 6: init detection evidence"
       c="?"
     fi
 
-    d="$(sed -n 's/^pid1 comm:  *//p' "$f" | head -1)"
-    v="$(sed -n 's/^systemd_running = \(true\|false\).*/\1/p' "$f" | head -1)"
+    d="$(sed -n 's/^pid1 comm:  *//p' "$f" | sed -n '1p')"
+    v="$(sed -n 's/^systemd_running = \(true\|false\).*/\1/p' "$f" | sed -n '1p')"
     printf '%-12s %-11s %-16s %-9s %-11s %-7s\n' \
       "$label" "$a" "$b" "$c" "${d:--}" "${v:--}"
   done
@@ -475,7 +476,8 @@ echo "=== stage 7: /bin/sh difference evidence"
 
     pf="$(grep -m1 -oE 'PIPEFAIL_SUPPORTED|PIPEFAIL_UNSUPPORTED' "$f" || true)"
     pf="${pf#PIPEFAIL_}"
-    [ -n "$pf" ] || pf="?"
+    # empty = the shell aborted on the illegal option (Ubuntu's dash does)
+    [ -n "$pf" ] || pf="aborted"
 
     printf '%-12s %-7s %-16s %-11s %-9s %-9s %-9s %-9s\n' \
       "$label" "$sh" "$bv" "$lc" "${cb:--}" "${db:--}" "${eb:--}" "$pf"
@@ -495,6 +497,7 @@ echo "=== stage 7: /bin/sh difference evidence"
     if [ "${sr:-0}" -ge 2 ]; then sr="ACCEPTED($sr)"; else sr="REJECTED(${sr:-0})"; fi
     pf2="$(grep -m1 -oE 'PIPEFAIL_SUPPORTED|PIPEFAIL_UNSUPPORTED' "$f" || true)"
     pf2="${pf2#PIPEFAIL_}"
+    [ -n "$pf2" ] || pf2="aborted"
     printf '%-12s %-18s %-16s %-16s\n' "$label" "$db2" "$sr" "${pf2:-?}"
   done
 
@@ -506,9 +509,82 @@ echo "=== stage 7: /bin/sh difference evidence"
     grep -E '^0000000|^--- TEST [CDE]:' "$RAW/11_shell_${label}.log" |
       sed 's/^/    /'
   done
+
+  echo
+  echo "### READING THIS TABLE"
+  echo "### * BASH_VERSION: 'set(...)' = /bin/sh really is bash; 'EMPTY' = not bash."
+  echo "### * local: OK everywhere, INCLUDING dash. 'local' is not POSIX but both"
+  echo "###   dash and bash accept it, so it is a portable-in-practice construct --"
+  echo "###   using it is still a spec violation and is avoidable."
+  echo "### * C_bytes (echo -e): bash 4 = -e consumed, TAB expanded."
+  echo "###   dash 7 = '-e a<TAB>b\\n', i.e. dash printed '-e ' literally as data"
+  echo "###   and expanded the tab anyway. Same bytes in, different output."
+  echo "### * D_bytes (echo, no -e): bash 5 = literal backslash-t kept;"
+  echo "###   dash 4 = TAB expanded. POSIX says both are conforming;"
+  echo "###   therefore 'echo' is unusable for portable output. Use printf (E)."
+  echo "### * pipefail: 'aborted' means the shell ABORTED on the illegal option,"
+  echo "###   before any test branch could run -- see results/18_shtrap_<distro>.log, TRAP B."
+  echo "### * [[ ]] and source are ACCEPTED only where /bin/sh is bash, i.e. the"
+  echo "###   script would break on Debian/Ubuntu. probe.sh uses neither."
 } >"$RAW/33_shell_matrix.log" 2>&1
 echo "-> 33_shell_matrix.log"
 tail -n "$TAIL_LINES" "$RAW/33_shell_matrix.log"
+
+# ---------------------------------------------------------------------------
+# Stage 8 — results index
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Stage 7b — shell traps (read-on-procfs, pipefail)
+# ---------------------------------------------------------------------------
+echo
+echo "=== stage 7b: shell traps"
+
+{
+  echo "### TRAP A: does 'read < /proc/file' return the whole value?"
+  printf '%-12s %-10s %-14s %-14s %-10s %s\n' \
+    DISTRO bin_sh read_builtin cat_version stat_size verdict
+  for image in "${IMAGES[@]}"; do
+    label="$(label_for "$image")"
+    f="$RAW/18_shtrap_${label}.log"
+    [ -f "$f" ] || continue
+    a="$(sed -n 's/^read -r v <.*->  \[\(.*\)\]$/\1/p' "$f" | sed -n '1p')"
+    b="$(sed -n 's/^v=\$(cat \/proc.*->  \[\(.*\)\]$/\1/p' "$f" | sed -n '1p')"
+    s="$(sed -n 's/^stat -c %s on that procfs file .*->  \[\(.*\)\]$/\1/p' "$f" | sed -n '1p')"
+    sh="$(jget "$RAW/20_probe_${label}.json" '.shells.bin_sh_impl')"
+    verdict="$(sed -n 's/^VERDICT_A: //p' "$f" | sed -n '1p')"
+    printf '%-12s %-10s %-14s %-14s %-10s %s\n' \
+      "$label" "$sh" "${a:--}" "${b:--}" "${s:--}" "${verdict:--}"
+  done
+
+  echo
+  echo "### TRAP B: set -o pipefail"
+  printf '%-12s %-12s %-22s %s\n' DISTRO accepts effect detail
+  for image in "${IMAGES[@]}"; do
+    label="$(label_for "$image")"
+    f="$RAW/18_shtrap_${label}.log"
+    [ -f "$f" ] || continue
+    acc="$(sed -n 's/^accepts pipefail: //p' "$f" | sed -n '1p')"
+    eff="$(sed -n 's/^false | true with pipefail set -> //p' "$f" | sed -n '1p')"
+    [ -n "$eff" ] || eff="$(sed -n 's/^false | true without pipefail -> //p' "$f" | sed -n '1p')"
+    det="$(sed -n 's/^    error: //p' "$f" | sed -n '1p')"
+    [ -n "$det" ] || det="$(sed -n 's/^option table says: //p' "$f" | sed -n '1p')"
+    printf '%-12s %-12s %-22s %s\n' "$label" "${acc:--}" "${eff:--}" "${det:--}"
+  done
+
+  echo
+  echo "### TRAP C: /bin/sh identity and package patchlevel"
+  for image in "${IMAGES[@]}"; do
+    label="$(label_for "$image")"
+    f="$RAW/18_shtrap_${label}.log"
+    [ -f "$f" ] || continue
+    printf '%-12s ' "$label"
+    sed -n 's/^readlink -f \/bin\/sh  ->  //p' "$f" | sed -n '1p' | tr -d '\n'
+    printf '  '
+    sed -n 's/^    \(Version: .*\|bash .*\)$/\1/p' "$f" | sed -n '1p'
+  done
+} >"$RAW/34_shtrap_matrix.log" 2>&1
+echo "-> 34_shtrap_matrix.log"
+tail -n "$TAIL_LINES" "$RAW/34_shtrap_matrix.log"
 
 # ---------------------------------------------------------------------------
 # Stage 8 — results index

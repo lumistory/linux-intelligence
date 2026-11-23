@@ -76,6 +76,7 @@ pub const CODE_PATH_ESCAPE: &str = "path_escape";
 pub const CODE_PATH_INVALID: &str = "path_invalid";
 pub const CODE_ARG_TOO_LARGE: &str = "arg_too_large";
 pub const CODE_ARG_MISSING: &str = "arg_missing";
+pub const CODE_ARG_UNEXPECTED: &str = "arg_unexpected";
 pub const CODE_NOT_AUTHORIZED: &str = "not_authorized";
 pub const CODE_IO_ERROR: &str = "io_error";
 pub const CODE_NOT_IMPLEMENTED: &str = "not_implemented_by_design";

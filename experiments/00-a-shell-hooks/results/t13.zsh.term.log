@@ -1,0 +1,24 @@
+
+[1m[7m%[27m[1m[0m                                                                                zsh: failed to load module `zsh/zle': /usr/lib/zsh/5.9.2/zsh/zle.so: cannot open shared object file: No such file or directory
+⟦LI-P⟧ [1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-01
+t13-01
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-02
+t13-02
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-03
+t13-03
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-04
+t13-04
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-05
+t13-05
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-06
+t13-06
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-07
+t13-07
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-08
+t13-08
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-09
+t13-09
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ echo t13-10
+t13-10
+[1m[7m%[27m[1m[0m                                                                                ⟦LI-P⟧ exit

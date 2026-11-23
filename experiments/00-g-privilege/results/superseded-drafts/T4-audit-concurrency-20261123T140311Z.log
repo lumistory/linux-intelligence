@@ -1,0 +1,23 @@
+# T4 — 100 concurrent clients x 20 requests each, one shared
+# append-only audit file. Invariants:
+#   A1 audit lines            == requests + 2 lifecycle records
+#   A2 sequence numbers       exactly 1..N, no gap, no duplicate
+#   A3 sequence order        == file order (O_APPEND + one locked write)
+#   A4 every line             is a complete, parseable JSON object
+#   A5 file mode              is 0600
+
+{"case":"storm_summary","client_errors":0,"clients":100,"elapsed_ms":11,"requests_per_client":20,"requests_sent":2000,"throughput_per_s":169795}
+
+audit_lines=2101
+request_served_records=2000
+requests_sent=2000
+file_mode=600
+file_uid=1000
+parent_dir_mode=700
+
+## A2/A4: sequence density and JSON validity
+parsed_records=2101 malformed_lines=0
+sequence_min=1 sequence_max=2101 count=2101
+sequence_dense_and_in_file_order=True
+sequence_duplicates=0
+types={"ConnectionClosed": 100, "HelperStarted": 1, "RequestServed": 2000}

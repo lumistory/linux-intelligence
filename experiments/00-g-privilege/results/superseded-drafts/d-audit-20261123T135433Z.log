@@ -1,0 +1,4 @@
+## audit log after a 100-client storm
+audit_lines=221
+audit_perms=600 USER:USER
+audit_count=221 unique=221 dense=True max=221

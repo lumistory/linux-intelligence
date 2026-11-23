@@ -1,0 +1,21 @@
+    Finished `release` profile [optimized] target(s) in 0.02s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running unittests src/main.rs (target/debug/deps/li_pty_proto-5fca1d85d80979a3)
+
+running 12 tests
+test responder::tests::answers_kitty_keyboard_query ... ok
+test responder::tests::answers_dsr ... ok
+test responder::tests::answers_osc_background_query ... ok
+test responder::tests::hex_decode_roundtrip ... ok
+test responder::tests::answers_xtgettcap_with_not_supported ... ok
+test responder::tests::ignores_plain_output ... ok
+test responder::tests::incomplete_sequence_is_not_answered ... ok
+test util::extra_tests::bare_lines_survive_bracketed_paste_noise ... ok
+test util::extra_tests::printed_lines_splits_on_cr_and_lf ... ok
+test util::tests::escapes_are_reversible_in_text ... ok
+test util::extra_tests::strips_csi_and_osc ... ok
+test util::tests::hex_limits ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

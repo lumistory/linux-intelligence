@@ -1,0 +1,8 @@
+== e no arbitrary exec
+semicolon injection                    {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+pipe injection                         {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+command subst                          {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+overlong path                          {"ok":false,"opcode":"<frame>","code":"frame_too_large","message":"frame exceeds 65536 bytes"}
+fake opcode name                       {"ok":false,"opcode":"<none>","code":"bad_opcode","message":"opcode must be numeric, not a string"}
+--- any exec/system/posix_spawn/fork in the helper crate?
+NONE FOUND

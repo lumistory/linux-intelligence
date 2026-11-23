@@ -1,0 +1,18 @@
+[package]
+name = "corr0h"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.99"
+publish = false
+
+[dependencies]
+# Deliberately NOT "bundled": the host ships SQLite 3.53.4 and the measured
+# numbers must describe the library that will actually run in production.
+rusqlite = "0.32"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[profile.release]
+debug = false
+opt-level = 2

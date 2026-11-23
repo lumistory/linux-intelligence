@@ -1,0 +1,93 @@
+=== experiment 0-D driver ===
+timestamp   : 20261123T135224Z
+kernel      : 7.2.8-zen1-2-zen
+bash        : GNU bash，版本 5.3.20(1)-release (x86_64-pc-linux-gnu)
+fish        : fish，版本 4.9.3
+zsh         : zsh 5.9.2 (x86_64-pc-linux-gnu) [local copy, not installed]
+zsh modules : <WORKSPACE>/experiments/00-d-pty/../toolchain/root/usr/lib/zsh/5.9.2/zsh
+results     : <WORKSPACE>/experiments/00-d-pty/results/20261123T135224Z
+work dir    : /tmp/li-phase0-d-20261123T135224Z
+
+=== build ===
+
+=== shell matrix (bash, zsh, fish) ===
+records: 3 shells
+transcript sizes: 68799  75050  72158  
+ASSERT OK   matrix.bash.all_steps_passed                         true
+ASSERT OK   matrix.bash.step_count                               10
+ASSERT OK   matrix.bash.ctrl_d_exit_status                       0
+ASSERT OK   matrix.bash.master_eof_after_ctrl_d                  true
+ASSERT OK   matrix.zsh.all_steps_passed                          true
+ASSERT OK   matrix.zsh.step_count                                10
+ASSERT OK   matrix.zsh.ctrl_d_exit_status                        0
+ASSERT OK   matrix.zsh.master_eof_after_ctrl_d                   true
+ASSERT OK   matrix.fish.all_steps_passed                         true
+ASSERT OK   matrix.fish.step_count                               10
+ASSERT OK   matrix.fish.ctrl_d_exit_status                       0
+ASSERT OK   matrix.fish.master_eof_after_ctrl_d                  true
+
+=== per-step matrix ===
+
+details written to details.txt (66 lines)
+
+=== targeted assertions ===
+ASSERT OK   winsize.bash.TIOCGWINSZ_rows                         50
+ASSERT OK   winsize.bash.child_saw_new_size                      true
+ASSERT OK   ctrlc.bash.shell_alive                               true
+ASSERT OK   ctrlc.bash.sleep_not_completed                       true
+ASSERT OK   vi.bash.alt_screen_entered                           true
+ASSERT OK   vi.bash.shell_usable_after_quit                      true
+ASSERT OK   less.bash.shell_usable_after_quit                    true
+ASSERT OK   top.bash.pid_header_found                            true
+ASSERT OK   winsize.zsh.TIOCGWINSZ_rows                          50
+ASSERT OK   winsize.zsh.child_saw_new_size                       true
+ASSERT OK   ctrlc.zsh.shell_alive                                true
+ASSERT OK   ctrlc.zsh.sleep_not_completed                        true
+ASSERT OK   vi.zsh.alt_screen_entered                            true
+ASSERT OK   vi.zsh.shell_usable_after_quit                       true
+ASSERT OK   less.zsh.shell_usable_after_quit                     true
+ASSERT OK   top.zsh.pid_header_found                             true
+ASSERT OK   winsize.fish.TIOCGWINSZ_rows                         50
+ASSERT OK   winsize.fish.child_saw_new_size                      true
+ASSERT OK   ctrlc.fish.shell_alive                               true
+ASSERT OK   ctrlc.fish.sleep_not_completed                       true
+ASSERT OK   vi.fish.alt_screen_entered                           true
+ASSERT OK   vi.fish.shell_usable_after_quit                      true
+ASSERT OK   less.fish.shell_usable_after_quit                    true
+ASSERT OK   top.fish.pid_header_found                            true
+
+=== 4 concurrent PTY sessions ===
+ASSERT OK   concurrent.no_cross_talk                             true
+ASSERT OK   concurrent.session_count                             4
+ASSERT OK   concurrent.unique_slave_paths                        4
+ASSERT OK   concurrent.all_winsizes_isolated                     true
+ASSERT OK   concurrent.no_foreign_tokens                         0
+session table:
+  session=0 shell=bash pid=185159 tty=/dev/pts/20 own_token=2 size=24 80 foreign=[]
+  session=1 shell=zsh pid=185161 tty=/dev/pts/23 own_token=2 size=25 81 foreign=[]
+  session=2 shell=fish pid=185158 tty=/dev/pts/24 own_token=4 size=26 82 foreign=[]
+  session=3 shell=bash pid=185160 tty=/dev/pts/25 own_token=2 size=27 83 foreign=[]
+
+=== takeover probe ===
+ASSERT OK   takeover.foreign_terminals_found_gt0                 true
+ASSERT OK   takeover.tiocsti_sysctl_zero                         0
+ASSERT OK   takeover.TIOCSTI_refused                             true
+foreign terminal sample:
+  pid=3683 comm=fish fd0=/dev/pts/0 tty_nr=34816
+  pid=3815 comm=miyu fd0=/dev/pts/0 tty_nr=34816
+  pid=3909 comm=fish fd0=/dev/pts/1 tty_nr=34817
+
+=== independent cross-check: terminals on this host ===
+
+=== terminal-query responder: ON vs OFF (measured) ===
+ASSERT OK   responder.fish_output_arrives_either_way             true
+ASSERT OK   responder.fish_sees_queries                          true
+ASSERT OK   responder.fish_answers_when_enabled                  true
+ASSERT OK   responder.fish_answers_zero_when_disabled            0
+ASSERT OK   responder.fish_off_is_slower_by_10x                  true
+fish handshake: responder ON 49ms, OFF 10064ms
+
+=== leak check ===
+
+RESULT: all assertions passed
+results: <WORKSPACE>/experiments/00-d-pty/results/20261123T135224Z

@@ -1,0 +1,13 @@
+bash   empty     n=180  median=    202 p99=    714 us  sessions=[202, 180, 246]
+bash   devnull   n=180  median=    256 p99=    583 us  sessions=[302, 256, 243]
+bash   deadsock  n=180  median=   1168 p99=   1575 us  sessions=[1168, 1149, 1210]
+bash   live      n=180  median=   1160 p99=   1739 us  sessions=[1160, 1167, 1156]
+zsh    empty     n=180  median=    192 p99=    433 us  sessions=[192, 222, 156]
+zsh    devnull   n=180  median=    197 p99=    347 us  sessions=[197, 190, 202]
+zsh    deadsock  n=180  median=   1488 p99=   2039 us  sessions=[1488, 1486, 1498]
+zsh    live      n=180  median=   1456 p99=   1741 us  sessions=[1467, 1456, 1374]
+fish   empty     n=180  median=   1079 p99=   1991 us  sessions=[1458, 957, 1079]
+fish   devnull   n=180  median=    404 p99=    641 us  sessions=[404, 372, 405]
+fish   deadsock  n=180  median=    346 p99=    622 us  sessions=[346, 354, 308]
+fish   live      n=180  median=    386 p99=    613 us  sessions=[395, 386, 360]
+wrote results/latency/latency.json

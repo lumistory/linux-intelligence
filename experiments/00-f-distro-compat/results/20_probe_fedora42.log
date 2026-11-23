@@ -1,5 +1,5 @@
 ### image: docker.io/library/fedora:42
-### utc:   2026-11-23T13:49:24Z
+### utc:   2026-11-23T14:00:26Z
 ### ---
 {
   "probe_schema": "li-cap/1",

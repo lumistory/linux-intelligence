@@ -1,0 +1,4 @@
+MARK case=t09 shell=bash
+RUN . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+RUN ( echo t09-subshell )
+RUN echo t09-cmdsub-$(echo substituted)

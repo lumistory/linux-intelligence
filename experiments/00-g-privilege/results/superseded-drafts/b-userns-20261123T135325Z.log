@@ -1,0 +1,19 @@
+== b userns root capability
+--- uid_map / gid_map
+uid_map:          0       1000          1
+gid_map:          0       1000          1
+id: 0:0
+--- can namespace-root read /etc/shadow?
+head: 无法以读模式打开 '/etc/shadow': 权限不够
+rc=0
+--- can it mount tmpfs (own mnt ns)?
+MOUNT_OK
+x
+0:0
+--- is the mount visible on the host?
+--- can it signal a host-root process (pid 1)?
+sh: 第 1 行：kill: (1) - 不允许的操作
+rc=1
+--- can it write a host-owned root dir?
+touch: 无法 touch '/etc/li-ns-test': 权限不够
+rc=1

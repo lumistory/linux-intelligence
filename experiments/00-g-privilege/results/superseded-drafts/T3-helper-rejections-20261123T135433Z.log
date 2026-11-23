@@ -1,0 +1,74 @@
+# T3 — the entire attacker-reachable surface of the helper.
+# root=/tmp/li-phase0-0g-QjU4Qz/t3root
+# allow_uid=1000
+
+## file modes: two independent gates
+  socket mode=600 uid=1000 gid=1000
+  audit  mode=600 uid=1000 gid=1000
+
+## T3a  path escapes: lexical traversal and symlink escapes
+##      both layers must refuse; openat2 also refuses symlinks INSIDE root
+  ../../etc/shadow           -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+  /etc/shadow                -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+  ../etc/shadow              -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+  sub/../../etc/shadow       -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+  link-shadow-abs            -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+  link-shadow-rel            -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+  link-rootdir               -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+  link-etc                   -> {"ok":false,"opcode":"StatPath","code":"path_escape","message":"path escapes the permitted root"}
+
+## T3b  shell metacharacters in a path argument
+  a;id                       -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  a|id                       -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  a&id                       -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  $(id)                      -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  `id`                       -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  a b                        -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  a"b                        -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  a'b                        -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  a>b                        -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  *                          -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  a\b                        -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+  embedded newline           -> {"ok":false,"opcode":"StatPath","code":"path_invalid","message":"path rejected by the lexical whitelist"}
+
+## T3c  opcode confusion
+  numeric unknown                -> {"ok":false,"opcode":"<none>","code":"unknown_opcode","message":"unknown opcode 99"}
+  string as command name         -> {"ok":false,"opcode":"<none>","code":"bad_opcode","message":"opcode must be numeric, not a string"}
+  negative                       -> {"ok":false,"opcode":"<none>","code":"bad_opcode","message":"opcode must be a JSON number"}
+  fractional                     -> {"ok":false,"opcode":"<none>","code":"bad_opcode","message":"opcode must be a JSON number"}
+  recognised but not implemented -> {"ok":false,"opcode":"BtrfsSnapshot","code":"not_implemented_by_design","message":"opcode exists in the table but is intentionally not implemented"}
+  undeclared argument            -> {"ok":false,"opcode":"Describe","code":"arg_unexpected","message":"Describe takes no arguments"}
+  args is an array               -> {"ok":false,"opcode":"StatPath","code":"arg_unexpected","message":"only `path` is accepted for this opcode"}
+  not JSON                       -> {"ok":false,"opcode":"<frame>","code":"bad_frame","message":"not a JSON request object"}
+
+## T3d  oversized frames (cap 64 KiB/frame, discard cap 8 MiB)
+  128 KiB, terminated            -> {"case":"raw_frame","elapsed_ms":0,"repeat":1,"requested_bytes":131072,"response":"{\"ok\":false,\"opcode\":\"<frame>\",\"code\":\"frame_too_large\",\"message\":\"frame exceeds 65536 bytes\"}","response_received":true,"response_timeout_ms":3000,"timed_out_waiting_for_response":false,"trailing_newline":true,"wrote_bytes":131072}
+  2 MiB, terminated              -> {"case":"raw_frame","elapsed_ms":1,"repeat":1,"requested_bytes":2097152,"response":"{\"ok\":false,\"opcode\":\"<frame>\",\"code\":\"frame_too_large\",\"message\":\"frame exceeds 65536 bytes\"}","response_received":true,"response_timeout_ms":3000,"timed_out_waiting_for_response":false,"trailing_newline":true,"wrote_bytes":2097152}
+  1 MiB, unterminated            -> {"case":"raw_frame","elapsed_ms":1527,"repeat":1,"requested_bytes":1048576,"response":"","response_received":false,"response_timeout_ms":1500,"timed_out_waiting_for_response":true,"trailing_newline":false,"wrote_bytes":1048576}
+  fresh connection works         -> {"ok":true,"opcode":"Describe","data":{"no_new_privs":true,"ops":["Describe","StatPath","ReadSmall","ListDir"],"root":"/tmp/li-phase0-0g-QjU4Qz/t3root","uid":1000}}
+
+## T3e  oversized argument (5000 bytes > MAX_ARG_BYTES=4096)
+  path of 5000 x "a"             -> {"ok":false,"opcode":"StatPath","code":"arg_too_large","message":"missing or oversized `path`"}
+
+## T3f  controls: legitimate requests still work
+  StatPath probe.txt             -> {"ok":true,"opcode":"StatPath","data":{"dev":49,"gid":1000,"ino":310530,"kind":"file","mode":"0644","mtime_ns":1795442077826903109,"resolved_under_root":true,"size":14,"uid":1000}}
+  ReadSmall probe.txt            -> {"ok":true,"opcode":"ReadSmall","data":{"bytes":14,"preview_hex":"6f7264696e6172792066696c650a","truncated":false}}
+  ListDir .                      -> {"ok":true,"opcode":"ListDir","data":{"count":6,"names":["link-etc","link-rootdir","link-shadow-abs","link-shadow-rel","probe.txt","sub"]}}
+
+## audit log after the matrix
+  audit_lines=72
+  by_code:
+          2 arg_too_large
+          4 arg_unexpected
+          1 bad_frame
+          6 bad_opcode
+          2 frame_too_large
+          2 not_implemented_by_design
+         16 path_escape
+         24 path_invalid
+          2 unknown_opcode
+  by_type:
+         36 ConnectionClosed
+          1 HelperStarted
+         31 RequestRejected
+          4 RequestServed

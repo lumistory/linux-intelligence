@@ -16,7 +16,6 @@ nix::ioctl_write_ptr_bad!(tiocsti_ioctl, libc::TIOCSTI, libc::c_char);
 
 /// A running shell (or any child) attached to a PTY we own.
 pub struct Session {
-    pub name: String,
     pub pid: i32,
     pub master: OwnedFd,
     pub slave_path: String,
@@ -36,7 +35,6 @@ pub struct Session {
 }
 
 pub struct SpawnSpec<'a> {
-    pub name: &'a str,
     pub argv: &'a [String],
     pub env: &'a [(String, String)],
     pub winsize: Winsize,
@@ -66,13 +64,15 @@ impl Session {
     }
 
     fn spawn_inner(spec: SpawnSpec<'_>, responder_enabled: bool) -> Result<Session> {
-        let openpty = nix::pty::openpty(Some(&spec.winsize), None)
-            .map_err(|e| Error::Sys { call: "openpty", source: e })?;
+        let openpty = nix::pty::openpty(Some(&spec.winsize), None).map_err(|e| Error::Sys {
+            call: "openpty",
+            source: e,
+        })?;
         let master = openpty.master;
         let slave = openpty.slave;
         let slave_path = std::fs::read_link(format!("/proc/self/fd/{}", slave.as_raw_fd()))
             .map(|p| p.to_string_lossy().into_owned())
-            .map_err(|e| Error::PlainIo(e))?;
+            .map_err(Error::PlainIo)?;
 
         let slave_raw = slave.as_raw_fd();
         let argv_c: Vec<CString> = spec
@@ -91,7 +91,10 @@ impl Session {
         // SAFETY: the child branch below performs only async-signal-safe calls
         // before exec and never returns to Rust code with owned state.
         let fork_res = unsafe { nix::unistd::fork() };
-        let pid = match fork_res.map_err(|e| Error::Sys { call: "fork", source: e })? {
+        let pid = match fork_res.map_err(|e| Error::Sys {
+            call: "fork",
+            source: e,
+        })? {
             nix::unistd::ForkResult::Parent { child } => child.as_raw(),
             nix::unistd::ForkResult::Child => {
                 // Child: from here on only async-signal-safe calls.
@@ -134,7 +137,6 @@ impl Session {
         set_nonblocking(master.as_raw_fd())?;
 
         let mut session = Session {
-            name: spec.name.to_string(),
             pid,
             master,
             slave_path,
@@ -151,10 +153,6 @@ impl Session {
         };
         session.responder_enabled = responder_enabled;
         Ok(session)
-    }
-
-    pub fn master_fd(&self) -> RawFd {
-        self.master.as_raw_fd()
     }
 
     /// Write raw bytes to the master (as if typed at the keyboard).
@@ -174,7 +172,12 @@ impl Session {
                     }
                     std::thread::sleep(Duration::from_millis(2));
                 }
-                Err(e) => return Err(Error::Sys { call: "write(master)", source: e }),
+                Err(e) => {
+                    return Err(Error::Sys {
+                        call: "write(master)",
+                        source: e,
+                    })
+                }
             }
         }
         Ok(())
@@ -198,7 +201,8 @@ impl Session {
         loop {
             let remaining = deadline.saturating_duration_since(Instant::now());
             let timeout = if first {
-                PollTimeout::try_from(remaining.max(Duration::from_millis(1))).unwrap_or(PollTimeout::ZERO)
+                PollTimeout::try_from(remaining.max(Duration::from_millis(1)))
+                    .unwrap_or(PollTimeout::ZERO)
             } else if remaining.is_zero() {
                 break;
             } else {
@@ -210,7 +214,12 @@ impl Session {
                 Ok(0) => break, // timeout, nothing more to read
                 Ok(_) => {}
                 Err(nix::errno::Errno::EINTR) => continue,
-                Err(e) => return Err(Error::Sys { call: "poll", source: e }),
+                Err(e) => {
+                    return Err(Error::Sys {
+                        call: "poll",
+                        source: e,
+                    })
+                }
             }
             let revents = fds[0].revents().unwrap_or(PollFlags::empty());
             if revents.is_empty() {
@@ -239,7 +248,11 @@ impl Session {
                         if !seen.is_empty() {
                             self.queries_seen = self.queries_seen.saturating_add(seen.len() as u64);
                         }
-                        let reply = if self.responder_enabled { reply } else { Vec::new() };
+                        let reply = if self.responder_enabled {
+                            reply
+                        } else {
+                            Vec::new()
+                        };
                         if !seen.is_empty() && self.responder_enabled {
                             self.answered.extend(seen);
                         }
@@ -256,7 +269,12 @@ impl Session {
                         break;
                     }
                     Err(nix::errno::Errno::EINTR) => continue,
-                    Err(e) => return Err(Error::Sys { call: "read(master)", source: e }),
+                    Err(e) => {
+                        return Err(Error::Sys {
+                            call: "read(master)",
+                            source: e,
+                        })
+                    }
                 }
             }
             if eof {
@@ -299,33 +317,27 @@ impl Session {
         Ok(start.elapsed().as_millis() as u64)
     }
 
-    /// Read until `needle` appears in the *contiguous* byte stream, retrying
-    /// with backspaces stripped.
+    /// Read until `needle` appears anywhere in the accumulated stream
+    /// (raw bytes, or after applying terminal backspaces).
     ///
-    /// Returns (matched, occurrences_in_raw, occurrences_in_debackspaced).
+    /// Both forms are tried because a redrawing line editor can split a token
+    /// across cursor-movement sequences. Callers that need to assert "the
+    /// command really ran" must use `util::count_bare_lines` on the text, not
+    /// this early-exit check.
     pub fn read_until_any(&mut self, needle: &str, timeout: Duration) -> Result<ReadOutcome> {
         let start = Instant::now();
         loop {
             let raw = self.text();
-            let clean = debackspace(&raw);
-            let n_raw = raw.matches(needle).count();
-            let n_clean = clean.matches(needle).count();
-            if n_raw > 0 || n_clean > 0 {
+            if raw.contains(needle) || debackspace(&raw).contains(needle) {
                 return Ok(ReadOutcome {
                     matched: true,
                     elapsed: start.elapsed(),
-                    bytes: self.bytes_read,
-                    occurrences_raw: n_raw,
-                    occurrences_debackspaced: n_clean,
                 });
             }
             if start.elapsed() >= timeout {
                 return Ok(ReadOutcome {
                     matched: false,
                     elapsed: start.elapsed(),
-                    bytes: self.bytes_read,
-                    occurrences_raw: 0,
-                    occurrences_debackspaced: 0,
                 });
             }
             self.pump(50)?;
@@ -342,18 +354,12 @@ impl Session {
                 return Ok(ReadOutcome {
                     matched: true,
                     elapsed: start.elapsed(),
-                    bytes: self.bytes_read,
-                    occurrences_raw: 1,
-                    occurrences_debackspaced: 1,
                 });
             }
             if start.elapsed() >= timeout {
                 return Ok(ReadOutcome {
                     matched: false,
                     elapsed: start.elapsed(),
-                    bytes: self.bytes_read,
-                    occurrences_raw: 0,
-                    occurrences_debackspaced: 0,
                 });
             }
             self.pump(50)?;
@@ -391,8 +397,10 @@ impl Session {
             ws_ypixel: 0,
         };
         // SAFETY: master fd is valid for the process lifetime of `self`.
-        unsafe { tiocswinsz_ioctl(self.master.as_raw_fd(), &ws) }
-            .map_err(|e| Error::Sys { call: "TIOCSWINSZ", source: e })?;
+        unsafe { tiocswinsz_ioctl(self.master.as_raw_fd(), &ws) }.map_err(|e| Error::Sys {
+            call: "TIOCSWINSZ",
+            source: e,
+        })?;
         self.winsize = ws;
         Ok(())
     }
@@ -405,8 +413,10 @@ impl Session {
             ws_ypixel: 0,
         };
         // SAFETY: master fd valid; `ws` is a properly sized output buffer.
-        unsafe { tiocgwinsz_ioctl(self.master.as_raw_fd(), &mut ws) }
-            .map_err(|e| Error::Sys { call: "TIOCGWINSZ", source: e })?;
+        unsafe { tiocgwinsz_ioctl(self.master.as_raw_fd(), &mut ws) }.map_err(|e| Error::Sys {
+            call: "TIOCGWINSZ",
+            source: e,
+        })?;
         Ok(ws)
     }
 
@@ -510,7 +520,12 @@ impl Session {
                     self.reaped = true;
                     return Ok(self.exit);
                 }
-                Err(e) => return Err(Error::Sys { call: "waitpid", source: e }),
+                Err(e) => {
+                    return Err(Error::Sys {
+                        call: "waitpid",
+                        source: e,
+                    })
+                }
             }
         }
     }
@@ -550,19 +565,26 @@ impl Session {
         self.queries_seen
     }
 
-    pub fn exit_status(&self) -> Option<i32> {
-        self.exit
+    /// Every query that was answered, as JSON, for the report.
+    pub fn answers_json(&self) -> Vec<serde_json::Value> {
+        self.answered
+            .iter()
+            .map(|a| serde_json::json!({ "query": a.query, "reply": a.reply }))
+            .collect()
     }
 }
 
 pub struct ReadOutcome {
     pub matched: bool,
+    /// Time spent waiting.
     pub elapsed: Duration,
-    pub bytes: u64,
-    /// Occurrences in the raw byte stream.
-    pub occurrences_raw: usize,
-    /// Occurrences after applying terminal backspaces.
-    pub occurrences_debackspaced: usize,
+}
+
+impl ReadOutcome {
+    /// Milliseconds waited, for the step detail.
+    pub fn elapsed_ms(&self) -> u64 {
+        self.elapsed.as_millis() as u64
+    }
 }
 
 /// Apply terminal `\b` (backspace) semantics to a stream: `a\bb` -> `b`.

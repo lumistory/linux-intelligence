@@ -1,0 +1,9 @@
+== d audit log under concurrency
+audit lines: 221
+audit perms: 600 USER:USER
+Traceback (most recent call last):
+  File "<string>", line 9, in <module>
+    print(f'count={len(seqs)} unique={len(set(seqs))} dense={sorted(seqs)==list(range(1,len(seqs)+1))}')
+                                                             ~~~~~~^^^^^^
+TypeError: '<' not supported between instances of 'NoneType' and 'NoneType'
+distinct seq: 

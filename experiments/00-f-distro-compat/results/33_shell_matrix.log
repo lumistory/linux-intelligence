@@ -6,14 +6,14 @@
 
 DISTRO       bin_sh  BASH_VERSION     local       C_bytes   D_bytes   E_bytes   pipefail 
 arch         bash    set(5.3.20(1)-release) LOCAL_OK    4         5         4         SUPPORTED
-ubuntu2404   dash    EMPTY            LOCAL_OK    7         4         4         ?        
+ubuntu2404   dash    EMPTY            LOCAL_OK    7         4         4         aborted  
 debian13     dash    EMPTY            LOCAL_OK    7         4         4         SUPPORTED
 fedora42     bash    set(5.2.37(1)-release) LOCAL_OK    4         5         4         SUPPORTED
 
 ### bashisms accepted by /bin/sh (should be REJECTED everywhere if POSIX)
 DISTRO       [[ ]]              source           set -o pipefail 
 arch         ACCEPTED           ACCEPTED(2)      SUPPORTED       
-ubuntu2404   REJECTED           REJECTED(1)      ?               
+ubuntu2404   REJECTED           REJECTED(1)      aborted         
 debian13     REJECTED           REJECTED(1)      SUPPORTED       
 fedora42     ACCEPTED           ACCEPTED(2)      SUPPORTED       
 
@@ -58,3 +58,19 @@ fedora42     ACCEPTED           ACCEPTED(2)      SUPPORTED
     --- TEST E: printf (the portable way; identical everywhere)
     0000000   a  \t   b  \n
     --- TEST E: printf (byte count)
+
+### READING THIS TABLE
+### * BASH_VERSION: 'set(...)' = /bin/sh really is bash; 'EMPTY' = not bash.
+### * local: OK everywhere, INCLUDING dash. 'local' is not POSIX but both
+###   dash and bash accept it, so it is a portable-in-practice construct --
+###   using it is still a spec violation and is avoidable.
+### * C_bytes (echo -e): bash 4 = -e consumed, TAB expanded.
+###   dash 7 = '-e a<TAB>b\n', i.e. dash printed '-e ' literally as data
+###   and expanded the tab anyway. Same bytes in, different output.
+### * D_bytes (echo, no -e): bash 5 = literal backslash-t kept;
+###   dash 4 = TAB expanded. POSIX says both are conforming;
+###   therefore 'echo' is unusable for portable output. Use printf (E).
+### * pipefail: 'aborted' means the shell ABORTED on the illegal option,
+###   before any test branch could run -- see results/18_shtrap_<distro>.log, TRAP B.
+### * [[ ]] and source are ACCEPTED only where /bin/sh is bash, i.e. the
+###   script would break on Debian/Ubuntu. probe.sh uses neither.

@@ -24,7 +24,12 @@ function _li_on --description 'install LI hooks'
     set -g _LI_LAST_CMD ""
     set -g _LI_SESSION_ID (set -q LI_SESSION_ID; and echo $LI_SESSION_ID; or echo "li-fish-$fish_pid")
     set -g _LI_PID $fish_pid
-    set -g _LI_TTY (tty 2>/dev/null; or echo none)
+    # `tty` without -s blocks when an inherited FD is not a terminal.
+    if tty -s 2>/dev/null
+        set -g _LI_TTY (tty 2>/dev/null; or echo tty)
+    else
+        set -g _LI_TTY none
+    end
     # session facts from /proc, no fork beyond the read itself
     set -l stat (cat /proc/$fish_pid/stat 2>/dev/null)
     if test -n "$stat"

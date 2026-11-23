@@ -11,7 +11,7 @@ pub mod proto;
 
 use serde_json::Value;
 
-pub use path::{Root, PathError};
+pub use path::{PathError, Root};
 
 /// Fixed opcode table. **Data, not commands.** There is no opcode whose effect
 /// is "run this", "eval this", or "open an arbitrary path".
@@ -120,6 +120,30 @@ pub fn arg_str<'a>(args: &'a Value, key: &str) -> Result<&'a str, &'static str> 
     Ok(s)
 }
 
+/// Strict allowlist for the `args` object: every key must be one the opcode
+/// declares, and nothing else may be present.
+///
+/// This matters more than it looks. A permissive `args` bag turns "unknown
+/// input is ignored" into an invitation: a future refactor that starts reading
+/// `args.cmd` would find attacker-supplied data already sitting there. Measured
+/// behaviour before this check existed: `{"opcode":1,"args":{"cmd":"id; cat
+/// /etc/shadow"}}` returned `ok:true`, correctly *not executing* anything, but
+/// silently accepting a field nobody declared. Rejecting it is cheaper than
+/// reasoning about it.
+pub fn check_arg_keys(args: &Value, allowed: &[&str]) -> Result<(), &'static str> {
+    let obj = match args {
+        Value::Object(o) => o,
+        Value::Null => return Ok(()),
+        _ => return Err(proto::CODE_ARG_UNEXPECTED),
+    };
+    for k in obj.keys() {
+        if !allowed.contains(&k.as_str()) {
+            return Err(proto::CODE_ARG_UNEXPECTED);
+        }
+    }
+    Ok(())
+}
+
 /// Handle one already-parsed request. Returns the response and the audit record
 /// payload. Pure with respect to the process: no exec, no /etc, no signals.
 pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
@@ -128,7 +152,10 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
         Err(e) => {
             let code = e.code();
             let resp = proto::Response::err("<none>", code, e.to_string());
-            return (resp, serde_json::json!({ "outcome": "rejected", "code": code }));
+            return (
+                resp,
+                serde_json::json!({ "outcome": "rejected", "code": code }),
+            );
         }
     };
     let name = opcode.name();
@@ -139,11 +166,20 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
             proto::CODE_NOT_IMPLEMENTED,
             "opcode exists in the table but is intentionally not implemented",
         );
-        return (resp, serde_json::json!({ "outcome": "refused_by_design", "code": proto::CODE_NOT_IMPLEMENTED }));
+        return (
+            resp,
+            serde_json::json!({ "outcome": "refused_by_design", "code": proto::CODE_NOT_IMPLEMENTED }),
+        );
     }
 
     match opcode {
         Opcode::Describe => {
+            if let Err(code) = check_arg_keys(&req.args, &[]) {
+                return (
+                    proto::Response::err(name, code, "Describe takes no arguments"),
+                    serde_json::json!({ "outcome": "rejected", "code": code }),
+                );
+            }
             let data = serde_json::json!({
                 "uid": current_euid(),
                 "no_new_privs": no_new_privs_state(),
@@ -156,6 +192,12 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
             )
         }
         Opcode::StatPath | Opcode::ReadSmall | Opcode::ListDir => {
+            if let Err(code) = check_arg_keys(&req.args, &["path"]) {
+                return (
+                    proto::Response::err(name, code, "only `path` is accepted for this opcode"),
+                    serde_json::json!({ "outcome": "rejected", "code": code }),
+                );
+            }
             let rel = match arg_str(&req.args, "path") {
                 Ok(p) => p,
                 Err(code) => {
@@ -198,7 +240,10 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
 
 fn list_dir(root: &Root, rel: &str) -> Result<Value, PathError> {
     let f = root.open_child(rel, libc::O_RDONLY | libc::O_DIRECTORY)?;
-    let rd = std::fs::read_dir(format!("/proc/self/fd/{}", std::os::fd::AsRawFd::as_raw_fd(&f)))?;
+    let rd = std::fs::read_dir(format!(
+        "/proc/self/fd/{}",
+        std::os::fd::AsRawFd::as_raw_fd(&f)
+    ))?;
     let mut names: Vec<String> = Vec::new();
     for e in rd.flatten().take(1024) {
         names.push(e.file_name().to_string_lossy().into_owned());

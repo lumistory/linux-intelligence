@@ -1,0 +1,5 @@
+MARK case=t12 shell=bash
+RUN . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+RUN seq 1 20000 | wc -l
+RUN seq 1 3000 > /dev/null; echo t12-redirect-ok
+RUN echo t12-after-big

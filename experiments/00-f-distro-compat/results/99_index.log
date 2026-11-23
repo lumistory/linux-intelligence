@@ -1,4 +1,4 @@
-# results index (20261123T134633Z)
+# results index (20261123T140009Z)
 
 FILE                                    BYTES
 00_build_artefacts.log                   2290
@@ -6,7 +6,7 @@ FILE                                    BYTES
 01_host_capcheck.log                      556
 01_probe_host_bash.log                   1322
 01_probe_host_bash_posix.log             1336
-01_probe_host_dash.log                   1419
+01_probe_host_dash.log                   1427
 10_ident_arch.log                        1363
 10_ident_debian13.log                    1241
 10_ident_fedora42.log                    1667
@@ -15,22 +15,22 @@ FILE                                    BYTES
 11_shell_debian13.log                    1410
 11_shell_fedora42.log                    1379
 11_shell_ubuntu2404.log                  1397
-12_procfs_arch.log                       2296
-12_procfs_debian13.log                   2288
-12_procfs_fedora42.log                   2282
-12_procfs_ubuntu2404.log                 2308
+12_procfs_arch.log                       2545
+12_procfs_debian13.log                   2531
+12_procfs_fedora42.log                   2531
+12_procfs_ubuntu2404.log                 2551
 13_capability_arch.log                   1532
 13_capability_debian13.log               1525
-13_capability_fedora42.log               1517
+13_capability_fedora42.log               1518
 13_capability_ubuntu2404.log             1531
 14_glibc_arch.log                        1274
 14_glibc_debian13.log                    1291
 14_glibc_fedora42.log                    1179
 14_glibc_ubuntu2404.log                  1297
-15_recovery_arch.log                     1902
-15_recovery_debian13.log                 1876
-15_recovery_fedora42.log                 1875
-15_recovery_ubuntu2404.log               1891
+15_recovery_arch.log                     2136
+15_recovery_debian13.log                 2112
+15_recovery_fedora42.log                 2111
+15_recovery_ubuntu2404.log               2129
 16_initdetect_arch.log                    990
 16_initdetect_debian13.log                935
 16_initdetect_fedora42.log                982
@@ -39,20 +39,25 @@ FILE                                    BYTES
 17_distbins_debian13.log                  892
 17_distbins_fedora42.log                  857
 17_distbins_ubuntu2404.log                898
+18_shtrap_arch.log                        884
+18_shtrap_debian13.log                    865
+18_shtrap_fedora42.log                    882
+18_shtrap_ubuntu2404.log                  887
 20_probe_arch.log                        1349
-20_probe_debian13.log                    1367
+20_probe_debian13.log                    1371
 20_probe_fedora42.log                    1356
-20_probe_ubuntu2404.log                  1369
-30_matrix.log                            4849
+20_probe_ubuntu2404.log                  1373
+30_matrix.log                            4711
 31_dist_matrix.log                       2020
 32_initdetect_matrix.log                 1058
-33_shell_matrix.log                      2784
-99_index.log                             2198
+33_shell_matrix.log                      3791
+34_shtrap_matrix.log                     1254
+99_index.log                             2428
 01_probe_host_bash.json                  1288
-01_probe_host_dash.json                  1344
+01_probe_host_dash.json                  1352
 20_probe_arch.json                       1254
-20_probe_debian13.json                   1279
+20_probe_debian13.json                   1283
 20_probe_fedora42.json                   1268
-20_probe_ubuntu2404.json                 1278
+20_probe_ubuntu2404.json                 1282
 
-total files: 53
+total files: 58

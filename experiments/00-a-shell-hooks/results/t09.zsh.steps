@@ -1,0 +1,4 @@
+MARK case=t09 shell=zsh
+RUN source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/zsh.zsh
+RUN ( echo t09-subshell )
+RUN echo t09-cmdsub-$(echo substituted)

@@ -60,7 +60,7 @@ class Pty:
                             "PS1": PROMPT + " ", "PROMPT": PROMPT + " ",
                             "HISTFILE": os.devnull, "LC_ALL": "C.UTF-8"})
                 if shell == "bash":
-                    a = ["/usr/bin/bash", "--norc", "--noprofile", "-i"]
+                    a = ["/usr/bin/bash", "--noprofile", "--rcfile", "/tmp/li-phase0-a/rc/bashrc", "-i"]
                 elif shell == "zsh":
                     a = [ZSH, "-f", "-i"]
                 else:
@@ -445,7 +445,11 @@ def probe_debug_trap():
     for c in ["echo one",
               "printf 'a\\n' | wc -l",
               "true && echo chained",
+              "echo A; echo B; echo C",
+              "for i in 1 2 3; do echo L$i; done",
+              "( echo S1; echo S2 )",
               "f() { echo in-f; }; f",
+              "set -T; g() { echo in-g; }; g; set +T",
               "echo x=$(echo sub)"]:
         out.append("=== typed: %s ===" % c)
         before = len(p.ev)
@@ -470,10 +474,11 @@ def probe_debug_trap():
         "CONCLUSION: REJECTED.",
         "  1. It fires once per *simple* command, not per command line: a pipeline",
         "     or an && chain or a function call yields several events for one line,",
-        "     and a shell loop yields one per iteration. There is no way to tell",
+        "     and a shell loop yields one per iteration (6 for the 3-iteration",
+        "     loop above). There is no way to tell",
         "     which firings belong to one user command without extra state.",
-        "  2. It fires inside functions and subshells, i.e. in code the user never",
-        "     typed, so event counts depend on implementation details of whatever",
+        "  2. It fires inside subshells, and inside function bodies as soon as",
+        "     `set -T` (functrace) is in effect, so event counts depend on whether",
         "     runs -- the source becomes noisy exactly when commands are complex.",
         "  3. It is not run inside $( ) at all, so command substitutions are",
         "     invisible, while the enclosing line is visible: counts do not match.",

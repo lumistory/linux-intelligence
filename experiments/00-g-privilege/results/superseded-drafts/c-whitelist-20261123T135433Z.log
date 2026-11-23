@@ -1,0 +1,10 @@
+1 Describe (expect ok)               {"ok":true,"opcode":"Describe","data":{"no_new_privs":true,"ops":["Describe","StatPath","ReadSmall","ListDir"],"root":"/tmp/li-phase0-0g-QjU4Qz/root","uid":1000}}
+2 StatPath ok.txt (expect ok)        {"ok":true,"opcode":"StatPath","data":{"dev":49,"gid":1000,"ino":310486,"kind":"file","mode":"0644","mtime_ns":1795442074817874974,"resolved_under_root":true,"size":3,"uid":1000}}
+3 ReadSmall ok.txt (expect ok)       {"ok":true,"opcode":"ReadSmall","data":{"bytes":3,"preview_hex":"6f6b0a","truncated":false}}
+3 traversal ../../etc/shadow         {"ok":false,"opcode":"ReadSmall","code":"path_escape","message":"path escapes the permitted root"}
+3 absolute /etc/shadow               {"ok":false,"opcode":"ReadSmall","code":"path_escape","message":"path escapes the permitted root"}
+3 symlink escaping root              {"ok":false,"opcode":"ReadSmall","code":"path_escape","message":"path escapes the permitted root"}
+99 unknown opcode                    {"ok":false,"opcode":"<none>","code":"unknown_opcode","message":"unknown opcode 99"}
+90 BtrfsSnapshot (by design)         {"ok":false,"opcode":"BtrfsSnapshot","code":"not_implemented_by_design","message":"opcode exists in the table but is intentionally not implemented"}
+string opcode                        {"ok":false,"opcode":"<none>","code":"bad_opcode","message":"opcode must be numeric, not a string"}
+100 KB oversized frame               {"case":"raw_frame","elapsed_ms":0,"repeat":1,"requested_bytes":100000,"response":"{\"ok\":false,\"opcode\":\"<frame>\",\"code\":\"frame_too_large\",\"message\":\"frame exceeds 65536 bytes\"}","response_received":true,"response_timeout_ms":2000,"timed_out_waiting_for_response":false,"trailing_newline":true,"wrote_bytes":100000}

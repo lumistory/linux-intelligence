@@ -1,0 +1,29 @@
+## cargo build --release --offline
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.01s
+
+## cargo test --release --offline
+running 8 tests
+test path::tests::accepts_plain_relative_paths ... ok
+test path::tests::no_trailing_or_double_slash ... ok
+test path::tests::os_str_roundtrip_keeps_bytes ... ok
+test path::tests::rejects_traversal_and_absolute ... ok
+test path::tests::rejects_metacharacters ... ok
+test peer::tests::nonexistent_pid_is_none ... ok
+test peer::tests::our_own_starttime_is_parseable ... ok
+test peer::tests::pid_one_comm_with_parens_does_not_break_parsing ... ok
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+## cargo clippy --release --offline --all-targets -- -D warnings
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.01s
+clippy=clean
+
+## cargo fmt --check
+fmt=clean

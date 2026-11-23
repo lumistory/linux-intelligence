@@ -1,0 +1,66 @@
+
+--- bash ---
+01_shell_started
+  {"interpretation":"prompt text is shell-specific; only arrival of output is asserted","pid":167358,"prompt_hex_after_quiet":"1b 5b 3f 32 30 30 34 68 4c 49 2d 42 41 53 48 3e 20","slave_path":"/dev/pts/22","wait_for_first_byte_ms":100}
+02_sentinel_executes
+  {"bare_output_lines":1,"occurrences_after_ansi_strip":2,"occurrences_raw":2,"read_until_matched":true,"sentinel":"LI_SENTINEL_BASH","why_bare_line":"the tty echo also contains the token; only the command's output forms a line equal to it"}
+03_pipeline_and_arithmetic
+  {"arithmetic_cmd":"echo $((2 + 3))","arithmetic_ok":true,"pipeline":"echo alpha beta | tr ' ' '-'","pipeline_ok":true,"why_per_shell":"fish has no $((...)); zsh treats [5] as a glob pattern"}
+04_initial_winsize
+  {"asked":"stty size","expected_line":"40 120","found":true,"read_until_matched":true}
+05_resize_visible
+  {"TIOCGWINSZ_cols":200,"TIOCGWINSZ_rows":50,"child_reported_new_size":true,"mechanism":"TIOCSWINSZ on the master makes the kernel send SIGWINCH to the slave's foreground pgroup","read_until_matched":true,"requested":"50 rows x 200 cols"}
+06_ctrl_c
+  {"interrupt_string_seen":true,"mechanism":"ISIG in the slave line discipline -> SIGINT to the foreground pgroup","sent_byte":"0x03","shell_alive_after":true,"sleep_did_not_complete":true}
+07_fullscreen_vi
+  {"alt_screen_enter":true,"alt_screen_exit":true,"cursor_motion_present":true,"screen_bytes":5042,"shell_usable_after_quit":true,"tilde_filler_present":false}
+08_fullscreen_less
+  {"alt_screen_enter":true,"alt_screen_exit":true,"cursor_motion_present":true,"plain_content_present":true,"screen_bytes":2585,"shell_usable_after_quit":true}
+09_control_top_batch
+  {"bytes":59904,"first_printed_lines":["top -b -n1 -o %MEM","top - 21:50:10 up  3:07,  1 user,  load average: 2.36, 1.62, 0.87","Tasks: 694 total, 2 running, 689 sleep, 0 d-sleep, 0 stopped, 3 zombie"],"lines_containing_PID":1,"marker":"a line containing both PID and COMMAND (or its locale equivalent)","note":"batch mode -> ordinary line output; contrast with vi/less above","pid_header_found":true,"summary_block_found":true}
+10_ctrl_d_exits
+  {"exit_signal":null,"exit_status":0,"master_eof":true,"note":"0x04 on an empty line is EOF; the shell should exit with status 0","sent_byte":"0x04"}
+
+--- zsh ---
+01_shell_started
+  {"interpretation":"prompt text is shell-specific; only arrival of output is asserted","pid":167579,"prompt_hex_after_quiet":"1b 5b 31 6d 1b 5b 37 6d 25 1b 5b 32 37 6d 1b 5b 31 6d 1b 5b 30 6d 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 0d 20 0d 0d 1b 5b 30 6d 1b 5b 32 37 6d 1b 5b 32 34 6d 1b 5b 4a 4c 49 2d 5a 53 48 3e 20 1b 5b 4b 1b 5b 3f 32 30 30 34 68","slave_path":"/dev/pts/22","wait_for_first_byte_ms":100}
+02_sentinel_executes
+  {"bare_output_lines":1,"occurrences_after_ansi_strip":2,"occurrences_raw":2,"read_until_matched":true,"sentinel":"LI_SENTINEL_ZSH","why_bare_line":"the tty echo also contains the token; only the command's output forms a line equal to it"}
+03_pipeline_and_arithmetic
+  {"arithmetic_cmd":"echo $((2 + 3))","arithmetic_ok":true,"pipeline":"echo alpha beta | tr ' ' '-'","pipeline_ok":true,"why_per_shell":"fish has no $((...)); zsh treats [5] as a glob pattern"}
+04_initial_winsize
+  {"asked":"stty size","expected_line":"40 120","found":true,"read_until_matched":true}
+05_resize_visible
+  {"TIOCGWINSZ_cols":200,"TIOCGWINSZ_rows":50,"child_reported_new_size":true,"mechanism":"TIOCSWINSZ on the master makes the kernel send SIGWINCH to the slave's foreground pgroup","read_until_matched":true,"requested":"50 rows x 200 cols"}
+06_ctrl_c
+  {"interrupt_string_seen":true,"mechanism":"ISIG in the slave line discipline -> SIGINT to the foreground pgroup","sent_byte":"0x03","shell_alive_after":true,"sleep_did_not_complete":true}
+07_fullscreen_vi
+  {"alt_screen_enter":true,"alt_screen_exit":true,"cursor_motion_present":true,"screen_bytes":5044,"shell_usable_after_quit":true,"tilde_filler_present":false}
+08_fullscreen_less
+  {"alt_screen_enter":true,"alt_screen_exit":true,"cursor_motion_present":true,"plain_content_present":true,"screen_bytes":2587,"shell_usable_after_quit":true}
+09_control_top_batch
+  {"bytes":59976,"first_printed_lines":["t\btop -b -n1 -o %MEM","top - 21:50:24 up  3:07,  1 user,  load average: 2.05, 1.59, 0.88","Tasks: 691 total, 1 running, 687 sleep, 0 d-sleep, 0 stopped, 3 zombie"],"lines_containing_PID":1,"marker":"a line containing both PID and COMMAND (or its locale equivalent)","note":"batch mode -> ordinary line output; contrast with vi/less above","pid_header_found":true,"summary_block_found":true}
+10_ctrl_d_exits
+  {"exit_signal":null,"exit_status":0,"master_eof":true,"note":"0x04 on an empty line is EOF; the shell should exit with status 0","sent_byte":"0x04"}
+
+--- fish ---
+01_shell_started
+  {"interpretation":"prompt text is shell-specific; only arrival of output is asserted","pid":168046,"prompt_hex_after_quiet":"1b 5b 3f 75 1b 5b 3e 30 71 1b 5d 31 31 3b 3f 1b 5c 1b 5b 3f 31 30 34 39 68 1b 50 2b 71 36 39 36 65 36 34 36 65 1b 5c 1b 50 2b 71 37 31 37 35 36 35 37 32 37 39 32 64 36 66 37 33 32 64 36 65 36 31 36 64 36 35 1b 5c 1b 5b 3f 31 30 34 39 6c 1b 5b 30 63 0d 1b 5d 30 3b 7e 1b 5c 1b 5b 6d 1b 5d 31 31 3b 3f 1b 5c 1b 5b 36 6e 1b 5b 30 63 1b 5b 3f 32 30 30 34 68 1b 5b 3f 32 30 33 31 68 1b 5b 3d 35 75 1b 5d 31 33 33 3b 41 3b 63 6c 69 63 6b 5f 65 76 65 6e 74 73 3d 31 1b 5c 7a 6f 75 1b 5b 6d 40 6d 69 6b 75 1b 5b 6d 20 7e 1b 5b 6d 1b 5b 6d 3e 20 1b 5d 31 33 33 3b 42 1b 5c 1b 5b 4b 0d 1b 5b 31 32 43","slave_path":"/dev/pts/20","wait_for_first_byte_ms":100}
+02_sentinel_executes
+  {"bare_output_lines":2,"occurrences_after_ansi_strip":3,"occurrences_raw":4,"read_until_matched":true,"sentinel":"LI_SENTINEL_FISH","why_bare_line":"the tty echo also contains the token; only the command's output forms a line equal to it"}
+03_pipeline_and_arithmetic
+  {"arithmetic_cmd":"math 2 + 3","arithmetic_ok":true,"pipeline":"echo alpha beta | tr ' ' '-'","pipeline_ok":true,"why_per_shell":"fish has no $((...)); zsh treats [5] as a glob pattern"}
+04_initial_winsize
+  {"asked":"stty size","expected_line":"40 120","found":true,"read_until_matched":true}
+05_resize_visible
+  {"TIOCGWINSZ_cols":200,"TIOCGWINSZ_rows":50,"child_reported_new_size":true,"mechanism":"TIOCSWINSZ on the master makes the kernel send SIGWINCH to the slave's foreground pgroup","read_until_matched":true,"requested":"50 rows x 200 cols"}
+06_ctrl_c
+  {"interrupt_string_seen":true,"mechanism":"ISIG in the slave line discipline -> SIGINT to the foreground pgroup","sent_byte":"0x03","shell_alive_after":true,"sleep_did_not_complete":true}
+07_fullscreen_vi
+  {"alt_screen_enter":true,"alt_screen_exit":true,"cursor_motion_present":true,"screen_bytes":5250,"shell_usable_after_quit":true,"tilde_filler_present":false}
+08_fullscreen_less
+  {"alt_screen_enter":true,"alt_screen_exit":true,"cursor_motion_present":true,"plain_content_present":true,"screen_bytes":2724,"shell_usable_after_quit":true}
+09_control_top_batch
+  {"bytes":60773,"first_printed_lines":["top","-b","-n1"],"lines_containing_PID":1,"marker":"a line containing both PID and COMMAND (or its locale equivalent)","note":"batch mode -> ordinary line output; contrast with vi/less above","pid_header_found":true,"summary_block_found":true}
+10_ctrl_d_exits
+  {"exit_signal":null,"exit_status":0,"master_eof":true,"note":"0x04 on an empty line is EOF; the shell should exit with status 0","sent_byte":"0x04"}

@@ -1,0 +1,7 @@
+shell  responder  out_seen  q_seen   q_ans    first_ms    handshake_ms
+bash   true       true      0        0        99          49
+bash   false      true      0        0        99          49
+zsh    true       true      0        0        99          49
+zsh    false      true      0        0        99          49
+fish   true       true      12       12       100         49
+fish   false      true      12       0        99          10070

@@ -57,7 +57,11 @@ pub fn shells(zsh_path: &str, home: &str, term: &str) -> Vec<ShellSpec> {
             id: "bash",
             path: "/bin/bash".into(),
             args: vec!["--norc".into(), "--noprofile".into(), "-i".into()],
-            env: base(&[("PS1", "LI-BASH> "), ("PS2", "LI-BASH+ "), ("PROMPT_COMMAND", "")]),
+            env: base(&[
+                ("PS1", "LI-BASH> "),
+                ("PS2", "LI-BASH+ "),
+                ("PROMPT_COMMAND", ""),
+            ]),
             sentinel: "LI_SENTINEL_BASH".into(),
             arith_cmd: "echo $((2 + 3))",
         },
@@ -78,7 +82,7 @@ pub fn shells(zsh_path: &str, home: &str, term: &str) -> Vec<ShellSpec> {
                 // "zsh: failed to load module `zsh/zle': /usr/lib/zsh/5.9.2/zsh/zle.so:
                 //  cannot open shared object file". Without zle, ZLE is dead and
                 // the shell's line editing is unusable.
-                ("ZDOTDIR", ""), // filled in by run_shell
+                ("ZDOTDIR", ""),            // filled in by run_shell
                 ("LI_ZSH_MODULE_ROOT", ""), // filled in by run_shell
             ]),
             sentinel: "LI_SENTINEL_ZSH".into(),
@@ -106,10 +110,7 @@ pub fn shells(zsh_path: &str, home: &str, term: &str) -> Vec<ShellSpec> {
 pub fn zsh_module_root(zsh_path: &str) -> String {
     let p = std::path::Path::new(zsh_path);
     // <prefix>/usr/bin/zsh -> <prefix>/usr/lib/zsh
-    let prefix = p
-        .parent()
-        .and_then(|d| d.parent())
-        .and_then(|d| d.parent());
+    let prefix = p.parent().and_then(|d| d.parent()).and_then(|d| d.parent());
     let lib = match prefix {
         Some(prefix) => prefix.join("usr/lib/zsh"),
         None => std::path::PathBuf::from("/usr/lib/zsh"),
@@ -124,7 +125,10 @@ pub fn zsh_module_root(zsh_path: &str) -> String {
         })
         .unwrap_or_default();
     versions.sort();
-    versions.pop().map(|v| v.to_string_lossy().into_owned()).unwrap_or_else(|| lib.to_string_lossy().into_owned())
+    versions
+        .pop()
+        .map(|v| v.to_string_lossy().into_owned())
+        .unwrap_or_else(|| lib.to_string_lossy().into_owned())
 }
 
 /// Write the isolated zsh startup shim. Returns the ZDOTDIR to use.
@@ -205,7 +209,11 @@ struct Recorder<'a> {
 
 impl<'a> Recorder<'a> {
     fn new(s: &'a mut Session) -> Self {
-        Recorder { mark: s.mark(), s, steps: Vec::new() }
+        Recorder {
+            mark: s.mark(),
+            s,
+            steps: Vec::new(),
+        }
     }
 
     fn step(&mut self, name: &'static str, matched: bool, elapsed_ms: u64, detail: Value) {
@@ -262,7 +270,12 @@ fn bare_token_lines(text: &str, token: &str) -> usize {
 /// expectation is recorded as `passed: false`; the matrix continues, so one
 /// broken shell cannot hide the others' results.
 pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun> {
-    let winsize = Winsize { ws_row: 40, ws_col: 120, ws_xpixel: 0, ws_ypixel: 0 };
+    let winsize = Winsize {
+        ws_row: 40,
+        ws_col: 120,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
     let argv = {
         let mut v = vec![spec.path.clone()];
         v.extend(spec.args.iter().cloned());
@@ -270,7 +283,6 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     };
     let env = resolve_env(spec, workdir)?;
     let mut s = Session::spawn(SpawnSpec {
-        name: spec.id,
         argv: &argv,
         env: &env,
         winsize,
@@ -353,7 +365,9 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     let _ = r.s.send_line("stty size");
     let (size1, ms) = timed(|| r.s.read_until_any("40 120", Duration::from_secs(8)));
     let (_, warm) = timed(|| r.s.wait_quiet(250, 3_000));
-    let got1 = printed_lines(&r.s.since(r.mark)).iter().any(|l| l == "40 120");
+    let got1 = printed_lines(&r.s.since(r.mark))
+        .iter()
+        .any(|l| l == "40 120");
     r.step(
         "04_initial_winsize",
         got1,
@@ -372,7 +386,9 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     let _ = r.s.send_line("stty size");
     let (size2, ms) = timed(|| r.s.read_until_any("50 200", Duration::from_secs(8)));
     let (_, warm) = timed(|| r.s.wait_quiet(250, 3_000));
-    let got2 = printed_lines(&r.s.since(r.mark)).iter().any(|l| l == "50 200");
+    let got2 = printed_lines(&r.s.since(r.mark))
+        .iter()
+        .any(|l| l == "50 200");
     let q = r.s.query_winsize();
     r.step(
         "05_resize_visible",
@@ -482,7 +498,9 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     let _ = r.s.send_line("top -b -n1 -o %MEM");
     // Wait for the child to finish writing; the sentinel below proves the
     // prompt came back.
-    let (_, _ms) = timed(|| r.s.read_until_any(&format!("{sentinel}-AFTER-TOP"), Duration::from_millis(50)));
+    let (_, _ms) = timed(|| {
+        r.s.read_until_any(&format!("{sentinel}-AFTER-TOP"), Duration::from_millis(50))
+    });
     let token_top = format!("{sentinel}-AFTER-TOP");
     std::thread::sleep(Duration::from_millis(1_500));
     let _ = r.s.send_line(&format!("echo {token_top}"));
@@ -535,7 +553,7 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     r.step(
         "10_ctrl_d_exits",
         d1.is_ok() && (eof_final || exit_status.is_some()),
-        (deadline - Instant::now()).as_millis().min(0) as u64,
+        0,
         json!({
             "sent_byte": "0x04",
             "master_eof": eof_final,

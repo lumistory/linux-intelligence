@@ -186,8 +186,14 @@ mod tests {
 
     #[test]
     fn rejects_traversal_and_absolute() {
-        assert!(matches!(validate_rel("../../etc/shadow"), Err(PathError::Escape)));
-        assert!(matches!(validate_rel("/etc/shadow"), Err(PathError::Escape)));
+        assert!(matches!(
+            validate_rel("../../etc/shadow"),
+            Err(PathError::Escape)
+        ));
+        assert!(matches!(
+            validate_rel("/etc/shadow"),
+            Err(PathError::Escape)
+        ));
         assert!(matches!(validate_rel("a/../../b"), Err(PathError::Escape)));
     }
 
@@ -205,7 +211,10 @@ mod tests {
             "a'b'",
             "&x",
         ] {
-            assert!(matches!(validate_rel(bad), Err(PathError::Invalid)), "{bad:?}");
+            assert!(
+                matches!(validate_rel(bad), Err(PathError::Invalid)),
+                "{bad:?}"
+            );
         }
     }
 

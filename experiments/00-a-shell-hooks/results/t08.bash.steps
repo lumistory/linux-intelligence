@@ -1,0 +1,6 @@
+MARK case=t08 shell=bash
+RUN . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+RUN sleep 0.3 &
+RUN echo t08-after-bg
+WAIT 0.6
+RUN wait

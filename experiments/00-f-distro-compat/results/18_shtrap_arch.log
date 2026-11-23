@@ -1,0 +1,21 @@
+### image:  docker.io/library/archlinux:latest
+### utc:    2026-11-23T14:00:14Z
+### script: src/probes/p9_shtrap.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/archlinux:latest sh /probe/p9_shtrap.sh
+### ---
+=== TRAP A: reading a procfs file with the read builtin
+shell reading it: /usr/bin/bash
+read -r v </proc/sys/kernel/pid_max  ->  [4194304]
+v=$(cat /proc/sys/kernel/pid_max)     ->  [4194304]
+stat -c %s on that procfs file      ->  [0]
+VERDICT_A: read builtin gives the SAME answer as cat (safe here)
+
+=== TRAP B: set -o pipefail
+accepts pipefail: yes
+false | true with pipefail set -> exit 1 (1 means pipefail is real)
+option table says: [pipefail       	on]
+
+=== TRAP C: which shell implements /bin/sh, and its package version
+readlink -f /bin/sh  ->  /usr/bin/bash
+    bash 5.3.20-1
+### done

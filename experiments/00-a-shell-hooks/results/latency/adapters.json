@@ -1,0 +1,128 @@
+{
+ "bash/baseline": {
+  "max_us": 452,
+  "mean_us": 230.7,
+  "median_us": 212,
+  "min_us": 133,
+  "n": 25,
+  "p95_us": 356,
+  "p99_us": 452,
+  "raw_us": [
+   175,
+   205,
+   146,
+   212,
+   136,
+   169,
+   146,
+   133,
+   200,
+   144,
+   169,
+   252,
+   208,
+   223,
+   266,
+   235,
+   206,
+   271,
+   452,
+   330,
+   329,
+   306,
+   356,
+   213,
+   285
+  ]
+ },
+ "bash/fd3dead": {
+  "error": "no samples (prompt_ok=False)"
+ },
+ "bash/fd3ok": {
+  "error": "no samples (prompt_ok=False)"
+ },
+ "fish/baseline": {
+  "max_us": 4569,
+  "mean_us": 2582.2,
+  "median_us": 2545,
+  "min_us": 1408,
+  "n": 25,
+  "p95_us": 3503,
+  "p99_us": 4569,
+  "raw_us": [
+   2724,
+   4569,
+   3082,
+   2722,
+   2307,
+   2545,
+   2514,
+   2278,
+   2097,
+   2583,
+   3503,
+   3432,
+   2891,
+   2136,
+   2956,
+   2261,
+   1903,
+   2832,
+   1469,
+   3067,
+   2829,
+   2220,
+   2438,
+   1790,
+   1408
+  ]
+ },
+ "fish/fd3dead": {
+  "error": "no samples (prompt_ok=False)"
+ },
+ "fish/fd3ok": {
+  "error": "no samples (prompt_ok=False)"
+ },
+ "zsh/baseline": {
+  "max_us": 259,
+  "mean_us": 174.7,
+  "median_us": 176,
+  "min_us": 87,
+  "n": 25,
+  "p95_us": 235,
+  "p99_us": 259,
+  "raw_us": [
+   159,
+   194,
+   191,
+   176,
+   143,
+   164,
+   103,
+   172,
+   188,
+   165,
+   234,
+   259,
+   208,
+   199,
+   125,
+   147,
+   151,
+   206,
+   87,
+   196,
+   196,
+   179,
+   139,
+   152,
+   235
+  ]
+ },
+ "zsh/fd3dead": {
+  "error": "no samples (prompt_ok=False)"
+ },
+ "zsh/fd3ok": {
+  "error": "no samples (prompt_ok=False)"
+ }
+}

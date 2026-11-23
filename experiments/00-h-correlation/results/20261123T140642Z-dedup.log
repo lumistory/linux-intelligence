@@ -1,0 +1,81 @@
+## 1. Deduplication (SYNTHETIC streams, ground truth by construction)
+
+population: 1050 events = 500 origins + 300 duplicates + 250 near-miss negatives
+
+### 1.1 Scheme A — exact `event_id` only (baseline)
+
+| metric | value |
+|---|---|
+| duplicates found (TP) | 150 |
+| false merges (FP) | 0 |
+| missed duplicates (FN) | 150 |
+| precision | 1.0000 |
+| recall | 0.5000 |
+| false-merge rate FP/(TP+FP) | 0.0000 |
+| undetected-duplicate rate FN/(TP+FN) | 0.5000 |
+
+### 1.2 Scheme B — semantic fingerprint, parameter sweep
+
+key = `type_class | session? | subject | ts_bucket`; `session?` is `-`
+unless `require_same_session`. Every row is a full re-run of the stream.
+
+| window | mode | session in key | TP | FP | FN | precision | recall | false-merge | FN-rate |
+|---|---|---|---|---|---|---|---|---|---|
+| 50 ms | single | false | 246 | 165 | 54 | 0.5985 | 0.8200 | 0.4015 | 0.1800 |
+| 50 ms | single | true | 246 | 58 | 54 | 0.8092 | 0.8200 | 0.1908 | 0.1800 |
+| 50 ms | triple | false | 291 | 328 | 9 | 0.4701 | 0.9700 | 0.5299 | 0.0300 |
+| 50 ms | triple | true | 300 | 76 | 0 | 0.7979 | 1.0000 | 0.2021 | 0.0000 |
+| 100 ms | single | false | 271 | 222 | 29 | 0.5497 | 0.9033 | 0.4503 | 0.0967 |
+| 100 ms | single | true | 271 | 63 | 29 | 0.8114 | 0.9033 | 0.1886 | 0.0967 |
+| 100 ms | triple | false | 293 | 440 | 7 | 0.3997 | 0.9767 | 0.6003 | 0.0233 |
+| 100 ms | triple | true | 298 | 149 | 2 | 0.6667 | 0.9933 | 0.3333 | 0.0067 |
+| 250 ms | single | false | 289 | 362 | 11 | 0.4439 | 0.9633 | 0.5561 | 0.0367 |
+| 250 ms | single | true | 289 | 90 | 11 | 0.7625 | 0.9633 | 0.2375 | 0.0367 |
+| 250 ms | triple | false | 298 | 566 | 2 | 0.3449 | 0.9933 | 0.6551 | 0.0067 |
+| 250 ms | triple | true | 299 | 256 | 1 | 0.5387 | 0.9967 | 0.4613 | 0.0033 |
+| 500 ms | single | false | 295 | 490 | 5 | 0.3758 | 0.9833 | 0.6242 | 0.0167 |
+| 500 ms | single | true | 295 | 155 | 5 | 0.6556 | 0.9833 | 0.3444 | 0.0167 |
+| 500 ms | triple | false | 298 | 635 | 2 | 0.3194 | 0.9933 | 0.6806 | 0.0067 |
+| 500 ms | triple | true | 300 | 369 | 0 | 0.4484 | 1.0000 | 0.5516 | 0.0000 |
+| 1000 ms | single | false | 297 | 592 | 3 | 0.3341 | 0.9900 | 0.6659 | 0.0100 |
+| 1000 ms | single | true | 297 | 245 | 3 | 0.5480 | 0.9900 | 0.4520 | 0.0100 |
+| 1000 ms | triple | false | 300 | 681 | 0 | 0.3058 | 1.0000 | 0.6942 | 0.0000 |
+| 1000 ms | triple | true | 299 | 478 | 1 | 0.3848 | 0.9967 | 0.6152 | 0.0033 |
+| 2000 ms | single | false | 298 | 653 | 2 | 0.3134 | 0.9933 | 0.6866 | 0.0067 |
+| 2000 ms | single | true | 298 | 362 | 2 | 0.4515 | 0.9933 | 0.5485 | 0.0067 |
+| 2000 ms | triple | false | 300 | 711 | 0 | 0.2967 | 1.0000 | 0.7033 | 0.0000 |
+| 2000 ms | triple | true | 300 | 578 | 0 | 0.3417 | 1.0000 | 0.6583 | 0.0000 |
+
+### 1.3 False merges by trap class (500 ms, triple, session in key vs dropped)
+
+| trap class | n | false merges (session in key) | false merges (session dropped) |
+|---|---|---|---|
+| D1 same cmd+session+window | 63 | 63 | 63 |
+| D2 same cmd, other session, same window | 63 | 31 | 63 |
+| D3 same cmd, far in time | 62 | 24 | 24 |
+| D4 other cmd, same window | 62 | 35 | 52 |
+
+chosen, session in key : TP 300 FP 369 FN 0 precision 0.4484 recall 1.0000
+chosen, session dropped: TP 298 FP 635 FN 2 precision 0.3194 recall 0.9933
+
+### 1.4 Stability across three seeds (chosen config)
+
+| seed | events | exact recall | fingerprint precision | fingerprint recall | false-merge |
+|---|---|---|---|---|---|
+| 0xc011ea | 1050 | 0.5000 | 0.4484 | 1.0000 | 0.5516 |
+| 0x5ec011 | 1050 | 0.5000 | 0.4476 | 0.9967 | 0.5524 |
+| 0x11ea | 1050 | 0.5000 | 0.4530 | 0.9967 | 0.5470 |
+
+### 1.5 Fingerprint blind spot: same fact, different subject text
+
+hook `make -j8`           -> Fresh
+proc `/usr/bin/make -j8`  -> Fresh
+The subject is normalized command text; a `/proc/<pid>/cmdline` absolute
+path does not hash equal to the typed command. Measured miss, not a bug to
+hide: basename-stripping is a Phase 1 decision, not a Phase 0 result.
+
+### 1.6 Verdict
+
+Exact `event_id` is necessary and free, but recall 0.5000 on a population where
+50.0% of all duplicates carry a fresh id. The fingerprint is what recovers them,
+and it costs 0.5516 false merges on the chosen config.

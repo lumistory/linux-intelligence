@@ -90,7 +90,12 @@ _li_sess() {
   fi
   [[ $_LI_SID == $$ ]] && typeset -g _LI_NEW_SESSION=true \
                        || typeset -g _LI_NEW_SESSION=false
-  typeset -g _LI_TTY=$(tty 2>/dev/null) || typeset -g _LI_TTY=none
+  # `tty` without -s blocks when an inherited FD is not a terminal; query only.
+  if tty -s 2>/dev/null; then
+    typeset -g _LI_TTY=$(tty 2>/dev/null || echo tty)
+  else
+    typeset -g _LI_TTY=none
+  fi
 }
 
 # --- preexec: true start, and the authoritative command text ---------------

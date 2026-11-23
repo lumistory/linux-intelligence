@@ -73,8 +73,7 @@ impl AuditLog {
         obj.insert("schema_version".into(), json!(1));
         obj.entry("event_id")
             .or_insert_with(|| json!(uuid::Uuid::new_v4().to_string()));
-        obj.entry("ts_wall")
-            .or_insert_with(|| json!(now_wall()));
+        obj.entry("ts_wall").or_insert_with(|| json!(now_wall()));
         obj.entry("ts_mono_ns")
             .or_insert_with(|| json!(now_mono_ns()));
 

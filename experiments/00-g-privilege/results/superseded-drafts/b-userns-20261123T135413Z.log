@@ -1,0 +1,7 @@
+## uid_map / gid_map inside unshare -Ur
+uid_map:          0       1000          1;
+gid_map:          0       1000          1;
+id -u: 0
+
+## read /etc/shadow as namespace-root
+head: 无法以读模式打开 '/etc/shadow': 权限不够

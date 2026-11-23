@@ -11,8 +11,6 @@
 //! actually send. Every query is recorded, so the report can show which ones
 //! were needed.
 
-use serde_json::{json, Value};
-
 #[derive(Debug, Clone)]
 pub struct Answered {
     pub query: String,
@@ -26,7 +24,10 @@ pub fn respond(bytes: &[u8], rows: u16, cols: u16) -> (Vec<u8>, Vec<Answered>) {
     let mut out: Vec<u8> = Vec::new();
     let mut seen: Vec<Answered> = Vec::new();
     let mut i = 0usize;
-    let name = |q: &str, r: String| Answered { query: q.to_string(), reply: r };
+    let name = |q: &str, r: String| Answered {
+        query: q.to_string(),
+        reply: r,
+    };
 
     while i < bytes.len() {
         if bytes[i] != 0x1b {
@@ -85,7 +86,11 @@ pub fn respond(bytes: &[u8], rows: u16, cols: u16) -> (Vec<u8>, Vec<Answered>) {
         // ESC [ ... (CSI)
         if i + 1 < bytes.len() && bytes[i + 1] == b'[' {
             if let Some((end, params, final_byte)) = scan_csi(bytes, i + 2) {
-                let q = format!("CSI {}{}", String::from_utf8_lossy(&params), final_byte as char);
+                let q = format!(
+                    "CSI {}{}",
+                    String::from_utf8_lossy(&params),
+                    final_byte as char
+                );
                 match (params.as_slice(), final_byte) {
                     // DSR: report cursor position (1,1 — we do not track it).
                     (b"", b'n') | (b"5", b'n') | (b"6", b'n') => {
@@ -183,7 +188,7 @@ fn scan_csi(bytes: &[u8], start: usize) -> Option<(usize, Vec<u8>, u8)> {
 
 fn decode_hex(s: &str) -> String {
     let clean: Vec<u8> = s.bytes().filter(|b| b.is_ascii_hexdigit()).collect();
-    if clean.len() % 2 != 0 {
+    if !clean.len().is_multiple_of(2) {
         return s.to_string();
     }
     let mut out = Vec::with_capacity(clean.len() / 2);
@@ -193,17 +198,6 @@ fn decode_hex(s: &str) -> String {
         out.push(hi << 4 | lo);
     }
     String::from_utf8_lossy(&out).into_owned()
-}
-
-/// Summary of the queries a program made, for the report.
-pub fn summarise(seen: &[Answered]) -> Value {
-    json!({
-        "query_count": seen.len(),
-        "queries": seen.iter().map(|a| json!({
-            "query": a.query,
-            "reply": a.reply,
-        })).collect::<Vec<_>>(),
-    })
 }
 
 #[cfg(test)]
@@ -220,7 +214,10 @@ mod tests {
     #[test]
     fn answers_osc_background_query() {
         let (out, _) = respond(b"\x1b]11;?\x1b\\", 24, 80);
-        assert_eq!(String::from_utf8_lossy(&out), "\x1b]11;rgb:0000/0000/0000\x1b\\");
+        assert_eq!(
+            String::from_utf8_lossy(&out),
+            "\x1b]11;rgb:0000/0000/0000\x1b\\"
+        );
     }
 
     #[test]

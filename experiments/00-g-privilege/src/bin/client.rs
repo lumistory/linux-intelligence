@@ -33,7 +33,10 @@ fn arg_num(args: &[String], name: &str) -> Option<u64> {
 
 fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let mode = args.first().ok_or("usage: client send|raw|rawstr|storm ...")?.clone();
+    let mode = args
+        .first()
+        .ok_or("usage: client send|raw|rawstr|storm ...")?
+        .clone();
     let socket = arg_val(&args, "--socket").ok_or("--socket required")?;
 
     match mode.as_str() {
@@ -176,7 +179,9 @@ fn storm(socket: &str, clients: usize, requests: usize, opcode: u64) -> Result<(
                 Ok(s) => s,
                 Err(_) => return requests,
             };
-            let mut w = stream.try_clone().unwrap_or_else(|_| stream.try_clone().unwrap());
+            let mut w = stream
+                .try_clone()
+                .unwrap_or_else(|_| stream.try_clone().unwrap());
             let mut rd = BufReader::new(stream);
             barrier.wait();
             let mut errs = 0usize;
