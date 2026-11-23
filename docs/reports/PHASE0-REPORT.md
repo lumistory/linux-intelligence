@@ -21,7 +21,7 @@ Eight experiments, all executed on this machine, all with raw logs retained:
 | 0-E | procfs and inotify | **PASS-WITH-LIMITS** | 20 tests, 2 hypotheses falsified |
 | 0-F | Arch/Ubuntu/Debian/Fedora | **PASS-WITH-LIMITS** | 4 distros × 21 probe fields, 58 logs |
 | 0-G | Privilege model + helper | **PASS** | 29/29 checks, 5 defects found and fixed in the driver/helper |
-| 0-H | Dedup/correlation/context | **PASS** | 24 credibility scenarios, 100k-row bench |
+| 0-H | Dedup/correlation/context | **PASS** | 24 credibility scenarios, 100k-row bench, 47 unit tests |
 
 Reports total 3 485 lines. Supporting documents: 6 ADRs (`docs/adr/`),
 `docs/ipc-protocol-v0.md`, `docs/security-boundary-v0.md`,
@@ -103,15 +103,25 @@ Open, and not hidden:
 3. **Recovery is the least validated area.** 0-F discovered state but never
    restored anything; no snapshot was created or rolled back.
 4. **Scale ceiling is 100 k rows.** No measurement at 1 M.
-5. **The digest used for secret-linkability is 64-bit FNV-1a.** Linkable by
+5. **`results/hexp-full-20261123T141333Z.log` is stale.** It is the output of an
+   intermediate binary (missing `LateArrival`, contains a watermark defect and an
+   old causality table) and it disagrees with the report. It was deliberately not
+   deleted — this project does not delete evidence — and is labelled as stale in
+   the experiment's README and REPORT §4. No number in the 0-H report comes from
+   it.
+6. **The digest used for secret-linkability is 64-bit FNV-1a.** Linkable by
    design; not a protection for the secret and not collision-resistant enough to
    be trusted for anything but "same value seen again".
-6. **`hidepid` hosts, musl/Alpine, ARM, nushell** all `NOT TESTED`.
-7. **Half-frame stall in the helper's framing** (0-G T7) is reproduced and
+7. **`hidepid` hosts, musl/Alpine, ARM, nushell** all `NOT TESTED`.
+7. **`(pid, starttime)` aliasing itself is SYNTHETIC in 0-H.** The real kernel
+   only produced the premise (40 concurrent forks → 2 distinct starttimes);
+   forcing a true alias needs `kernel.pid_max` write access, which this host does
+   not grant. Marked `NOT TESTED`.
+8. **Half-frame stall in the helper's framing** (0-G T7) is reproduced and
    documented, not fixed: a frame with no newline and under the discard cap
    blocks that one connection in `read()` (1500 ms timeout measured; new
    connections unaffected).
-8. **The audit log's `0600` protects it from other users, not from its owner.**
+9. **The audit log's `0600` protects it from other users, not from its owner.**
    Any claim of tamper-evidence is unsupported; marked `NOT TESTED`.
 
 ## 6. Security risks
@@ -125,7 +135,7 @@ Open, and not hidden:
 | Privilege escalation through the helper | **closed in prototype**: closed numeric opcodes, `openat2(RESOLVE_BENEATH)`, no exec-capable call in the crate (grep-verified), 10/10 injection attempts refused |
 | Secrets reaching the journal | **mitigated** for the three measured shapes (0 misses, 1 false positive / 53); a bare positional secret remains undetectable |
 | Inotify overflow silently losing events | **not mitigable** at this layer; declared as `partial:IN_Q_OVERFLOW is data loss` |
-| Misattributing a file change to a process | **impossible** to do correctly here; inotify carries no pid and non-privileged fanotify is denied |
+| Misattributing a file change to a process | **impossible** to do correctly here; inotify carries no pid and non-privileged fanotify is denied. 0-H further caps file attribution at `Probable`: `Confirmed` requires the path to be tied to the command text, which fails for every path-computing tool (compiler, package manager, git, make, test runner) — i.e. exactly the writes worth caring about |
 
 ## 7. Next phase plan
 

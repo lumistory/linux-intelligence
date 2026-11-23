@@ -5,6 +5,14 @@ Authoritative run: **`results/20261123T142301Z-*`** (24 files), produced by
 cores, `CLK_TCK=100`, rustc 1.99.0, SQLite 3.53.4 (system library, deliberately
 not the bundled copy), `ulimit -n` 1024.
 
+**Reproducibility.** The whole suite was run twice back to back
+(`20261123T142301Z` and `20261123T143036Z`); both exited 0. The logic
+experiments are byte-identical between runs (fixed seeds, fixed timestamps), and
+the SQLite timings agree within a few percent — q1 p50 76.3 vs 75.3 us, q2 144.2
+vs 142.4 us, q3 32.7 vs 32.9 us, insert 516 vs 507 ms. No cell moved by more than
+8 %, so the numbers in §7 are stable enough to plan against and still obviously
+measurements rather than constants.
+
 Synthetic material is labelled `SYNTHETIC` where it is used. Kernel and database
 facts (tick granularity, WAL behaviour, `kill -9`, migration, VACUUM) are
 measured on real files and real processes.
