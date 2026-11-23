@@ -69,7 +69,7 @@ fn wal(args: &[String]) -> R<()> {
     for busy_ms in [5_000u64, 0u64] {
         println!();
         println!("### busy_timeout_ms={busy_ms}");
-        let mut writer = Command::new(&exe)
+        let writer = Command::new(&exe)
             .args(["writer", path, &seconds.to_string()])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -125,7 +125,7 @@ fn wal(args: &[String]) -> R<()> {
     println!();
     println!("### two concurrent writers (the case busy_timeout actually covers)");
     for busy_ms in [5_000u64, 0u64] {
-        let mut w1 = Command::new(&exe)
+        let w1 = Command::new(&exe)
             .args([
                 "writer",
                 path,
@@ -137,7 +137,7 @@ fn wal(args: &[String]) -> R<()> {
             .stderr(Stdio::piped())
             .spawn()?;
         std::thread::sleep(std::time::Duration::from_millis(50));
-        let mut w2 = Command::new(&exe)
+        let w2 = Command::new(&exe)
             .args([
                 "writer",
                 path,

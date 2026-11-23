@@ -36,6 +36,8 @@ step "build (offline, release)"
 # Offline on purpose: the crate cache is warm and a network fetch would make the
 # result unreproducible on a cold machine.
 cargo build --release --offline 2>&1 | tail -3 | tee -a "$LOG"
+cargo fmt --check 2>&1 | tail -2 | tee -a "$LOG"
+cargo clippy --release --offline --all-targets -- -D warnings 2>&1 | tail -2 | tee -a "$LOG"
 cargo test --release --offline 2>&1 | grep -E "^test result|FAILED" | tee -a "$LOG"
 
 step "unit + logic experiments"

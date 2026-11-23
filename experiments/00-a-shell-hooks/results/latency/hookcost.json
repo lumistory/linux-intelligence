@@ -1,19 +1,26 @@
 {
  "bash": {
-  "error": "no samples"
+  "max_us": 3,
+  "median_us": 3.0,
+  "method": "per_command_clock",
+  "min_us": 2,
+  "n": 40,
+  "p99_us": 3
  },
  "fish": {
-  "max_us": 1184,
-  "median_us": 1184,
-  "min_us": 1184,
+  "max_us": 1085,
+  "median_us": 1085,
+  "method": "batch_loop",
+  "min_us": 1085,
   "n": 1,
-  "p99_us": 1184
+  "p99_us": 1085
  },
  "zsh": {
-  "max_us": 3246,
-  "median_us": 2706.0,
-  "min_us": 2015,
+  "max_us": 2947,
+  "median_us": 2348.0,
+  "method": "per_command_clock",
+  "min_us": 1778,
   "n": 40,
-  "p99_us": 3205
+  "p99_us": 2677
  }
 }

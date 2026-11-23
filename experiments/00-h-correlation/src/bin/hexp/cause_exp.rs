@@ -25,7 +25,15 @@ pub fn run() -> R<()> {
         "inotify carries no pid (0-E), so a file two processes appended to cannot be \
          attributed to either one",
     ];
-    for (c, why) in [
+    // The naive claim is the one a correlator without these rules would emit:
+    // a plain causal sentence built from nothing but temporal adjacency.
+    let naive = [
+        "\"make modified build/out.o\"",
+        "\"echo modified notes.txt\"",
+        "\"vim modified init.lua\"",
+        "\"cmd-a modified shared.log\"",
+    ];
+    for ((c, why), claim) in [
         Counterexample::BackgroundTask,
         Counterexample::DelayedWrite,
         Counterexample::EditorRenameSave,
@@ -33,12 +41,13 @@ pub fn run() -> R<()> {
     ]
     .iter()
     .zip(whys)
+    .zip(naive)
     {
         let (k, l) = c.defensible();
         println!(
-            "| {} | \"{} caused the file change\" | {} | `{}` | {} |",
+            "| {} | {} | {} | `{}` | {} |",
             c.as_str(),
-            c.as_str(),
+            claim,
             why,
             k.as_str(),
             l.as_str()

@@ -69,7 +69,7 @@ impl Default for ReorderPolicy {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct SessionState {
     next_expected: u64,
     started: bool,
@@ -78,20 +78,6 @@ struct SessionState {
     forced_gaps: usize,
     forced_capacity: usize,
     late_arrivals: usize,
-}
-
-impl Default for SessionState {
-    fn default() -> Self {
-        Self {
-            next_expected: 0,
-            started: false,
-            held: Vec::new(),
-            emitted_in_order: 0,
-            forced_gaps: 0,
-            forced_capacity: 0,
-            late_arrivals: 0,
-        }
-    }
 }
 
 #[derive(Debug)]

@@ -1,0 +1,65 @@
+
+## 2. Out-of-order streams (SYNTHETIC, single session, 500 events, 1 ms apart)
+
+### 2.1 distinct timestamps
+
+| disorder depth | received | ts-sort | sequence | forced gaps | late | max buffered |
+|---|---|---|---|---|---|---|
+| 1 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 | 1 |
+| 2 | 0.9990 | 1.0000 | 1.0000 | 0 | 0 | 2 |
+| 4 | 0.9970 | 1.0000 | 1.0000 | 0 | 0 | 4 |
+| 8 | 0.9931 | 1.0000 | 1.0000 | 0 | 0 | 8 |
+| 16 | 0.9846 | 1.0000 | 1.0000 | 0 | 0 | 16 |
+| 32 | 0.9710 | 1.0000 | 1.0000 | 0 | 0 | 30 |
+
+### 2.2 timestamps quantised to the 10 ms CLK_TCK grid
+
+| disorder depth | received | ts-sort | sequence | forced gaps | late | max buffered |
+|---|---|---|---|---|---|---|
+| 1 | 1.0000 | 1.0000 | 1.0000 | 0 | 0 | 1 |
+| 2 | 0.9990 | 0.9990 | 1.0000 | 0 | 0 | 2 |
+| 4 | 0.9970 | 0.9974 | 1.0000 | 0 | 0 | 4 |
+| 8 | 0.9931 | 0.9952 | 1.0000 | 0 | 0 | 8 |
+| 16 | 0.9846 | 0.9927 | 1.0000 | 0 | 0 | 16 |
+| 32 | 0.9710 | 0.9920 | 1.0000 | 0 | 0 | 30 |
+
+### 2.3 Tolerance-window sizing (depth 8, quantised timestamps)
+
+reorder delay distribution: n=220 p50=300000 ns p90=600000 ns p99=700000 ns max=700000 ns
+
+`grace_ns` is measured on the stream clock, so it also fires on a quiet
+session. A grace keyed on *more events arriving* would never fire exactly when
+a lost event sits alone in the buffer.
+
+| grace | forced gaps | late | max buffered | agreement |
+|---|---|---|---|---|
+| 1 us | 111 | 322 | 1 | 0.9931 |
+| 2 us | 111 | 322 | 1 | 0.9931 |
+| 5 us | 111 | 322 | 1 | 0.9931 |
+| 10 us | 111 | 322 | 1 | 0.9931 |
+| 20 us | 111 | 322 | 1 | 0.9931 |
+| 50 us | 111 | 322 | 1 | 0.9931 |
+| 100 us | 111 | 322 | 1 | 0.9931 |
+| 250 us | 121 | 264 | 2 | 0.9937 |
+| 1000 us | 0 | 0 | 8 | 1.0000 |
+
+### 2.4 Mid-stream attach: the case that breaks a naive reorderer
+
+A consumer that starts at sequence 100 of a 200-event stream (daemon restart,
+no checkpoint) sees every earlier event as 'below the watermark'.
+
+attached at sequence 100 of 200, fed the remaining 100 events:
+  emitted=100 still_held=0 forced_gaps=0 late_arrivals=0
+With `initial_sequence: None` the first arrival defines the watermark, so the
+100 later events flow in order and nothing stalls. With a stored checkpoint the
+policy must pass `initial_sequence: Some(n)`; anything older then becomes a
+`LateArrival` (emitted immediately and flagged), never a silent drop and never a
+stall. Both are 0-loss; they differ in whether the flag fires.
+
+### 2.5 Why timestamps alone cannot be the answer
+
+With 10 ms quantisation and 1 ms spacing, 450 of 499 adjacent pairs share a
+tick, so `ORDER BY ts_mono_ns` leaves their order to the sort's tie-break,
+not to the data. `sequence` has no ties by construction (0-C: gaps are exact).
+Cross-source ordering has no `sequence` space, so it must fall back to
+`ts_mono_ns` with an explicit +/-1 tick uncertainty that is stored, not hidden.

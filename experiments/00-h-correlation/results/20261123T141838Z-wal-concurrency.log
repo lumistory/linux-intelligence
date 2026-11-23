@@ -1,0 +1,22 @@
+journal_mode=wal wal_autocheckpoint=1000
+
+### busy_timeout_ms=5000
+writer w attempted=144733 errors=0
+r0 ok=42137 busy=0 other_errors=0 p50_us=144.9 p99_us=620.6 max_us=2090.3
+r1 ok=42773 busy=0 other_errors=0 p50_us=112.5 p99_us=558.7 max_us=3265.1
+r2 ok=41072 busy=0 other_errors=0 p50_us=144.4 p99_us=523.5 max_us=1736.5
+r3 ok=43481 busy=0 other_errors=0 p50_us=120.5 p99_us=632.5 max_us=1640.8
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### busy_timeout_ms=0
+writer w attempted=249798 errors=0
+r0 ok=110372 busy=0 other_errors=0 p50_us=14.3 p99_us=821.6 max_us=2120.7
+r1 ok=109951 busy=0 other_errors=0 p50_us=14.1 p99_us=820.1 max_us=1875.6
+r2 ok=112146 busy=0 other_errors=0 p50_us=14.0 p99_us=797.9 max_us=2018.1
+r3 ok=104745 busy=0 other_errors=0 p50_us=14.7 p99_us=830.4 max_us=2154.2
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### two concurrent writers (the case busy_timeout actually covers)
+busy_timeout_ms=5000
+  writer A: writer wa attempted=121330 errors=0
+  writer B: writer wb attempted=198567 errors=0

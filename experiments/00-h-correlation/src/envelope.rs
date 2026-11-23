@@ -102,6 +102,8 @@ pub struct Event {
 }
 
 impl Event {
+    // Nine independent envelope fields, fixed by docs/00-phase0-protocol.md §2.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         event_id: impl Into<String>,
         source: Source,

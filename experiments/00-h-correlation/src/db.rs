@@ -258,6 +258,8 @@ impl Store {
         Ok(())
     }
 
+    /// Nine columns, all meaningful; a builder would only move the arity around.
+    #[allow(clippy::too_many_arguments)]
     pub fn insert_process(
         &self,
         pid: u32,

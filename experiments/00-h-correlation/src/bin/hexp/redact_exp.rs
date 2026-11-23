@@ -287,9 +287,6 @@ pub fn run() -> R<()> {
             r.rules,
             r.secret_digest.clone().unwrap_or_else(|| "-".into())
         );
-        match cmd.split(' ').nth(0) {
-            _ => {}
-        }
     }
 
     println!();
