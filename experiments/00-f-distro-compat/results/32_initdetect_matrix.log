@@ -1,0 +1,3 @@
+### Does the systemctl binary correctly indicate a running systemd?
+DISTRO       systemctl_bin  is-system-running pid1_comm    VERDICT       
+arch         PRESENT        list-units rc -> 1 sh           false (PID 1 is NOT systemd; the binary lies)

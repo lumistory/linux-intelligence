@@ -24,6 +24,8 @@ pub struct Session {
     raw: Vec<u8>,
     bytes_read: u64,
     eof: bool,
+    /// Terminal queries answered so far (fish/vim/less block until answered).
+    pub answered: Vec<crate::responder::Answered>,
     reaped: bool,
     exit: Option<i32>,
     exit_signal: Option<String>,
@@ -126,6 +128,7 @@ impl Session {
             raw: Vec::new(),
             bytes_read: 0,
             eof: false,
+            answered: Vec::new(),
             reaped: false,
             exit: None,
             exit_signal: None,
@@ -208,6 +211,21 @@ impl Session {
                         self.raw.extend_from_slice(&buf[..n]);
                         self.bytes_read += n as u64;
                         total += n;
+                        // A PTY is a pipe, not a terminal: programs that query
+                        // the terminal (fish, vim, less) block until answered.
+                        let (reply, seen) = crate::responder::respond(
+                            &buf[..n],
+                            self.winsize.ws_row,
+                            self.winsize.ws_col,
+                        );
+                        if !seen.is_empty() {
+                            self.answered.extend(seen);
+                        }
+                        if !reply.is_empty() {
+                            // Best effort: if the buffer is full the program
+                            // will time out on its own, which is recorded.
+                            let _ = nix::unistd::write(&self.master, &reply);
+                        }
                     }
                     Err(nix::errno::Errno::EAGAIN) => break,
                     Err(nix::errno::Errno::EIO) => {

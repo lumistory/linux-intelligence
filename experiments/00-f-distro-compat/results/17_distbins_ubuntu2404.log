@@ -1,0 +1,22 @@
+### image:  docker.io/library/ubuntu:24.04
+### utc:    2026-11-23T13:40:16Z
+### script: src/probes/p8_dist.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/ubuntu:24.04 sh /probe/p8_dist.sh
+### ---
+--- host container libc
+ldd (Ubuntu GLIBC 2.39-0ubuntu8.9) 2.39
+--- artefact properties as seen from inside
+hello_dyn: 15: file: not found
+hello_static: 15: file: not found
+hello_newer: 15: file: not found
+--- run 1/3: Rust dynamic (Arch glibc 2.44 build)
+hello-rust
+hello_dyn exit = 0
+--- run 2/3: Rust static
+hello-rust
+hello_static exit = 0
+--- run 3/3: C requiring GLIBC_2.43
+/probe-bin/hello_newer: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.43' not found (required by /probe-bin/hello_newer)
+hello_newer exit = 1
+--- if a run failed, the loader error above is the evidence
+### done

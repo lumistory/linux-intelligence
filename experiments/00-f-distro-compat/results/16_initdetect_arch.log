@@ -1,0 +1,24 @@
+### image:  docker.io/library/archlinux:latest
+### utc:    2026-11-23T13:40:13Z
+### script: src/probes/p7_init.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/archlinux:latest sh /probe/p7_init.sh
+### ---
+=== METHOD A (WRONG): does the systemctl binary exist?
+systemctl: PRESENT at /usr/sbin/systemctl
+systemctl --version: systemd 262 (262.1-1-arch)
+=== METHOD B (WRONG): ask systemctl about system state
+is-system-running -> offline
+list-units rc -> 1
+=== METHOD C (HEURISTIC): does /run/systemd/system exist?
+ls: cannot access '/run/systemd/system': No such file or directory
+=== METHOD D (CORRECT): is PID 1 systemd?
+pid1 comm:    sh
+pid1 exe:     /usr/bin/bash
+pid1 cmdline: sh /probe/p7_init.sh 
+=== VERDICT
+systemd_running = false (PID 1 is NOT systemd; the binary lies)
+=== unit directories exist even without a running systemd?
+/etc/systemd/system
+/lib/systemd/system
+/usr/lib/systemd/system
+### done

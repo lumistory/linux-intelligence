@@ -1,0 +1,49 @@
+### image:  docker.io/library/ubuntu:24.04
+### utc:    2026-11-23T13:40:14Z
+### script: src/probes/p1_ident.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/ubuntu:24.04 sh /probe/p1_ident.sh
+### ---
+--- /etc/os-release (raw)
+PRETTY_NAME="Ubuntu 24.04.5 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04.5 LTS (Noble Numbat)"
+VERSION_CODENAME=noble
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=noble
+LOGO=ubuntu-logo
+--- selected fields
+ID=ubuntu
+ID_LIKE=debian
+VERSION_ID=24.04
+PRETTY_NAME=Ubuntu 24.04.5 LTS
+NAME=Ubuntu
+BUILD_ID=
+--- package managers
+pacman: ABSENT
+apt: /usr/bin/apt
+apt-get: /usr/bin/apt-get
+dpkg: /usr/bin/dpkg
+dnf: ABSENT
+rpm: ABSENT
+zypper: ABSENT
+apk: ABSENT
+yum: ABSENT
+--- /bin/sh
+lrwxrwxrwx 1 root root 4 Mar 31  2024 /bin/sh -> dash
+readlink -f /bin/sh -> /usr/bin/dash
+--- pid 1
+comm:    sh
+cmdline: sh /probe/p1_ident.sh 
+--- container markers
+ls: cannot access '/.dockerenv': No such file or directory
+-rw-r--r-- 1 root root 0 Nov 23 13:40 /run/.containerenv
+--- user / arch
+uid=0(root) gid=0(root) groups=0(root)
+x86_64
+### done

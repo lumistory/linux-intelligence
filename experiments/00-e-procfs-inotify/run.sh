@@ -410,13 +410,15 @@ fs_large_write() {
     cat "$RAW/.b3-watch-$STAMP.tmp"
     echo
     echo "## MODIFY counts per file"
-    # Count only real event rows: they begin with the monotonic timestamp and
-    # carry the mask name as a standalone field. Anchoring on the row shape
-    # avoids matching the summary lines that this very block writes.
-    printf 'one-write.bin  MODIFY=%s\n' "$(awk '$1 ~ /^[0-9]+$/ && $5 == "MODIFY" && $9 == "one-write.bin"' "$RAW/.b3-watch-$STAMP.tmp" | wc -l)"
-    printf 'many-writes.bin MODIFY=%s\n' "$(awk '$1 ~ /^[0-9]+$/ && $5 == "MODIFY" && $9 == "many-writes.bin"' "$RAW/.b3-watch-$STAMP.tmp" | wc -l)"
-    printf 'one-write.bin  CLOSE_WRITE=%s\n' "$(awk '$1 ~ /^[0-9]+$/ && $5 == "CLOSE_WRITE" && $9 == "one-write.bin"' "$RAW/.b3-watch-$STAMP.tmp" | wc -l)"
-    printf 'many-writes.bin CLOSE_WRITE=%s\n' "$(awk '$1 ~ /^[0-9]+$/ && $5 == "CLOSE_WRITE" && $9 == "many-writes.bin"' "$RAW/.b3-watch-$STAMP.tmp" | wc -l)"
+    # Event rows have exactly 8 fields:
+    #   monots wd dir mask_raw mask_names cookie isdir name
+    # Only rows whose first field is numeric are real events; that excludes the
+    # "# ..." comments and the summary lines this block itself writes.
+    for f in one-write.bin many-writes.bin; do
+      printf '%-16s MODIFY=%-4s CLOSE_WRITE=%s\n' "$f" \
+        "$(awk -v f="$f" '$1 ~ /^[0-9]+$/ && NF==8 && $5=="MODIFY" && $8==f' "$RAW/.b3-watch-$STAMP.tmp" | wc -l)" \
+        "$(awk -v f="$f" '$1 ~ /^[0-9]+$/ && NF==8 && $5=="CLOSE_WRITE" && $8==f' "$RAW/.b3-watch-$STAMP.tmp" | wc -l)"
+    done
   } >>"$out"
   rm -f "$RAW/.b3-watch-$STAMP.tmp"
   rm -f "$root/one-write.bin" "$root/many-writes.bin"
@@ -650,13 +652,19 @@ fs_attribution_limits() {
 #include <errno.h>
 #include <string.h>
 #include <sys/fanotify.h>
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0
+#endif
 int main(int argc, char **argv) {
     const char *path = argv[1];
+    errno = 0;
     int fd = fanotify_init(FAN_CLASS_NOTIF, O_RDONLY | O_LARGEFILE);
     printf("fanotify_init(FAN_CLASS_NOTIF) = %d errno=%d (%s)\n", fd, errno, strerror(errno));
     if (fd < 0) return 1;
+    errno = 0;
     int r = fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_MODIFY, AT_FDCWD, path);
     printf("fanotify_mark = %d errno=%d (%s)\n", r, errno, strerror(errno));
+    errno = 0;
     int fd2 = fanotify_init(FAN_CLASS_NOTIF | FAN_REPORT_PIDFD, O_RDONLY | O_LARGEFILE);
     printf("fanotify_init(FAN_REPORT_PIDFD) = %d errno=%d (%s)\n", fd2, errno, strerror(errno));
     return 0;

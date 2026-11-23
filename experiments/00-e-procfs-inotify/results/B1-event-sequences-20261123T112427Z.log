@@ -1,0 +1,33 @@
+# watch root: /tmp/li-phase0-0e-scratch/seq
+# All operations below are issued from the shell while the watcher runs.
+## create
+## modify (append)
+## chmod
+## mv same directory
+## mkdir
+## create inside sub (watched only if recursive)
+## mv across directories within root
+## hard link
+## symlink
+## unlink
+## rm -f within scratch root
+
+## watcher event log (non-recursive: sub/ events are NOT expected)
+# watching 1 dir(s) under /tmp/li-phase0-0e-scratch/seq
+# mask=0xfce recursive=false auto_add=false
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+72 1 /tmp/li-phase0-0e-scratch/seq 0x00000100 CREATE 0 0 created.txt
+11415 1 /tmp/li-phase0-0e-scratch/seq 0x00000002 MODIFY 0 0 created.txt
+13707 1 /tmp/li-phase0-0e-scratch/seq 0x00000008 CLOSE_WRITE 0 0 created.txt
+201267862 1 /tmp/li-phase0-0e-scratch/seq 0x00000002 MODIFY 0 0 created.txt
+201279358 1 /tmp/li-phase0-0e-scratch/seq 0x00000008 CLOSE_WRITE 0 0 created.txt
+403337681 1 /tmp/li-phase0-0e-scratch/seq 0x00000004 ATTRIB 0 0 created.txt
+605443374 1 /tmp/li-phase0-0e-scratch/seq 0x00000040 MOVED_FROM 11510 0 created.txt
+605454184 1 /tmp/li-phase0-0e-scratch/seq 0x00000080 MOVED_TO 11510 0 renamed.txt
+807510847 1 /tmp/li-phase0-0e-scratch/seq 0x40000100 CREATE+ISDIR 0 1 sub
+1310841668 1 /tmp/li-phase0-0e-scratch/seq 0x00000040 MOVED_FROM 11512 0 renamed.txt
+1512757553 1 /tmp/li-phase0-0e-scratch/seq 0x00000100 CREATE 0 0 hardlink.txt
+1714500366 1 /tmp/li-phase0-0e-scratch/seq 0x00000100 CREATE 0 0 symlink.txt
+1916363080 1 /tmp/li-phase0-0e-scratch/seq 0x00000200 DELETE 0 0 hardlink.txt
+2118479056 1 /tmp/li-phase0-0e-scratch/seq 0x00000200 DELETE 0 0 symlink.txt
+# total_events 14

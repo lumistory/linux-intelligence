@@ -1,0 +1,58 @@
+### host probe under bash invoked as sh
+### ---
+{
+  "probe_schema": "li-cap/1",
+  "probe_shell": "/usr/bin/bash",
+  "probe_under_bash": true,
+  "host": {
+    "uname_r": "7.2.8-zen1-2-zen",
+    "uname_m": "x86_64",
+    "is_container": false,
+    "cgroup_v2": true
+  },
+  "os_release": {
+    "file_present": true,
+    "ID": "arch",
+    "ID_LIKE": "",
+    "VERSION_ID": "",
+    "PRETTY_NAME": "Arch Linux",
+    "pkg_manager": "pacman"
+  },
+  "init": {
+    "pid1_comm": "systemd",
+    "pid1_is_systemd": true,
+    "systemctl_present": true,
+    "run_systemd_dir": true,
+    "systemctl_is_system_running": "running"
+  },
+  "shells": {
+    "bin_sh_target": "/usr/bin/bash",
+    "bin_sh_impl": "bash",
+    "bash_version": "5.3.20(1)-release",
+    "dash_present": false,
+    "zsh_present": false,
+    "fish_present": true
+  },
+  "libc": {
+    "ldd_first_line": "ldd (GNU libc) 2.44",
+    "glibc_version": "2.44",
+    "musl_ldso_present": false
+  },
+  "procfs": {
+    "self_stat_fields": 52,
+    "pid_max": 4194304,
+    "ns_last_pid": 115244,
+    "visible_numeric_proc_entries": 567
+  },
+  "inotify_limits": {
+    "max_user_watches": 524288,
+    "max_user_instances": 1024,
+    "max_queued_events": 16384
+  },
+  "recovery_tools": {
+    "btrfs": "/usr/bin/btrfs",
+    "snapper": "/usr/bin/snapper",
+    "lvm": "",
+    "git": "/usr/bin/git"
+  }
+}

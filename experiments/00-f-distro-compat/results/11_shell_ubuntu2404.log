@@ -1,0 +1,46 @@
+### image:  docker.io/library/ubuntu:24.04
+### utc:    2026-11-23T13:40:14Z
+### script: src/probes/p2_shell.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/ubuntu:24.04 sh /probe/p2_shell.sh
+### ---
+--- bash version
+GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)
+--- /bin/sh resolves to
+/usr/bin/dash
+--- shell binaries present
+sh: /usr/bin/sh
+bash: /usr/bin/bash
+dash: /usr/bin/dash
+zsh: ABSENT
+fish: ABSENT
+busybox: ABSENT
+ksh: ABSENT
+mksh: ABSENT
+yash: ABSENT
+--- TEST A: is BASH_VERSION set under /bin/sh ?
+BASH_VERSION_EMPTY
+--- TEST B: local builtin under /bin/sh
+LOCAL_OK x=1
+--- TEST C: echo -e under /bin/sh (od -c shows whether TAB is a real tab)
+0000000   -   e       a  \t   b  \n
+0000007
+--- TEST D: echo with backslash, no -e
+0000000   a  \t   b  \n
+0000004
+--- TEST E: printf (the portable way)
+0000000   a  \t   b  \n
+0000004
+--- TEST F: [[ ]] acceptance
+/bin/sh: 1: [[: not found
+DOUBLE_BRACKET_FAIL
+--- TEST G: source builtin vs . (POSIX)
+SOURCE_NOT_AVAILABLE
+SOURCE_RAN
+--- TEST H: pipefail support under /bin/sh
+--- TEST I: set -e arithmetic / return quirk, dash vs bash
+ARITH_ZERO=0
+OR_CHAIN_OK
+--- TEST K: env var visibility of BASH_* inside /bin/sh
+0
+no BASH* env vars
+### done

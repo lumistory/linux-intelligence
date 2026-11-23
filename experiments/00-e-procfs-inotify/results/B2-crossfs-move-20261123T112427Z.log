@@ -1,0 +1,15 @@
+# src=/tmp/li-phase0-0e-scratch/xfs-src  fstype=tmpfs  dev=tmpfs
+# dst=<WORKSPACE>/experiments/00-e-procfs-inotify/results/xfs-target  fstype=btrfs  dev=/dev/nvme1n1p3
+# Same-device rename for contrast is covered in B1 (mv within one dir).
+
+## events for the cross-device move
+# watching 1 dir(s) under <WORKSPACE>/experiments/00-e-procfs-inotify/results/xfs-target
+# mask=0xfce recursive=false auto_add=false
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+76 1 <WORKSPACE>/experiments/00-e-procfs-inotify/results/xfs-target 0x00000100 CREATE 0 0 moving.txt
+12793 1 <WORKSPACE>/experiments/00-e-procfs-inotify/results/xfs-target 0x00000002 MODIFY 0 0 moving.txt
+15913 1 <WORKSPACE>/experiments/00-e-procfs-inotify/results/xfs-target 0x00000004 ATTRIB 0 0 moving.txt
+17793 1 <WORKSPACE>/experiments/00-e-procfs-inotify/results/xfs-target 0x00000008 CLOSE_WRITE 0 0 moving.txt
+# total_events 4
+
+move_pairs_seen 0 (0 = no cookie pair, i.e. not a rename)

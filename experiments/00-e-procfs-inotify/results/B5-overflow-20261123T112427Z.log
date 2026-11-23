@@ -1,0 +1,45 @@
+## fast consumer (drains continuously)
+root                     /tmp/li-phase0-0e-scratch/ovf-fast
+max_queued_events        16384
+read_buffer_bytes        65536
+slow_ms_before_drain     0
+files_target             50000
+
+files_created            50000
+create_errors            0
+expected_events_min      50000 (one IN_CREATE per file)
+events_received          100000
+drain_calls              55759
+overflow_events          0
+ignored_events           0
+wall_s                   0.214
+
+event_type_counts:
+  CLOSE_WRITE              50000
+  CREATE                   50000
+
+conclusion               no overflow observed with this reader speed
+
+## slow consumer (300 ms stall before first drain)
+root                     /tmp/li-phase0-0e-scratch/ovf-slow
+max_queued_events        16384
+read_buffer_bytes        65536
+slow_ms_before_drain     300
+files_target             50000
+OVERFLOW monots_ns=36 wd=-1 mask=0x00004000 cookie=0 name=""
+
+files_created            50000
+create_errors            0
+expected_events_min      50000 (one IN_CREATE per file)
+events_received          16385
+drain_calls              9
+overflow_events          1
+ignored_events           0
+wall_s                   0.113
+
+event_type_counts:
+  CLOSE_WRITE              8192
+  CREATE                   8192
+  Q_OVERFLOW               1
+
+conclusion               queue overflowed; 1 IN_Q_OVERFLOW event(s); events lost = unobservable quantity

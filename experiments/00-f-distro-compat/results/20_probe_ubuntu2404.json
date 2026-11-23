@@ -1,0 +1,56 @@
+{
+  "probe_schema": "li-cap/1",
+  "probe_shell": "/usr/bin/dash",
+  "probe_under_bash": false,
+  "host": {
+    "uname_r": "7.2.8-zen1-2-zen",
+    "uname_m": "x86_64",
+    "is_container": true,
+    "cgroup_v2": true
+  },
+  "os_release": {
+    "file_present": true,
+    "ID": "ubuntu",
+    "ID_LIKE": "debian",
+    "VERSION_ID": "24.04",
+    "PRETTY_NAME": "Ubuntu 24.04.5 LTS",
+    "pkg_manager": "apt"
+  },
+  "init": {
+    "pid1_comm": "sh",
+    "pid1_is_systemd": false,
+    "systemctl_present": false,
+    "run_systemd_dir": false,
+    "systemctl_is_system_running": "not-installed"
+  },
+  "shells": {
+    "bin_sh_target": "/usr/bin/dash",
+    "bin_sh_impl": "dash",
+    "bash_version": "5.2.21(1)-release",
+    "dash_present": true,
+    "zsh_present": false,
+    "fish_present": false
+  },
+  "libc": {
+    "ldd_first_line": "ldd (Ubuntu GLIBC 2.39-0ubuntu8.9) 2.39",
+    "glibc_version": "2.39",
+    "musl_ldso_present": false
+  },
+  "procfs": {
+    "self_stat_fields": 52,
+    "pid_max": null,
+    "ns_last_pid": null,
+    "visible_numeric_proc_entries": 4
+  },
+  "inotify_limits": {
+    "max_user_watches": null,
+    "max_user_instances": null,
+    "max_queued_events": null
+  },
+  "recovery_tools": {
+    "btrfs": "",
+    "snapper": "",
+    "lvm": "",
+    "git": ""
+  }
+}

@@ -1,0 +1,48 @@
+### image:  docker.io/library/archlinux:latest
+### utc:    2026-11-23T13:40:11Z
+### script: src/probes/p1_ident.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/archlinux:latest sh /probe/p1_ident.sh
+### ---
+--- /etc/os-release (raw)
+NAME="Arch Linux"
+PRETTY_NAME="Arch Linux"
+ID=arch
+BUILD_ID=rolling
+VERSION_ID=20261108.0.623074
+ANSI_COLOR="38;2;23;147;209"
+HOME_URL="https://archlinux.org/"
+DOCUMENTATION_URL="https://wiki.archlinux.org/"
+SUPPORT_URL="https://bbs.archlinux.org/"
+BUG_REPORT_URL="https://gitlab.archlinux.org/groups/archlinux/-/issues"
+PRIVACY_POLICY_URL="https://terms.archlinux.org/docs/privacy-policy/"
+LOGO=archlinux-logo
+--- selected fields
+ID=arch
+ID_LIKE=
+VERSION_ID=20261108.0.623074
+PRETTY_NAME=Arch Linux
+NAME=Arch Linux
+BUILD_ID=rolling
+--- package managers
+pacman: /usr/sbin/pacman
+apt: ABSENT
+apt-get: ABSENT
+dpkg: ABSENT
+dnf: ABSENT
+rpm: ABSENT
+zypper: ABSENT
+apk: ABSENT
+yum: ABSENT
+--- /bin/sh
+lrwxrwxrwx 1 root root 4 Sep 15 19:47 /bin/sh -> bash
+readlink -f /bin/sh -> /usr/bin/bash
+--- pid 1
+comm:    sh
+cmdline: sh /probe/p1_ident.sh 
+--- container markers
+ls: cannot access '/.dockerenv': No such file or directory
+-rw-r--r-- 1 root root 0 Nov 23 13:40 /run/.containerenv
+--- user / arch
+uid=0(root) gid=0(root) groups=0(root)
+x86_64
+### done

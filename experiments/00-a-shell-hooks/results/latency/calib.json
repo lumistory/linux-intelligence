@@ -1,0 +1,174 @@
+{
+ "bash/empty": {
+  "n": 10,
+  "median_us": 23.0,
+  "mean_us": 45.5,
+  "p99_us": 139,
+  "min_us": 18,
+  "max_us": 139,
+  "raw_us": [
+   139,
+   26,
+   88,
+   22,
+   82,
+   20,
+   18,
+   18,
+   18,
+   24
+  ]
+ },
+ "bash/devnull": {
+  "n": 10,
+  "median_us": 143.0,
+  "mean_us": 194.5,
+  "p99_us": 715,
+  "min_us": 21,
+  "max_us": 715,
+  "raw_us": [
+   278,
+   230,
+   185,
+   715,
+   225,
+   90,
+   101,
+   27,
+   73,
+   21
+  ]
+ },
+ "bash/dead": {
+  "n": 10,
+  "median_us": 26.0,
+  "mean_us": 46.8,
+  "p99_us": 211,
+  "min_us": 21,
+  "max_us": 211,
+  "raw_us": [
+   211,
+   54,
+   29,
+   26,
+   25,
+   26,
+   26,
+   24,
+   21,
+   26
+  ]
+ },
+ "bash/live": {
+  "n": 10,
+  "median_us": 237.5,
+  "mean_us": 272.3,
+  "p99_us": 537,
+  "min_us": 118,
+  "max_us": 537,
+  "raw_us": [
+   537,
+   454,
+   407,
+   213,
+   262,
+   164,
+   265,
+   156,
+   147,
+   118
+  ]
+ },
+ "zsh/empty": {
+  "n": 10,
+  "median_us": 37.0,
+  "mean_us": 84.0,
+  "p99_us": 313,
+  "min_us": 16,
+  "max_us": 313,
+  "raw_us": [
+   313,
+   36,
+   22,
+   81,
+   155,
+   143,
+   38,
+   18,
+   18,
+   16
+  ]
+ },
+ "zsh/devnull": {
+  "n": 10,
+  "median_us": 145.5,
+  "mean_us": 178.2,
+  "p99_us": 506,
+  "min_us": 30,
+  "max_us": 506,
+  "raw_us": [
+   506,
+   211,
+   184,
+   140,
+   263,
+   124,
+   150,
+   141,
+   33,
+   30
+  ]
+ },
+ "zsh/dead": {
+  "n": 10,
+  "median_us": 148.5,
+  "mean_us": 166.7,
+  "p99_us": 331,
+  "min_us": 78,
+  "max_us": 331,
+  "raw_us": [
+   331,
+   190,
+   82,
+   91,
+   245,
+   229,
+   124,
+   166,
+   131,
+   78
+  ]
+ },
+ "zsh/live": {
+  "n": 10,
+  "median_us": 146.5,
+  "mean_us": 176.0,
+  "p99_us": 414,
+  "min_us": 69,
+  "max_us": 414,
+  "raw_us": [
+   414,
+   256,
+   195,
+   214,
+   120,
+   161,
+   132,
+   126,
+   73,
+   69
+  ]
+ },
+ "fish/empty": {
+  "error": "no prompt after hook load"
+ },
+ "fish/devnull": {
+  "error": "no prompt after hook load"
+ },
+ "fish/dead": {
+  "error": "no prompt after hook load"
+ },
+ "fish/live": {
+  "error": "no prompt after hook load"
+ }
+}

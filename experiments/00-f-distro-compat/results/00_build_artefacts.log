@@ -1,0 +1,29 @@
+### build host: HOST kernel 7.2.8-zen1-2-zen
+### gcc: gcc (GCC) 16.2.1 20260810
+### rustc: rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+
+--- capcheck
+<WORKSPACE>/experiments/00-f-distro-compat/results/bin/capcheck: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=c93c7c50d6f5d782bce3caae4174bc2c65983a50, for GNU/Linux 4.4.0, not stripped
+    size: 886200 bytes
+    GLIBC version nodes required: 
+    exec on host: {
+--- hello_dyn
+<WORKSPACE>/experiments/00-f-distro-compat/results/bin/hello_dyn: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 4.4.0, BuildID[sha1]=301d4e83386629e6621b893b695c2f9712a15134, not stripped
+    size: 444616 bytes
+    GLIBC version nodes required: GLIBC_2.2.5 GLIBC_2.3 GLIBC_2.3.4 GLIBC_2.14 GLIBC_2.16 GLIBC_2.18 GLIBC_2.28 GLIBC_2.30 GLIBC_2.32 GLIBC_2.33 GLIBC_2.34 
+    exec on host: hello-rust
+--- hello_static
+<WORKSPACE>/experiments/00-f-distro-compat/results/bin/hello_static: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), static-pie linked, for GNU/Linux 4.4.0, BuildID[sha1]=d0f7e14b0ef01a29699dcc90e95dc28f24cc6f14, not stripped
+    size: 1440344 bytes
+    GLIBC version nodes required: 
+    exec on host: hello-rust
+--- hello_newer
+<WORKSPACE>/experiments/00-f-distro-compat/results/bin/hello_newer: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a43baa1f5011738bf8e22c9b575044e200941207, for GNU/Linux 4.4.0, not stripped
+    size: 16088 bytes
+    GLIBC version nodes required: GLIBC_2.2.5 GLIBC_2.4 GLIBC_2.34 GLIBC_2.43 
+    exec on host: hello-newer: xxxx
+--- dash
+<WORKSPACE>/experiments/00-f-distro-compat/results/bin/dash: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=1dae76d194dee04924e19c116af81e304a29cf55, for GNU/Linux 3.2.0, stripped
+    size: 129736 bytes
+    GLIBC version nodes required: GLIBC_2.2.5 GLIBC_2.3 GLIBC_2.3.4 GLIBC_2.4 GLIBC_2.11 GLIBC_2.14 GLIBC_2.33 GLIBC_2.34 GLIBC_2.38 
+    exec on host: dash-runs

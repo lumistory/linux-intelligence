@@ -1,0 +1,21 @@
+### image:  docker.io/library/debian:13
+### utc:    2026-11-23T13:40:18Z
+### script: src/probes/p5_glibc.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/debian:13 sh /probe/p5_glibc.sh
+### ---
+--- ldd --version | head -1
+ldd (Debian GLIBC 2.41-12+deb13u4) 2.41
+--- loader / libc locations
+lrwxrwxrwx 1 root root 44 Jun 29 21:37 /lib64/ld-linux-x86-64.so.2 -> ../lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+-rwxr-xr-x 1 root root 1995216 Jun 29 21:37 /lib/x86_64-linux-gnu/libc.so.6
+-rwxr-xr-x 1 root root 1995216 Jun 29 21:37 /usr/lib/x86_64-linux-gnu/libc.so.6
+ls: cannot access '/usr/lib/libc.so.6': No such file or directory
+ls: cannot access '/usr/lib64/libc.so.6': No such file or directory
+ls: cannot access '/lib/libc.so.6': No such file or directory
+--- maximum GLIBC_2.x version node in the libc we have
+libc=/lib/x86_64-linux-gnu/libc.so.6 -> libc=/usr/lib/x86_64-linux-gnu/libc.so.6 -> --- musl loader?
+ls: cannot access '/lib/ld-musl-x86_64.so.1': No such file or directory
+--- libstdc++ / libgcc presence (C++ runtime deps)
+ls: cannot access '/usr/lib/libstdc++.so.6': No such file or directory
+ls: cannot access '/usr/lib64/libstdc++.so.6': No such file or directory
+### done

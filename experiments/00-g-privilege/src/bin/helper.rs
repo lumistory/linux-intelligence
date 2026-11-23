@@ -81,48 +81,90 @@ fn parse_args() -> Result<Config, String> {
 }
 
 /// Framing reader: returns one line (without `\n`) or a classified framing
-/// error. Never allocates more than `DISCARD_CAP_BYTES`.
+/// error.
+///
+/// Two properties matter and both were bugs in the first version:
+///
+/// * An oversized frame must be **drained to its next newline**, otherwise its
+///   tail would be re-parsed as a fresh request — a classic stream-desync
+///   request-smuggling shape. This is a `discarding` state, not a one-shot
+///   return.
+/// * The memory footprint must be bounded by `MAX_FRAME_BYTES`, not by what the
+///   peer sends. Once a frame is known to be oversized its bytes are dropped as
+///   they arrive; only the *count* is kept, up to `DISCARD_CAP_BYTES`.
 enum Frame {
     Line(Vec<u8>),
-    TooLarge,
+    TooLarge { discarded: u64 },
     DiscardExceeded,
     Eof,
 }
 
-fn read_frame(stream: &mut UnixStream, buf: &mut Vec<u8>) -> Frame {
-    let mut chunk = [0u8; 8192];
-    loop {
-        if let Some(pos) = buf.iter().position(|b| *b == b'\n') {
-            let mut line: Vec<u8> = buf.drain(..=pos).collect();
-            line.pop();
-            if line.last() == Some(&b'\r') {
+struct FrameReader {
+    buf: Vec<u8>,
+    discarding: bool,
+    discarded: u64,
+}
+
+impl FrameReader {
+    fn new() -> Self {
+        Self {
+            buf: Vec::with_capacity(4096),
+            discarding: false,
+            discarded: 0,
+        }
+    }
+
+    fn reset_discard(&mut self) {
+        self.discarding = false;
+        self.discarded = 0;
+    }
+
+    fn read_frame(&mut self, stream: &mut UnixStream) -> Frame {
+        let mut chunk = [0u8; 8192];
+        loop {
+            if self.discarding {
+                // Drop everything up to and including the next newline.
+                if let Some(pos) = self.buf.iter().position(|b| *b == b'\n') {
+                    self.buf.drain(..=pos);
+                    let discarded = self.discarded;
+                    self.reset_discard();
+                    return Frame::TooLarge { discarded };
+                }
+                self.discarded += self.buf.len() as u64;
+                self.buf.clear();
+                if self.discarded > proto::DISCARD_CAP_BYTES as u64 {
+                    return Frame::DiscardExceeded;
+                }
+            } else if let Some(pos) = self.buf.iter().position(|b| *b == b'\n') {
+                if pos > proto::MAX_FRAME_BYTES {
+                    self.buf.drain(..=pos);
+                    let discarded = pos as u64;
+                    self.reset_discard();
+                    return Frame::TooLarge { discarded };
+                }
+                let mut line: Vec<u8> = self.buf.drain(..=pos).collect();
                 line.pop();
-            }
-            if line.len() > proto::MAX_FRAME_BYTES {
-                return Frame::TooLarge;
-            }
-            return Frame::Line(line);
-        }
-        if buf.len() > proto::DISCARD_CAP_BYTES {
-            return Frame::DiscardExceeded;
-        }
-        match stream.read(&mut chunk) {
-            Ok(0) => return Frame::Eof,
-            Ok(n) => {
-                buf.extend_from_slice(&chunk[..n]);
-                if buf.len() > proto::MAX_FRAME_BYTES {
-                    // Drop the oversized prefix but keep draining to the next
-                    // newline, so one bad frame cannot desynchronise the stream
-                    // into treating its tail as a fresh request.
-                    if let Some(pos) = buf.iter().position(|b| *b == b'\n') {
-                        buf.drain(..=pos);
-                        return Frame::TooLarge;
-                    }
-                    return Frame::TooLarge;
+                if line.last() == Some(&b'\r') {
+                    line.pop();
+                }
+                self.reset_discard();
+                return Frame::Line(line);
+            } else if self.buf.len() > proto::MAX_FRAME_BYTES {
+                // Known-oversized, no newline yet: switch to dropping mode.
+                self.discarding = true;
+                self.discarded = self.buf.len() as u64;
+                self.buf.clear();
+                if self.discarded > proto::DISCARD_CAP_BYTES as u64 {
+                    return Frame::DiscardExceeded;
                 }
             }
-            Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-            Err(_) => return Frame::Eof,
+
+            match stream.read(&mut chunk) {
+                Ok(0) => return Frame::Eof,
+                Ok(n) => self.buf.extend_from_slice(&chunk[..n]),
+                Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(_) => return Frame::Eof,
+            }
         }
     }
 }
@@ -273,10 +315,10 @@ fn handle_conn(
         }
     };
 
-    let mut buf: Vec<u8> = Vec::with_capacity(4096);
+    let mut reader = FrameReader::new();
     loop {
-        let frame = read_frame(&mut stream, &mut buf);
-        let (resp, line_bytes) = match frame {
+        let frame = reader.read_frame(&mut stream);
+        let resp = match frame {
             Frame::Eof => break,
             Frame::DiscardExceeded => {
                 let _ = audit.record(json!({
@@ -284,7 +326,8 @@ fn handle_conn(
                     "payload": {
                         "peer_pid": cred.pid, "peer_uid": cred.uid,
                         "code": proto::CODE_DISCARD_EXCEEDED,
-                        "reason": "unterminated frame exceeded discard cap"
+                        "reason": "unterminated frame exceeded discard cap",
+                        "discard_cap_bytes": proto::DISCARD_CAP_BYTES,
                     },
                     "evidence_status": "observed"
                 }));
@@ -294,14 +337,27 @@ fn handle_conn(
                 );
                 break;
             }
-            Frame::TooLarge => (
+            Frame::TooLarge { discarded } => {
+                // Every refusal is audited. This branch previously returned a
+                // response without an audit line, which the T8 completeness
+                // check caught.
+                let _ = audit.record(json!({
+                    "source": "policy", "type": "RequestRejected",
+                    "payload": {
+                        "peer_pid": cred.pid, "peer_uid": cred.uid,
+                        "request_bytes": discarded,
+                        "code": proto::CODE_FRAME_TOO_LARGE,
+                        "max_frame_bytes": proto::MAX_FRAME_BYTES,
+                        "reason": "frame exceeded MAX_FRAME_BYTES",
+                    },
+                    "evidence_status": "observed"
+                }));
                 proto::Response::err(
                     "<frame>",
                     proto::CODE_FRAME_TOO_LARGE,
                     format!("frame exceeds {} bytes", proto::MAX_FRAME_BYTES),
-                ),
-                proto::MAX_FRAME_BYTES as u64 + 1,
-            ),
+                )
+            }
             Frame::Line(line) => {
                 let n = line.len() as u64;
                 // R5: re-assert per request. Cheap (one prctl) and makes the
@@ -335,7 +391,7 @@ fn handle_conn(
                         if seq.is_err() {
                             break;
                         }
-                        (resp, n)
+                        resp
                     }
                     Err(code) => {
                         let _ = audit.record(json!({
@@ -347,13 +403,12 @@ fn handle_conn(
                             },
                             "evidence_status": "observed"
                         }));
-                        (proto::Response::err("<frame>", code, "not a JSON request object"), n)
+                        proto::Response::err("<frame>", code, "not a JSON request object")
                     }
                 }
             }
         };
         served.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        let _ = line_bytes;
         if write_response(&mut stream, &resp).is_err() {
             break;
         }

@@ -1,0 +1,16 @@
+## inotify event ABI has no pid field
+grep -c pid /usr/include/linux/inotify.h  -> 0
+# struct inotify_event = { s32 wd; u32 mask; u32 cookie; u32 len; char name[]; }
+
+## fanotify is the API that does carry pid, but it needs privilege
+/tmp/li-phase0-0e-scratch/fanotify_probe.c: 在函数‘main’中:
+/tmp/li-phase0-0e-scratch/fanotify_probe.c:8:56: error: ‘O_LARGEFILE’未声明(在此函数内第一次使用)
+    8 |     int fd = fanotify_init(FAN_CLASS_NOTIF, O_RDONLY | O_LARGEFILE);
+      |                                                        ^~~~~~~~~~~
+/tmp/li-phase0-0e-scratch/fanotify_probe.c:8:56: note: 每个未声明的标识符在其出现的函数内只报告一次
+compile failed
+
+## conclusion: unprivileged collection cannot get a pid/writer identity.
+## PID attribution requires eBPF (with CAP_BPF/CAP_PERFMON) or the audit
+## subsystem (with CAP_AUDIT_WRITE + audit rules installed by root).
+## Neither is implemented in Phase 0; both are out of scope for 0-E.

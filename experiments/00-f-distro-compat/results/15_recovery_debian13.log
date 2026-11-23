@@ -1,0 +1,44 @@
+### image:  docker.io/library/debian:13
+### utc:    2026-11-23T13:40:18Z
+### script: src/probes/p6_recovery.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/debian:13 sh /probe/p6_recovery.sh
+### ---
+--- tool presence (PATH then fixed bin dirs)
+btrfs: ABSENT
+mkfs.btrfs: ABSENT
+snapper: ABSENT
+lvm: ABSENT
+lvm2: ABSENT
+pvcreate: ABSENT
+vgcreate: ABSENT
+vgs: ABSENT
+lvs: ABSENT
+git: ABSENT
+rsync: ABSENT
+tar: /usr/bin/tar
+zfs: ABSENT
+zpool: ABSENT
+xfs_info: ABSENT
+tune2fs: ABSENT
+--- filesystems the kernel offers (shared with host)
+nodev	sysfs nodev	tmpfs nodev	proc nodev	cgroup nodev	cgroup2 nodev	devtmpfs nodev	binfmt_misc nodev	configfs nodev	debugfs nodev	tracefs nodev	securityfs nodev	sockfs nodev	bpf nodev	pipefs nodev	ramfs nodev	hugetlbfs nodev	devpts 	ext3 	ext2 	ext4 nodev	autofs 	fuseblk nodev	fuse nodev	fusectl nodev	virtiofs nodev	efivarfs nodev	mqueue nodev	binder 	btrfs nodev	pstore 	vfat nodev	overlay 
+--- snapshot-capable filesystem actually mounted here?
+/dev/nvme1n1p3 on /probe-bin type btrfs (ro,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvolid=3296,subvol=/@home)
+/dev/nvme1n1p3 on /probe type btrfs (ro,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvolid=3296,subvol=/@home)
+--- df
+Filesystem      Size  Used Avail Use% Mounted on
+overlay         932G  716G  210G  78% /
+/dev/nvme1n1p3  932G  716G  210G  78% /probe
+tmpfs            64M     0   64M   0% /dev
+tmpfs           1.6G  1.2M  1.6G   1% /etc/hosts
+--- installed package count (metadata only, no network)
+dpkg -l ii: 78
+--- can we even SEE a block device?
+ls: cannot access '/dev/sd*': No such file or directory
+ls: cannot access '/dev/nvme*': No such file or directory
+ls: cannot access '/dev/vd*': No such file or directory
+--- /sys/block
+nvme0n1
+nvme1n1
+zram0
+### done

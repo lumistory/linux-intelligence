@@ -1,0 +1,34 @@
+# Two distinct processes write to two files in the same watched directory.
+# Each writer prints its own pid; the event log has no pid at all.
+# Writers are separate /bin/sh processes (not subshells of this script),
+# so the pids printed below are genuinely different processes.
+
+## events
+# watching 1 dir(s) under /tmp/li-phase0-0e-scratch/attrib
+# mask=0xfce recursive=false auto_add=false
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+43 1 /tmp/li-phase0-0e-scratch/attrib 0x00000100 CREATE 0 0 from-a.txt
+11742 1 /tmp/li-phase0-0e-scratch/attrib 0x00000002 MODIFY 0 0 from-a.txt
+12933 1 /tmp/li-phase0-0e-scratch/attrib 0x00000008 CLOSE_WRITE 0 0 from-a.txt
+16224 1 /tmp/li-phase0-0e-scratch/attrib 0x00000100 CREATE 0 0 from-b.txt
+17215 1 /tmp/li-phase0-0e-scratch/attrib 0x00000002 MODIFY 0 0 from-b.txt
+18199 1 /tmp/li-phase0-0e-scratch/attrib 0x00000008 CLOSE_WRITE 0 0 from-b.txt
+302519029 1 /tmp/li-phase0-0e-scratch/attrib 0x00000100 CREATE 0 0 shared.txt
+302533053 1 /tmp/li-phase0-0e-scratch/attrib 0x00000002 MODIFY 0 0 shared.txt
+302534499 1 /tmp/li-phase0-0e-scratch/attrib 0x00000008 CLOSE_WRITE 0 0 shared.txt
+403502257 1 /tmp/li-phase0-0e-scratch/attrib 0x00000002 MODIFY 0 0 shared.txt
+403514059 1 /tmp/li-phase0-0e-scratch/attrib 0x00000008 CLOSE_WRITE 0 0 shared.txt
+403515226 1 /tmp/li-phase0-0e-scratch/attrib 0x00000002 MODIFY 0 0 shared.txt
+403516199 1 /tmp/li-phase0-0e-scratch/attrib 0x00000008 CLOSE_WRITE 0 0 shared.txt
+504669743 1 /tmp/li-phase0-0e-scratch/attrib 0x00000002 MODIFY 0 0 shared.txt
+504688732 1 /tmp/li-phase0-0e-scratch/attrib 0x00000008 CLOSE_WRITE 0 0 shared.txt
+504690017 1 /tmp/li-phase0-0e-scratch/attrib 0x00000002 MODIFY 0 0 shared.txt
+504691007 1 /tmp/li-phase0-0e-scratch/attrib 0x00000008 CLOSE_WRITE 0 0 shared.txt
+# total_events 17
+
+## fields present in every event: wd, mask, cookie, name. No pid, no uid.
+## stat check: the pids above are distinct processes writing distinct files
+from-a.txt size=7
+from-b.txt size=7
+# shared.txt events are indistinguishable by writer; only the count and
+# the interleaving are visible.

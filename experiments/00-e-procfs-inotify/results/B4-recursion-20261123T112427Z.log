@@ -1,0 +1,43 @@
+## Case 1: single non-recursive watch, events in a new subdirectory
+# expected: CREATE for newdir and top4/top5, NOTHING for newdir/file*.txt
+# watching 1 dir(s) under /tmp/li-phase0-0e-scratch/rec-noauto
+# mask=0xfce recursive=false auto_add=false
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+61 1 /tmp/li-phase0-0e-scratch/rec-noauto 0x40000100 CREATE+ISDIR 0 1 newdir
+402963839 1 /tmp/li-phase0-0e-scratch/rec-noauto 0x00000100 CREATE 0 0 top4.txt
+402982917 1 /tmp/li-phase0-0e-scratch/rec-noauto 0x00000002 MODIFY 0 0 top4.txt
+402985315 1 /tmp/li-phase0-0e-scratch/rec-noauto 0x00000008 CLOSE_WRITE 0 0 top4.txt
+402986953 1 /tmp/li-phase0-0e-scratch/rec-noauto 0x00000100 CREATE 0 0 top5.txt
+402988530 1 /tmp/li-phase0-0e-scratch/rec-noauto 0x00000002 MODIFY 0 0 top5.txt
+402990076 1 /tmp/li-phase0-0e-scratch/rec-noauto 0x00000008 CLOSE_WRITE 0 0 top5.txt
+# total_events 7
+
+case1_events_in_newdir 0
+case1_events_at_top    6
+
+## Case 2: recursive + auto-add on new directories
+# expected: preexisting-target.txt seen; immediate.txt may be missed (gap)
+# watching 3 dir(s) under /tmp/li-phase0-0e-scratch/rec-auto
+# mask=0xfce recursive=true auto_add=true
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+64 3 /tmp/li-phase0-0e-scratch/rec-auto/existing/inner 0x00000100 CREATE 0 0 preexisting-target.txt
+16483 3 /tmp/li-phase0-0e-scratch/rec-auto/existing/inner 0x00000002 MODIFY 0 0 preexisting-target.txt
+19030 3 /tmp/li-phase0-0e-scratch/rec-auto/existing/inner 0x00000008 CLOSE_WRITE 0 0 preexisting-target.txt
+650994 1 /tmp/li-phase0-0e-scratch/rec-auto 0x40000100 CREATE+ISDIR 0 1 brand-new
+# auto-added watch wd=4 on /tmp/li-phase0-0e-scratch/rec-auto/brand-new
+502018462 4 /tmp/li-phase0-0e-scratch/rec-auto/brand-new 0x00000100 CREATE 0 0 after-gap.txt
+502032865 4 /tmp/li-phase0-0e-scratch/rec-auto/brand-new 0x00000002 MODIFY 0 0 after-gap.txt
+502035335 4 /tmp/li-phase0-0e-scratch/rec-auto/brand-new 0x00000008 CLOSE_WRITE 0 0 after-gap.txt
+# total_events 7
+
+case2_preexisting_seen 3
+case2_immediate_seen   0
+case2_after_gap_seen   3
+root                     /tmp/li-phase0-0e-scratch/watchcount
+directories              60
+files                    0
+bytes                    0
+max_depth_components     6
+watches_needed_recursive 60
+max_user_watches         524288
+# 10 top dirs x 5 subdirs = 50 subdirs + 10 parents = 60 dirs, so 61 watches

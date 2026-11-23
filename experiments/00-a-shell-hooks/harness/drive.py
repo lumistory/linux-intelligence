@@ -38,7 +38,10 @@ def shell_argv(shell):
     if shell == "zsh":
         return [os.environ.get("LI_ZSH", DEFAULT_ZSH), "-f", "-i"]
     if shell == "fish":
-        return ["/usr/bin/fish", "--no-config", "-i"]
+        # fish ignores $PS1 (prompt lives in fish_prompt) and, under a real
+        # TERM, blocks on DA1/OSC11 capability queries. Both solved this way.
+        return ["/usr/bin/fish", "--no-config", "-i", "-C",
+                "function fish_prompt; printf '%s ' " + PROMPT + "; end"]
     raise SystemExit("unknown shell %r" % shell)
 
 
@@ -60,6 +63,12 @@ class Driver:
         pid, fd = pty.fork()
         if pid == 0:
             try:
+                # CPython ignores SIGPIPE (and SIGXFSZ); ignoring is inherited
+                # across exec, so without this reset the shell would start with
+                # SIGPIPE already ignored and the "dead sink" tests would be
+                # measuring the harness instead of the shell.
+                signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+                signal.signal(signal.SIGXFSZ, signal.SIG_DFL)
                 # os.pipe() hands out the two lowest free fds and marks them
                 # close-on-exec (PEP 446). Two traps:
                 #  a) if the write end already *is* 3, dup2(3,3) is a no-op and
@@ -76,7 +85,7 @@ class Driver:
                 os.close(tmp_r)
                 env = dict(os.environ)
                 env.update({
-                    "TERM": "xterm-256color",
+                    "TERM": "dumb" if self.shell == "fish" else "xterm-256color",
                     "PS1": PROMPT + " ",
                     "PS2": PROMPT2 + " ",
                     "PROMPT": PROMPT + " ",

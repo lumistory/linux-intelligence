@@ -1,0 +1,62 @@
+### image:  docker.io/library/fedora:42
+### utc:    2026-11-23T13:40:21Z
+### script: src/probes/p4_capability.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/fedora:42 sh /probe/p4_capability.sh
+### ---
+--- capcheck: static binary, real syscalls
+{
+  "inotify": {
+    "init": "ok",
+    "add_watch_tmp": "ok",
+    "watch_descriptor": 1
+  },
+  "unix_socket": {
+    "socket": "ok",
+    "bind_tmp": "ok",
+    "listen": "ok",
+    "connect": "ok",
+    "path": "/tmp/li-0f-cap-7.sock"
+  },
+  "procfs": {
+    "opendir_proc": "ok",
+    "numeric_entries": 2,
+    "read_proc_1_comm": "ok",
+    "pid1_comm": "sh"
+  },
+  "syscalls": {
+    "netlink_socket": "ok",
+    "pipe2": "ok",
+    "fork_waitpid": "ok",
+    "uid": 0,
+    "euid": 0
+  }
+}
+capcheck exit: 0
+--- our own seccomp / capability status
+CapPrm:	00000000800405fb
+CapEff:	00000000800405fb
+CapBnd:	00000000800405fb
+NoNewPrivs:	0
+Seccomp:	2
+--- ls /proc (plain)
+1
+10
+11
+acpi
+asound
+ls /proc exit: 0
+--- sockets / tools available for a second opinion
+socat: ABSENT
+nc: ABSENT
+ncat: ABSENT
+python3: ABSENT
+perl: ABSENT
+--- can we write to /tmp at all?
+tmp_writable = yes
+--- /proc/sys is it writable from the container?
+sysctl_writable = no
+--- mounted filesystems (is /proc a real procfs?)
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /dev tmpfs rw,nosuid,size=65536k,mode=755,uid=1000,gid=1000,inode64,huge=advise 0 0
+sysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0
+### done

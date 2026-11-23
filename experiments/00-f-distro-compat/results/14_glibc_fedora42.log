@@ -1,0 +1,21 @@
+### image:  docker.io/library/fedora:42
+### utc:    2026-11-23T13:40:21Z
+### script: src/probes/p5_glibc.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/fedora:42 sh /probe/p5_glibc.sh
+### ---
+--- ldd --version | head -1
+ldd (GNU libc) 2.41
+--- loader / libc locations
+-rwxr-xr-x 1 root root 975112 Jan 23  2026 /lib64/ld-linux-x86-64.so.2
+ls: cannot access '/lib/x86_64-linux-gnu/libc.so.6': No such file or directory
+ls: cannot access '/usr/lib/x86_64-linux-gnu/libc.so.6': No such file or directory
+ls: cannot access '/usr/lib/libc.so.6': No such file or directory
+-rwxr-xr-x 1 root root 2443424 Jan 23  2026 /usr/lib64/libc.so.6
+ls: cannot access '/lib/libc.so.6': No such file or directory
+--- maximum GLIBC_2.x version node in the libc we have
+libc=/usr/lib64/libc.so.6 -> --- musl loader?
+ls: cannot access '/lib/ld-musl-x86_64.so.1': No such file or directory
+--- libstdc++ / libgcc presence (C++ runtime deps)
+ls: cannot access '/usr/lib/libstdc++.so.6': No such file or directory
+lrwxrwxrwx 1 root root 19 Jan 23  2026 /usr/lib64/libstdc++.so.6 -> libstdc++.so.6.0.34
+### done

@@ -24,6 +24,13 @@ pub struct ShellSpec {
     pub env: Vec<(String, String)>,
     /// Token whose appearance proves the shell executed our command.
     pub sentinel: String,
+    /// Shell-specific arithmetic expression that prints `5`.
+    ///
+    /// POSIX `$((2 + 3))` is not fish syntax, and `[$((...))]` is additionally
+    /// a glob pattern in zsh, so this must be per shell. Measured, not guessed:
+    /// `echo [$((2 + 3))]` in zsh produced `zsh: no matches found: [5]`, and in
+    /// fish `fish: command substitutions not allowed in command position`.
+    pub arith_cmd: &'static str,
 }
 
 pub fn shells(zsh_path: &str, home: &str, term: &str) -> Vec<ShellSpec> {
@@ -52,13 +59,30 @@ pub fn shells(zsh_path: &str, home: &str, term: &str) -> Vec<ShellSpec> {
             args: vec!["--norc".into(), "--noprofile".into(), "-i".into()],
             env: base(&[("PS1", "LI-BASH> "), ("PS2", "LI-BASH+ "), ("PROMPT_COMMAND", "")]),
             sentinel: "LI_SENTINEL_BASH".into(),
+            arith_cmd: "echo $((2 + 3))",
         },
         ShellSpec {
             id: "zsh",
             path: zsh_path.into(),
-            args: vec!["-f".into(), "-i".into()],
-            env: base(&[("PS1", "LI-ZSH> "), ("PS2", "LI-ZSH+ "), ("ZLE_RPROMPT_INDENT", "0")]),
+            // `-d` (NO_GLOBAL_RCS) + ZDOTDIR pointing at an isolated directory:
+            // the shim .zshenv below is the *only* startup file read. `-f`
+            // cannot be used because it would also skip the shim, and the local
+            // zsh copy cannot find its own modules without it.
+            args: vec!["-d".into(), "-i".into()],
+            env: base(&[
+                ("PS1", "LI-ZSH> "),
+                ("PS2", "LI-ZSH+ "),
+                ("ZLE_RPROMPT_INDENT", "0"),
+                // zsh looks for zle.so under /usr/lib/zsh/<ver>/zsh, which does
+                // not exist for this unpacked copy. Measured failure:
+                // "zsh: failed to load module `zsh/zle': /usr/lib/zsh/5.9.2/zsh/zle.so:
+                //  cannot open shared object file". Without zle, ZLE is dead and
+                // the shell's line editing is unusable.
+                ("ZDOTDIR", ""), // filled in by run_shell
+                ("LI_ZSH_MODULE_ROOT", ""), // filled in by run_shell
+            ]),
             sentinel: "LI_SENTINEL_ZSH".into(),
+            arith_cmd: "echo $((2 + 3))",
         },
         ShellSpec {
             id: "fish",
@@ -68,8 +92,57 @@ pub fn shells(zsh_path: &str, home: &str, term: &str) -> Vec<ShellSpec> {
             // greeting can be suppressed from the environment.
             env: base(&[("fish_greeting", "")]),
             sentinel: "LI_SENTINEL_FISH".into(),
+            arith_cmd: "math 2 + 3",
         },
     ]
+}
+
+/// Directory that contains the `zsh/` subdirectory of loadable modules, derived
+/// from the zsh binary's own location (`<prefix>/usr/bin/zsh` ->
+/// `<prefix>/usr/lib/zsh/<ver>`).
+///
+/// This is how the unpacked local zsh copy is made usable without installing it
+/// system-wide: `module_path` is pointed at the copy instead of `/usr/lib`.
+pub fn zsh_module_root(zsh_path: &str) -> String {
+    let p = std::path::Path::new(zsh_path);
+    // <prefix>/usr/bin/zsh -> <prefix>/usr/lib/zsh
+    let prefix = p
+        .parent()
+        .and_then(|d| d.parent())
+        .and_then(|d| d.parent());
+    let lib = match prefix {
+        Some(prefix) => prefix.join("usr/lib/zsh"),
+        None => std::path::PathBuf::from("/usr/lib/zsh"),
+    };
+    // Pick the highest version directory present, if any.
+    let mut versions: Vec<std::path::PathBuf> = std::fs::read_dir(&lib)
+        .map(|rd| {
+            rd.flatten()
+                .map(|e| e.path())
+                .filter(|p| p.join("zsh").is_dir())
+                .collect()
+        })
+        .unwrap_or_default();
+    versions.sort();
+    versions.pop().map(|v| v.to_string_lossy().into_owned()).unwrap_or_else(|| lib.to_string_lossy().into_owned())
+}
+
+/// Write the isolated zsh startup shim. Returns the ZDOTDIR to use.
+///
+/// The shim exists only to set `module_path`/`fpath`; it deliberately does not
+/// define a prompt or any aliases, so the measurement stays about the PTY
+/// mechanism rather than about zsh configuration.
+pub fn write_zsh_shim(workdir: &std::path::Path, module_root: &str) -> Result<std::path::PathBuf> {
+    let dir = workdir.join("zdotdir");
+    std::fs::create_dir_all(&dir).map_err(|e| crate::error::Error::io(&dir, e))?;
+    let body = format!(
+        "# written by li-pty-proto: isolated zsh startup, no user config\n\
+         module_path=({module_root} $module_path)\n\
+         fpath=({module_root} $fpath)\n"
+    );
+    let env = dir.join(".zshenv");
+    std::fs::write(&env, body).map_err(|e| crate::error::Error::io(&env, e))?;
+    Ok(dir)
 }
 
 pub struct StepReport {
@@ -126,6 +199,25 @@ impl<'a> Recorder<'a> {
         self.mark = self.s.mark();
     }
 
+    /// Put the shell back into a known-empty editing state.
+    ///
+    /// Necessary because a line the shell rejects stays in its editing buffer:
+    /// measured with fish, one bad command made every later keystroke append to
+    /// the same rejected line, which silently poisoned all following steps.
+    /// ^C aborts the line, ^U kills it; both are harmless when already idle.
+    fn resync(&mut self) {
+        let _ = self.s.write_raw(&[0x03]);
+        let _ = self.s.pump(120);
+        let _ = self.s.write_raw(&[0x15]);
+        let _ = self.s.pump(120);
+        let _ = self.s.wait_quiet(120, 800);
+        self.discard_pending();
+    }
+
+    fn discard_pending(&mut self) {
+        self.mark = self.s.mark();
+    }
+
     fn finish(self) -> Vec<StepReport> {
         self.steps
     }
@@ -155,10 +247,25 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
         v.extend(spec.args.iter().cloned());
         v
     };
+    // zsh only: provide an isolated ZDOTDIR whose .zshenv fixes module_path.
+    // The empty placeholders in `spec.env` are resolved here, once, so the
+    // ShellSpec stays a pure description.
+    let mut env: Vec<(String, String)> = spec.env.clone();
+    if spec.id == "zsh" {
+        let root = zsh_module_root(&spec.path);
+        let dir = write_zsh_shim(workdir, &root)?;
+        for (k, v) in env.iter_mut() {
+            if k == "ZDOTDIR" {
+                *v = dir.to_string_lossy().into_owned();
+            } else if k == "LI_ZSH_MODULE_ROOT" {
+                *v = root.clone();
+            }
+        }
+    }
     let mut s = Session::spawn(SpawnSpec {
         name: spec.id,
         argv: &argv,
-        env: &spec.env,
+        env: &env,
         winsize,
         cwd: workdir,
     })?;
@@ -189,6 +296,7 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     );
 
     // ---- 2. sentinel command executes ------------------------------
+    r.resync();
     let _ = r.s.send_line(&format!("echo {sentinel}"));
     let (out, ms) = timed(|| r.s.read_until_any(&sentinel, Duration::from_secs(8)));
     let (_, warm) = timed(|| r.s.wait_quiet(250, 3_000));
@@ -210,14 +318,16 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     );
 
     // ---- 3. pipeline + arithmetic ---------------------------------
+    r.resync();
     let _ = r.s.send_line("echo alpha beta | tr ' ' '-'");
     let (_, ms1) = timed(|| r.s.read_until_any("alpha-beta", Duration::from_secs(8)));
-    let _ = r.s.send_line("echo [$((2 + 3))]");
-    let (_, ms2) = timed(|| r.s.read_until_any("[5]", Duration::from_secs(8)));
+    let _ = r.s.send_line(spec.arith_cmd);
+    // Both variants print `5`; wait for the bare digit, then confirm on a line.
+    let (_, ms2) = timed(|| r.s.read_until_any("5", Duration::from_secs(8)));
     let (_, warm) = timed(|| r.s.wait_quiet(250, 3_000));
     let lines3 = printed_lines(&r.s.since(r.mark));
     let pipe_ok = lines3.iter().any(|l| l == "alpha-beta");
-    let arith_ok = lines3.iter().any(|l| l == "[5]");
+    let arith_ok = lines3.iter().any(|l| l == "5");
     r.step(
         "03_pipeline_and_arithmetic",
         pipe_ok && arith_ok,
@@ -225,11 +335,14 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
         json!({
             "pipeline_ok": pipe_ok,
             "arithmetic_ok": arith_ok,
-            "expressions": ["echo alpha beta | tr ' ' '-'", "echo [$((2 + 3))]"],
+            "pipeline": "echo alpha beta | tr ' ' '-'",
+            "arithmetic_cmd": spec.arith_cmd,
+            "why_per_shell": "fish has no $((...)); zsh treats [5] as a glob pattern",
         }),
     );
 
     // ---- 4. initial geometry --------------------------------------
+    r.resync();
     let _ = r.s.send_line("stty size");
     let (size1, ms) = timed(|| r.s.read_until_any("40 120", Duration::from_secs(8)));
     let (_, warm) = timed(|| r.s.wait_quiet(250, 3_000));
@@ -271,6 +384,7 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     std::thread::sleep(Duration::from_millis(200));
 
     // ---- 6. ^C interrupts, shell stays alive -----------------------
+    r.resync();
     let _ = r.s.send_line("sleep 30");
     std::thread::sleep(Duration::from_millis(500));
     let int_injected = r.s.write_raw(&[0x03]).is_ok();
@@ -295,7 +409,9 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     );
 
     // ---- 7. full-screen: vi ---------------------------------------
-    let _ = r.s.send_line("vi /tmp/li-phase0-vi.txt");
+    r.resync();
+    let vi_path = format!("{}/vi-target.txt", workdir.display());
+    let _ = r.s.send_line(&format!("vi -n {vi_path}"));
     std::thread::sleep(Duration::from_millis(900));
     let _ = r.s.pump(400);
     let vi_text = r.s.since(r.mark);
@@ -327,7 +443,8 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     r.step("07_fullscreen_vi", alive7, ms + warm, d7);
 
     // ---- 8. full-screen: less -------------------------------------
-    let _ = r.s.send_line("less /etc/passwd");
+    r.resync();
+    let _ = r.s.send_line("less -R /etc/passwd");
     std::thread::sleep(Duration::from_millis(900));
     let _ = r.s.pump(400);
     let less_text = r.s.since(r.mark);
@@ -350,6 +467,7 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
     r.step("08_fullscreen_less", alive8, ms + warm, d8);
 
     // ---- 9. control case: top -b -n1 ------------------------------
+    r.resync();
     //
     // Measured directly on this host: `top -b -n1 | head -5` truncates the
     // stream before the column-header row, so the header marker never appears.

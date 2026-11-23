@@ -1,0 +1,10 @@
+
+⟦LI-P⟧ 
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ source ⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish⟦LI-P⟧ source <WORKSPACE>/experiments/00-a-shell-hooks/adapters/fish.fish
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ echo ⟦LI-P⟧ echo plain-command⟦LI-P⟧ echo plain-command
+plain-command
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ false
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ echo ⟦LI-P⟧ echo (math ⟦LI-P⟧ echo (math 6 ⟦LI-P⟧ echo (math 6 \* ⟦LI-P⟧ echo (math 6 \* 7)
+42
+⏎                                                                               ⏎ ⟦LI-P⟧ ⟦LI-P⟧ exit
+

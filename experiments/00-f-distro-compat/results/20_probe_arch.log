@@ -1,0 +1,60 @@
+### image: docker.io/library/archlinux:latest
+### utc:   2026-11-23T13:40:22Z
+### ---
+{
+  "probe_schema": "li-cap/1",
+  "probe_shell": "/usr/bin/bash",
+  "probe_under_bash": true,
+  "host": {
+    "uname_r": "7.2.8-zen1-2-zen",
+    "uname_m": "x86_64",
+    "is_container": true,
+    "cgroup_v2": true
+  },
+  "os_release": {
+    "file_present": true,
+    "ID": "arch",
+    "ID_LIKE": "",
+    "VERSION_ID": "20261108.0.623074",
+    "PRETTY_NAME": "Arch Linux",
+    "pkg_manager": "pacman"
+  },
+  "init": {
+    "pid1_comm": "sh",
+    "pid1_is_systemd": false,
+    "systemctl_present": true,
+    "run_systemd_dir": false,
+    "systemctl_is_system_running": "offline"
+  },
+  "shells": {
+    "bin_sh_target": "/usr/bin/bash",
+    "bin_sh_impl": "bash",
+    "bash_version": "5.3.20(1)-release",
+    "dash_present": false,
+    "zsh_present": false,
+    "fish_present": false
+  },
+  "libc": {
+    "ldd_first_line": "ldd (GNU libc) 2.44",
+    "glibc_version": "2.44",
+    "musl_ldso_present": false
+  },
+  "procfs": {
+    "self_stat_fields": 52,
+    "pid_max": 4194304,
+    "ns_last_pid": 50,
+    "visible_numeric_proc_entries": 4
+  },
+  "inotify_limits": {
+    "max_user_watches": 524288,
+    "max_user_instances": 1024,
+    "max_queued_events": 16384
+  },
+  "recovery_tools": {
+    "btrfs": "",
+    "snapper": "",
+    "lvm": "",
+    "git": ""
+  }
+}
+### done

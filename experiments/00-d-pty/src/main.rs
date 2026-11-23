@@ -9,6 +9,7 @@
 
 mod error;
 mod pty;
+mod responder;
 mod scene;
 mod util;
 

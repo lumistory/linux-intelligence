@@ -1,0 +1,45 @@
+### Field-by-field comparison of probe.sh output across 4 containers + host
+
+FIELD                              arch           ubuntu2404     debian13       fedora42      
+os_release.ID                      arch           ubuntu         debian         fedora        
+os_release.ID_LIKE                 -              debian         -              -             
+os_release.VERSION_ID              20261108.0.623074 24.04          13             42            
+os_release.pkg_manager             pacman         apt            apt            dnf           
+init.pid1_comm                     sh             sh             sh             sh            
+init.pid1_is_systemd               -              -              -              -             
+init.systemctl_present             true           -              -              -             
+shells.bin_sh_impl                 bash           dash           dash           bash          
+shells.bash_version                5.3.20(1)-release 5.2.21(1)-release 5.2.37(1)-release 5.2.37(1)-release
+probe_under_bash                   true           -              -              true          
+libc.glibc_version                 2.44           2.39           2.41           2.41          
+procfs.self_stat_fields            52             52             52             52            
+procfs.pid_max                     4194304        -              -              4194304       
+inotify_limits.max_user_watches    524288         -              -              524288        
+inotify_limits.max_user_instances  1024           -              -              1024          
+inotify_limits.max_queued_events   16384          -              -              16384         
+recovery_tools.btrfs               -              -              -              -             
+recovery_tools.snapper             -              -              -              -             
+recovery_tools.git                 -              -              -              -             
+
+### which fields differ between the four containers?
+DIFFERS   os_release.ID                    arch=arch ubuntu=ubuntu debian=debian fedora=fedora
+DIFFERS   os_release.VERSION_ID            arch=20261108.0.623074 ubuntu=24.04 debian=13 fedora=42
+DIFFERS   os_release.pkg_manager           arch=pacman ubuntu=apt debian=apt fedora=dnf
+SAME      init.pid1_comm                   = sh
+DIFFERS   init.systemctl_present           arch=true ubuntu=- debian=- fedora=-
+DIFFERS   shells.bin_sh_impl               arch=bash ubuntu=dash debian=dash fedora=bash
+DIFFERS   shells.bash_version              arch=5.3.20(1)-release ubuntu=5.2.21(1)-release debian=5.2.37(1)-release fedora=5.2.37(1)-release
+DIFFERS   libc.glibc_version               arch=2.44 ubuntu=2.39 debian=2.41 fedora=2.41
+SAME      procfs.self_stat_fields          = 52
+DIFFERS   procfs.pid_max                   arch=4194304 ubuntu=- debian=- fedora=4194304
+DIFFERS   inotify_limits.max_user_watches  arch=524288 ubuntu=- debian=- fedora=524288
+
+### host vs arch container: kernel-derived fields must be identical
+SAME      host.uname_r                     host=7.2.8-zen1-2-zen container-arch=7.2.8-zen1-2-zen
+SAME      procfs.self_stat_fields          host=52 container-arch=52
+SAME      procfs.pid_max                   host=4194304 container-arch=4194304
+SAME      inotify_limits.max_user_watches  host=524288 container-arch=524288
+SAME      inotify_limits.max_user_instances host=1024 container-arch=1024
+SAME      inotify_limits.max_queued_events host=16384 container-arch=16384
+CONTRAST  init.pid1_comm                   host=systemd container=sh
+CONTRAST  init.pid1_is_systemd             host=true container=-

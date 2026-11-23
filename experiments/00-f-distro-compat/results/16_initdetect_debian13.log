@@ -1,0 +1,22 @@
+### image:  docker.io/library/debian:13
+### utc:    2026-11-23T13:40:19Z
+### script: src/probes/p7_init.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/debian:13 sh /probe/p7_init.sh
+### ---
+=== METHOD A (WRONG): does the systemctl binary exist?
+systemctl: ABSENT (binary test happens to agree with reality here)
+=== METHOD B (WRONG): ask systemctl about system state
+skipped (no systemctl binary)
+=== METHOD C (HEURISTIC): does /run/systemd/system exist?
+ls: cannot access '/run/systemd/system': No such file or directory
+=== METHOD D (CORRECT): is PID 1 systemd?
+pid1 comm:    sh
+pid1 exe:     /usr/bin/dash
+pid1 cmdline: sh /probe/p7_init.sh 
+=== VERDICT
+systemd_running = false (PID 1 is NOT systemd; the binary lies)
+=== unit directories exist even without a running systemd?
+/etc/systemd/system
+/lib/systemd/system
+/usr/lib/systemd/system
+### done

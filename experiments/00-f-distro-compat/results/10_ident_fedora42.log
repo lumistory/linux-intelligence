@@ -1,0 +1,59 @@
+### image:  docker.io/library/fedora:42
+### utc:    2026-11-23T13:40:19Z
+### script: src/probes/p1_ident.sh
+### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/fedora:42 sh /probe/p1_ident.sh
+### ---
+--- /etc/os-release (raw)
+NAME="Fedora Linux"
+VERSION="42 (Container Image)"
+RELEASE_TYPE=stable
+ID=fedora
+VERSION_ID=42
+VERSION_CODENAME=""
+PLATFORM_ID="platform:f42"
+PRETTY_NAME="Fedora Linux 42 (Container Image)"
+ANSI_COLOR="0;38;2;60;110;180"
+LOGO=fedora-logo-icon
+CPE_NAME="cpe:/o:fedoraproject:fedora:42"
+DEFAULT_HOSTNAME="fedora"
+HOME_URL="https://fedoraproject.org/"
+DOCUMENTATION_URL="https://docs.fedoraproject.org/en-US/fedora/f42/"
+SUPPORT_URL="https://ask.fedoraproject.org/"
+BUG_REPORT_URL="https://bugzilla.redhat.com/"
+REDHAT_BUGZILLA_PRODUCT="Fedora"
+REDHAT_BUGZILLA_PRODUCT_VERSION=42
+REDHAT_SUPPORT_PRODUCT="Fedora"
+REDHAT_SUPPORT_PRODUCT_VERSION=42
+SUPPORT_END=2026-05-13
+VARIANT="Container Image"
+VARIANT_ID=container
+--- selected fields
+ID=fedora
+ID_LIKE=
+VERSION_ID=42
+PRETTY_NAME=Fedora Linux 42 (Container Image)
+NAME=Fedora Linux
+BUILD_ID=
+--- package managers
+pacman: ABSENT
+apt: ABSENT
+apt-get: ABSENT
+dpkg: ABSENT
+dnf: /usr/sbin/dnf
+rpm: /usr/sbin/rpm
+zypper: ABSENT
+apk: ABSENT
+yum: /usr/sbin/yum
+--- /bin/sh
+lrwxrwxrwx 1 root root 4 Nov  8  2024 /bin/sh -> bash
+readlink -f /bin/sh -> /usr/bin/bash
+--- pid 1
+comm:    sh
+cmdline: sh /probe/p1_ident.sh 
+--- container markers
+ls: cannot access '/.dockerenv': No such file or directory
+-rw-r--r-- 1 root root 0 Nov 23 13:40 /run/.containerenv
+--- user / arch
+uid=0(root) gid=0(root) groups=0(root)
+x86_64
+### done

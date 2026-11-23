@@ -1,0 +1,24 @@
+# watch a directory owned by another uid (root, mode 0700)
+FATAL: inotify_add_watch failed: errno 13 (Permission denied (os error 13))
+exit_code=1
+
+# watch another root-only path
+FATAL: inotify_add_watch failed: errno 13 (Permission denied (os error 13))
+exit_code=1
+
+# watch a nonexistent path (for contrast: ENOENT, not EACCES)
+FATAL: inotify_add_watch failed: errno 2 (No such file or directory (os error 2))
+exit_code=1
+
+# watch a regular file (no IN_ONLYDIR in our mask: this is ALLOWED,
+# and is the documented way to watch a single file's IN_MODIFY)
+# watching 1 dir(s) under /tmp/li-phase0-0e-regular-file
+# mask=0xfce recursive=false auto_add=false
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+48 1 /tmp/li-phase0-0e-regular-file 0x00000002 MODIFY 0 0 -
+11722 1 /tmp/li-phase0-0e-regular-file 0x00000008 CLOSE_WRITE 0 0 -
+# total_events 2
+exit_code=0
+
+# for contrast, the same path with IN_ONLYDIR would fail ENOTDIR; our
+# default mask does not set it, so the success above is expected

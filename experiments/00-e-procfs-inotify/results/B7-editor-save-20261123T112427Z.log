@@ -1,0 +1,58 @@
+## vim ex-mode :wq (writes in place by default: backupcopy=auto)
+## vim with backupcopy=no (temp file + rename, the common modern default
+## for many editors)
+## nano (temp file + rename)
+## explicit atomic-replace pattern (what editors do)
+
+## events (note MOVED_FROM+MOVED_TO sharing a cookie = rename/atomic replace)
+# watching 1 dir(s) under /tmp/li-phase0-0e-scratch/editor
+# mask=0xfce recursive=false auto_add=false
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+75 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 .doc.txt.swp
+11531 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 .doc.txt.swx
+13939 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 .doc.txt.swx
+15795 1 /tmp/li-phase0-0e-scratch/editor 0x00000200 DELETE 0 0 .doc.txt.swx
+17394 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 .doc.txt.swp
+18955 1 /tmp/li-phase0-0e-scratch/editor 0x00000200 DELETE 0 0 .doc.txt.swp
+20517 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 .doc.txt.swp
+22001 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.swp
+23525 1 /tmp/li-phase0-0e-scratch/editor 0x00000004 ATTRIB 0 0 .doc.txt.swp
+93463 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.swp
+99640 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 doc.txt
+102062 1 /tmp/li-phase0-0e-scratch/editor 0x00000004 ATTRIB 0 0 doc.txt
+103760 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 doc.txt
+105439 1 /tmp/li-phase0-0e-scratch/editor 0x00000004 ATTRIB 0 0 doc.txt
+108595 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.swp
+111680 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 .doc.txt.swp
+114518 1 /tmp/li-phase0-0e-scratch/editor 0x00000200 DELETE 0 0 .doc.txt.swp
+1004652632 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 .doc.txt.swp
+1004668088 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 .doc.txt.swx
+1004670474 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 .doc.txt.swx
+1004672267 1 /tmp/li-phase0-0e-scratch/editor 0x00000200 DELETE 0 0 .doc.txt.swx
+1004673808 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 .doc.txt.swp
+1004675373 1 /tmp/li-phase0-0e-scratch/editor 0x00000200 DELETE 0 0 .doc.txt.swp
+1004676871 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 .doc.txt.swp
+1004678352 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.swp
+1004679899 1 /tmp/li-phase0-0e-scratch/editor 0x00000004 ATTRIB 0 0 .doc.txt.swp
+1004683599 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.swp
+1004692284 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.swp
+1004703959 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 doc.txt
+1004709561 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 doc.txt
+1004711444 1 /tmp/li-phase0-0e-scratch/editor 0x00000004 ATTRIB 0 0 doc.txt
+1004714084 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 doc.txt
+1004716771 1 /tmp/li-phase0-0e-scratch/editor 0x00000004 ATTRIB 0 0 doc.txt
+1004789193 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.swp
+1004795263 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 .doc.txt.swp
+1004797569 1 /tmp/li-phase0-0e-scratch/editor 0x00000200 DELETE 0 0 .doc.txt.swp
+1506266016 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 nano.txt
+1506277128 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 nano.txt
+1506279521 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 nano.txt
+2016963315 1 /tmp/li-phase0-0e-scratch/editor 0x00000100 CREATE 0 0 .doc.txt.tmp
+2016973880 1 /tmp/li-phase0-0e-scratch/editor 0x00000002 MODIFY 0 0 .doc.txt.tmp
+2016976360 1 /tmp/li-phase0-0e-scratch/editor 0x00000008 CLOSE_WRITE 0 0 .doc.txt.tmp
+2017919976 1 /tmp/li-phase0-0e-scratch/editor 0x00000040 MOVED_FROM 11530 0 .doc.txt.tmp
+2017956167 1 /tmp/li-phase0-0e-scratch/editor 0x00000080 MOVED_TO 11530 0 doc.txt
+# total_events 44
+
+create_count 8
+move_pairs   1

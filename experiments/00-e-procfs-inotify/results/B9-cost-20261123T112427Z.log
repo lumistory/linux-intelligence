@@ -1,0 +1,14 @@
+files_created            1000
+events_received          2000
+events_per_file          2.000
+drain_calls              21
+drain_latency_ns_p50     11400
+drain_latency_ns_p99     156164
+drain_latency_ns_mean    18963
+wall_s                   0.0225
+cpu_user_s               0.0000
+cpu_system_s             0.0023
+cpu_total_s              0.0023
+max_rss_kb               2416
+cpu_us_per_event         1.167
+NOTE: writer and observer share this process; the CPU figure includes file creation.

@@ -75,6 +75,7 @@ fn run() -> Result<(), String> {
             let bytes = arg_num(&args, "--bytes").ok_or("--bytes required")? as usize;
             let newline = args.iter().any(|a| a == "--newline");
             let repeat = arg_num(&args, "--repeat").unwrap_or(1).max(1);
+            let timeout_ms = arg_num(&args, "--timeout-ms").unwrap_or(2000);
             let body = vec![b'A'; bytes];
             let mut conn = connect(&socket)?;
             let t0 = Instant::now();
@@ -97,10 +98,27 @@ fn run() -> Result<(), String> {
                 }
             }
             let _ = conn.flush();
-            // Try to read a response; the helper may have closed on us.
+            // Read a response with a deadline. A frame that never terminated is
+            // still in flight as far as the helper is concerned: it will not
+            // answer until it sees '\n' or the discard cap is exceeded. Blocking
+            // forever here would hang the driver, so a timeout is a *result*,
+            // not a test failure.
             let mut rd = BufReader::new(conn.try_clone().map_err(|e| e.to_string())?);
             let mut resp = String::new();
-            let read_ok = rd.read_line(&mut resp).is_ok() && !resp.is_empty();
+            conn.set_read_timeout(Some(Duration::from_millis(timeout_ms)))
+                .map_err(|e| e.to_string())?;
+            let read_res = rd.read_line(&mut resp);
+            let (read_ok, timed_out) = match read_res {
+                Ok(n) if n > 0 => (true, false),
+                Ok(_) => (false, false),
+                Err(e) => (
+                    false,
+                    matches!(
+                        e.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                    ),
+                ),
+            };
             println!(
                 "{}",
                 json!({
@@ -108,6 +126,8 @@ fn run() -> Result<(), String> {
                     "requested_bytes": bytes, "repeat": repeat, "trailing_newline": newline,
                     "wrote_bytes": wrote,
                     "response_received": read_ok,
+                    "timed_out_waiting_for_response": timed_out,
+                    "response_timeout_ms": timeout_ms,
                     "response": resp.trim_end(),
                     "elapsed_ms": t0.elapsed().as_millis() as u64,
                 })

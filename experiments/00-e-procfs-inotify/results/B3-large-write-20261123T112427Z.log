@@ -1,0 +1,125 @@
+# 100MB via dd bs=100M count=1 (single write syscall)
+输入了 1+0 块记录
+输出了 1+0 块记录
+104857600 字节 (105 MB, 100 MiB) 已复制，0.0414501 s，2.5 GB/s
+# 100MB via dd bs=1M count=100 (100 write syscalls)
+输入了 100+0 块记录
+输出了 100+0 块记录
+104857600 字节 (105 MB, 100 MiB) 已复制，0.0198625 s，5.3 GB/s
+
+## events
+# watching 1 dir(s) under /tmp/li-phase0-0e-scratch/big
+# mask=0xfce recursive=false auto_add=false
+# monots_ns wd dir mask_raw mask_names cookie isdir name
+49 1 /tmp/li-phase0-0e-scratch/big 0x00000100 CREATE 0 0 one-write.bin
+41319824 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 one-write.bin
+41333273 1 /tmp/li-phase0-0e-scratch/big 0x00000008 CLOSE_WRITE 0 0 one-write.bin
+546189308 1 /tmp/li-phase0-0e-scratch/big 0x00000100 CREATE 0 0 many-writes.bin
+546879742 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+547106417 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+547469131 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+547740031 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+548176891 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+548375509 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+548593730 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+548848359 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+549290966 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+549626302 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+549726475 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+549918890 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+550118916 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+550306651 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+550454492 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+550631130 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+550820844 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+551018927 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+551196465 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+551380939 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+551554774 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+551741289 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+551931074 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+552103845 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+552296225 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+552472517 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+552654461 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+552835274 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+553007442 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+553196888 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+553369912 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+553566626 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+553751033 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+553988188 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+554179878 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+554351936 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+554551154 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+554745203 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+554925220 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+555112472 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+555295597 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+555487616 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+555667867 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+555880213 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+556066083 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+556267647 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+556431083 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+556593896 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+556770642 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+556951017 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+557118528 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+557313959 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+557470989 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+557643928 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+557815889 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+558005920 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+558187854 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+558369194 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+558547664 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+558746651 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+558911208 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+559090298 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+559414592 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+559604842 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+559797904 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+559984525 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+560167302 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+560343696 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+560517600 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+560706271 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+560893934 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+561063435 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+561259536 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+561429238 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+561608093 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+561778743 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+561986905 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+562173080 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+562374492 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+562532142 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+562705283 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+562874654 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+563045688 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+563225317 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+563443755 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+563605689 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+563779885 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+563950620 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+564121039 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+564305370 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+564487236 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+564651926 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+564844809 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+565011286 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+565185206 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+565349195 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+565517639 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+565682345 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+565851185 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+566018913 1 /tmp/li-phase0-0e-scratch/big 0x00000002 MODIFY 0 0 many-writes.bin
+566023385 1 /tmp/li-phase0-0e-scratch/big 0x00000008 CLOSE_WRITE 0 0 many-writes.bin
+# total_events 105
+
+## MODIFY counts per file
+one-write.bin  MODIFY=0
+many-writes.bin MODIFY=0
+one-write.bin  CLOSE_WRITE=0
+many-writes.bin CLOSE_WRITE=0

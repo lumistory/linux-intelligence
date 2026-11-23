@@ -98,10 +98,16 @@ pub fn enforce_no_new_privs() -> std::io::Result<()> {
 }
 
 pub fn no_new_privs_state() -> bool {
-    // SAFETY: prctl(PR_GET_NO_NEW_PRIVS) writes one int to the provided pointer.
-    let mut v: libc::c_int = -1;
-    let rc = unsafe { libc::prctl(libc::PR_GET_NO_NEW_PRIVS, 0, 0, 0, &mut v) };
-    rc == 0 && v == 1
+    // `PR_GET_NO_NEW_PRIVS` does **not** write through a pointer: the kernel
+    // returns the state as the syscall's return value (1 = set, 0 = unset,
+    // negative = error). Measured the hard way — the first version of this
+    // function used an out-pointer and reported `false` for a process that had
+    // already set the flag.
+    //
+    // SAFETY: prctl(PR_GET_NO_NEW_PRIVS) ignores args 2..5 and has no pointer
+    // arguments.
+    let rc = unsafe { libc::prctl(libc::PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0) };
+    rc == 1
 }
 
 /// Reject non-UTF-8 and oversized string arguments before any parsing.

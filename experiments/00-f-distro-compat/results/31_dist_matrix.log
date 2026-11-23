@@ -1,0 +1,17 @@
+### Can one binary built on Arch (glibc 2.44) run everywhere?
+
+DISTRO       hello_dyn  hello_static             hello_newer libc_seen               
+arch         =          =(static)                =          2.44                    
+ubuntu2404   =          =(static)                =          2.39                    
+debian13     =          =(static)                =          2.41                    
+fedora42     =          =(static)                =          2.41                    
+
+### loader error messages (verbatim, from results/17_distbins_*.log):
+hello_dyn: 15: file: not found
+hello_dyn: line 15: file: command not found
+hello_newer: 15: file: not found
+hello_newer: line 15: file: command not found
+hello_static: 15: file: not found
+hello_static: line 15: file: command not found
+/probe-bin/hello_newer: /lib64/libc.so.6: version `GLIBC_2.43' not found (required by /probe-bin/hello_newer)
+/probe-bin/hello_newer: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.43' not found (required by /probe-bin/hello_newer)
