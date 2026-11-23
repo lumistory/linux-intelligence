@@ -1,0 +1,8 @@
+{"_shell_proc": {"pid": 74519, "pgrp": 74519, "sid": 34832}}
+{"_unparsable": "PC rc=0 h=3 hist=[    2  PROMPT_COMMAND='printf \"PC rc=%s h=%s hist=[%s] t=%s\\n\" \"$?\" \"$HISTCMD\" \"$(HISTTIMEFORMAT= history 1)\" \"$EPOCHREALTIME\" >&3'] t=1795432996.751329", "_recv_mono_ns": 2420822366460, "_recv_wall": "2026-11-23T11:23:16Z"}
+{"_unparsable": "PC rc=0 h=4 hist=[    3  echo alpha] t=1795432997.104334", "_recv_mono_ns": 2421175387452, "_recv_wall": "2026-11-23T11:23:17Z"}
+{"_unparsable": "PC rc=1 h=5 hist=[    4  false] t=1795432997.457009", "_recv_mono_ns": 2421527832941, "_recv_wall": "2026-11-23T11:23:17Z"}
+{"_unparsable": "PC rc=0 h=6 hist=[    5  echo beta] t=1795432997.809257", "_recv_mono_ns": 2421880329535, "_recv_wall": "2026-11-23T11:23:17Z"}
+{"_unparsable": "PC rc=0 h=7 hist=[    6  sleep 0.2 && echo chained] t=1795432998.364023", "_recv_mono_ns": 2422434862695, "_recv_wall": "2026-11-23T11:23:18Z"}
+{"_unparsable": "PC rc=0 h=8 hist=[    7  printf 'a\\nb\\n' | wc -l] t=1795432998.718029", "_recv_mono_ns": 2422789043075, "_recv_wall": "2026-11-23T11:23:18Z"}
+{"_unparsable": "PC rc=0 h=9 hist=[    8  for i in 1 2 3; do echo loop$i; done] t=1795432999.071027", "_recv_mono_ns": 2423141862019, "_recv_wall": "2026-11-23T11:23:19Z"}

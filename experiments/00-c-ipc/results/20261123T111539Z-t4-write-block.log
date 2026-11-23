@@ -1,0 +1,53 @@
+# T4 client write behaviour while the daemon is SIGSTOPped
+# Phase A uses a non-blocking socket to count exactly how many frames
+# the kernel accepts; phase B uses a blocking socket and times the
+# write that stalls. Both are per-connection, so the numbers are
+# about one small shell hook write, not about the whole system.
+# host
+Linux HOST 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
+# cpu / memory
+20
+model name	: 13th Gen Intel(R) Core(TM) i7-13700H
+                总计        已用        空闲        共享   缓冲/缓存        可用
+内存：   16361185280  6417211392   672915456  1543479296 12137107456  9943973888
+# limits
+1024
+212992
+4194304
+212992
+4194304
+512
+# user
+uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+# runtime dir
+XDG_RUNTIME_DIR=/run/user/1000
+# versions
+rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+# binaries
+-rwxr-xr-x 2 USER USER 3495800 11月23日 19:12 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+-rwxr-xr-x 2 USER USER 7451528 11月23日 19:02 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+90588aa3345ed0250195da6b38f102c0fb0e08679d2e75aab7e50a5315b5ebb9  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+6d5de782697598996160d1a8acdb8cc4c61aded756019af25a09845952b3a0fd  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+# daemon pid=63897
+--- warm-up: one client so the daemon has an established peer ---
+{"all_acked":true,"client_batch_write":{"max_us":15.371,"n":1,"p50_us":15.371,"p90_us":15.371,"p99_us":15.371},"clients":1,"connect_errors":0,"events_acked":1,"events_per_client":1,"events_total":1,"latency_event_to_ack":{"max_us":156.98,"n":1,"p50_us":156.98,"p90_us":156.98,"p99_us":156.98},"mode":"concurrency","throughput_events_per_sec":5835.599491135725,"wall_ms":0.171362}
+--- SIGSTOP daemon ---
+# daemon state: Tl
+--- A: 120 B payload (~390 B frames), SO_SNDTIMEO 2 ms ---
+{"blocking":{"blocking_write_wall_us":2307.197,"bytes_written_before_block":65745,"frames_written_before_block":167,"write_error":"Resource temporarily unavailable (os error 11)"},"frame_bytes":387,"mode":"fill","nonblocking":{"blocked_at_frame_number":168,"bytes_accepted":65077,"drained_after_ms":null,"drained_within_wait":false,"fill_duration_us":486.164,"frames_accepted":167},"session":"t4a","so_sndbuf_bytes":212992,"so_sndtimeo_us":2000}
+--- B: 8 KiB payload (~8.5 kB frames) ---
+{"blocking":{"blocking_write_wall_us":2830.709,"bytes_written_before_block":194675,"frames_written_before_block":23,"write_error":"Resource temporarily unavailable (os error 11)"},"frame_bytes":8459,"mode":"fill","nonblocking":{"blocked_at_frame_number":24,"bytes_accepted":194583,"drained_after_ms":null,"drained_within_wait":false,"fill_duration_us":235.246,"frames_accepted":23},"session":"t4b","so_sndbuf_bytes":212992,"so_sndtimeo_us":2000}
+--- C: minimal payload (~270 B frames) ---
+{"blocking":{"blocking_write_wall_us":2564.823,"bytes_written_before_block":45705,"frames_written_before_block":167,"write_error":"Resource temporarily unavailable (os error 11)"},"frame_bytes":267,"mode":"fill","nonblocking":{"blocked_at_frame_number":168,"bytes_accepted":45037,"drained_after_ms":null,"drained_within_wait":false,"fill_duration_us":291.801,"frames_accepted":167},"session":"t4c","so_sndbuf_bytes":212992,"so_sndtimeo_us":2000}
+--- D: 120 B payload, SO_SNDTIMEO 50 ms (realistic hook timeout) ---
+{"blocking":{"blocking_write_wall_us":50672.345,"bytes_written_before_block":65745,"frames_written_before_block":167,"write_error":"Resource temporarily unavailable (os error 11)"},"frame_bytes":387,"mode":"fill","nonblocking":{"blocked_at_frame_number":168,"bytes_accepted":65077,"drained_after_ms":null,"drained_within_wait":false,"fill_duration_us":204.03,"frames_accepted":167},"session":"t4d","so_sndbuf_bytes":212992,"so_sndtimeo_us":50000}
+--- E: 120 B payload, SO_SNDTIMEO 5 ms ---
+{"blocking":{"blocking_write_wall_us":5057.545999999999,"bytes_written_before_block":65745,"frames_written_before_block":167,"write_error":"Resource temporarily unavailable (os error 11)"},"frame_bytes":387,"mode":"fill","nonblocking":{"blocked_at_frame_number":168,"bytes_accepted":65077,"drained_after_ms":null,"drained_within_wait":false,"fill_duration_us":299.552,"frames_accepted":167},"session":"t4e","so_sndbuf_bytes":212992,"so_sndtimeo_us":5000}
+--- SIGCONT daemon, then verify it recovers ---
+# daemon state: Sl
+{"all_acked":true,"client_batch_write":{"max_us":34.656,"n":2,"p50_us":34.656,"p90_us":34.656,"p99_us":34.656},"clients":2,"connect_errors":0,"events_acked":10,"events_per_client":5,"events_total":10,"latency_event_to_ack":{"max_us":527.427,"n":10,"p50_us":516.424,"p90_us":526.678,"p99_us":527.427},"mode":"concurrency","throughput_events_per_sec":17782.266812244157,"wall_ms":0.562358}
+--- socket buffer sysctls ---
+212992
+4194304
+STATS {"accepted":1393,"acks_dropped":1205,"acks_sent":14,"bad_frames":0,"bytes_read":875923,"conns_closed":13,"conns_opened":13,"dedup_dropped":0,"events_ingested":1396,"oversize_frames":0,"rejected_uid":0,"seq_violations":0}

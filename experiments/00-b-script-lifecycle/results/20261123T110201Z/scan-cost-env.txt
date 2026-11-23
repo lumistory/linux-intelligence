@@ -1,0 +1,4 @@
+processes_in_table=476
+kernel=7.2.8-zen1-2-zen
+nproc=20
+run.sh: 行 137: /usr/bin/time: 没有那个文件或目录

@@ -1,0 +1,3 @@
+execrepl:about-to-exec pid=23574
+/etc/hostname
+/etc/hosts

@@ -1,0 +1,150 @@
+   Compiling li-run-proto v0.1.0 (<WORKSPACE>/experiments/00-b-script-lifecycle)
+    Finished `release` profile [optimized] target(s) in 0.14s
+mbx[cache]: 0 hits, 0 misses, 1 incremental; 0 B downloaded, 0 B uploaded, 0 B stored locally
+mbx[savings]: every checkout believes it owns 543.8 GiB of outputs. the disk keeps one copy and says nothing.
+Diff in <WORKSPACE>/experiments/00-b-script-lifecycle/src/main.rs:97:
+                 print!("{USAGE}");
+                 std::process::exit(0);
+             }
+-            other => {
+-                return Err(Error::Usage(format!(
+-                    "unknown argument `{other}`\n{USAGE}"
+-                )))
+-            }
++            other => return Err(Error::Usage(format!("unknown argument `{other}`\n{USAGE}"))),
+         }
+     }
+ 
+Diff in <WORKSPACE>/experiments/00-b-script-lifecycle/src/main.rs:152:
+ 
+ fn run() -> Result<i32, Error> {
+     let args = parse_args()?;
+-    std::fs::create_dir_all(&args.out_dir)
+-        .map_err(|e| Error::io(args.out_dir.clone(), e))?;
++    std::fs::create_dir_all(&args.out_dir).map_err(|e| Error::io(args.out_dir.clone(), e))?;
+ 
+     let stdout_path = args.out_dir.join("script-stdout.txt");
+     let stderr_path = args.out_dir.join("script-stderr.txt");
+Diff in <WORKSPACE>/experiments/00-b-script-lifecycle/src/main.rs:191:
+         });
+     }
+ 
+-    let child = cmd.spawn().map_err(|e| {
+-        Error::Usage(format!("cannot exec `{}`: {e}", args.program))
+-    })?;
++    let child = cmd
++        .spawn()
++        .map_err(|e| Error::Usage(format!("cannot exec `{}`: {e}", args.program)))?;
+     let pid = child.id() as i32;
+     let t_spawned = now_mono_ns();
+ 
+Diff in <WORKSPACE>/experiments/00-b-script-lifecycle/src/main.rs:263:
+     let snapshot_after = procfs::snapshot();
+     let appeared = procfs::appeared(&snapshot_before, &snapshot_after);
+ 
+-    let out_bytes = std::fs::metadata(&stdout_path).map(|m| m.len()).unwrap_or(0);
+-    let err_bytes = std::fs::metadata(&stderr_path).map(|m| m.len()).unwrap_or(0);
++    let out_bytes = std::fs::metadata(&stdout_path)
++        .map(|m| m.len())
++        .unwrap_or(0);
++    let err_bytes = std::fs::metadata(&stderr_path)
++        .map(|m| m.len())
++        .unwrap_or(0);
+     let (out_lines, out_first_line, out_crlf) = count_lines(&stdout_path);
+ 
+     let (exit_code, term_signal, core_dumped) = match &status {
+Diff in <WORKSPACE>/experiments/00-b-script-lifecycle/src/main.rs:405:
+ 
+ fn signal_name(sig: i32) -> String {
+     let names = [
+-        (1, "SIGHUP"), (2, "SIGINT"), (3, "SIGQUIT"), (4, "SIGILL"),
+-        (6, "SIGABRT"), (8, "SIGFPE"), (9, "SIGKILL"), (11, "SIGSEGV"),
+-        (13, "SIGPIPE"), (14, "SIGALRM"), (15, "SIGTERM"), (24, "SIGXCPU"),
++        (1, "SIGHUP"),
++        (2, "SIGINT"),
++        (3, "SIGQUIT"),
++        (4, "SIGILL"),
++        (6, "SIGABRT"),
++        (8, "SIGFPE"),
++        (9, "SIGKILL"),
++        (11, "SIGSEGV"),
++        (13, "SIGPIPE"),
++        (14, "SIGALRM"),
++        (15, "SIGTERM"),
++        (24, "SIGXCPU"),
+         (25, "SIGXFSZ"),
+     ];
+     match names.iter().find(|(n, _)| *n == sig) {
+Diff in <WORKSPACE>/experiments/00-b-script-lifecycle/src/main.rs:445:
+     let kind = if libc::WIFEXITED(status) {
+         ExitKind::Exited(libc::WEXITSTATUS(status))
+     } else if libc::WIFSIGNALED(status) {
+-        ExitKind::Signaled(
+-            libc::WTERMSIG(status),
+-            libc::WCOREDUMP(status),
+-        )
++        ExitKind::Signaled(libc::WTERMSIG(status), libc::WCOREDUMP(status))
+     } else {
+         ExitKind::Other
+     };
+Diff in <WORKSPACE>/experiments/00-b-script-lifecycle/src/procfs.rs:145:
+         // Field layout: pid (comm) state ppid pgrp session tty_nr tpgid flags
+         // minflt cminflt majflt cmajflt utime stime cutime cstime priority
+         // nice num_threads itrealvalue starttime ...
+-        let raw = "1234 (a) b (c) S 12 34 56 34816 -1 4194304 100 0 0 0 7 8 0 0 20 0 1 0 999888 123 456";
++        let raw =
++            "1234 (a) b (c) S 12 34 56 34816 -1 4194304 100 0 0 0 7 8 0 0 20 0 1 0 999888 123 456";
+         let p = parse_stat(raw).expect("parse");
+         assert_eq!(p.pid, 1234);
+         assert_eq!(p.comm, "a) b (c");
+WARN: cargo fmt --check reported differences
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling libc v0.2.191
+   Compiling cfg_aliases v0.2.2
+   Compiling nix v0.29.0
+   Compiling thiserror v2.0.21
+   Compiling serde_json v1.0.154
+   Compiling syn v3.0.10
+   Compiling thiserror-impl v2.0.21
+    Checking memchr v2.8.3
+    Checking bitflags v2.13.2
+    Checking itoa v1.0.19
+    Checking cfg-if v1.0.5
+    Checking li-run-proto v0.1.0 (<WORKSPACE>/experiments/00-b-script-lifecycle)
+error: manual checked division
+   --> src/main.rs:360:36
+    |
+360 |                 "mean_read_ns": if sample_stats.reads == 0 { 0 } else { sample_stats.total_read_ns / sample_stats.reads },
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^              ----------------------------------------------- division performed here
+    |                                    |
+    |                                    check performed here
+    |
+    = help: consider using `checked_div`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#manual_checked_ops
+    = note: `-D clippy::manual-checked-ops` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_checked_ops)]`
+
+error: could not compile `li-run-proto` (bin "li-run-proto") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `li-run-proto` (bin "li-run-proto" test) due to 1 previous error
+mbx[cache]: 22 hits, 5 misses, 7 not looked up; 0 B downloaded, 0 B uploaded, 10.9 MiB stored locally
+mbx[savings]: 82295 compilations on file. the box remembers.
+WARN: clippy reported findings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.00s
+     Running unittests src/main.rs (target/debug/deps/li_run_proto-51093d662028098e)
+
+running 7 tests
+test events::tests::uuid_shape ... ok
+test events::tests::mono_is_nonzero ... ok
+test events::tests::epoch_formats ... ok
+test procfs::tests::own_process_is_visible ... ok
+test procfs::tests::parses_comm_with_parens_and_spaces ... ok
+test procfs::tests::rejects_garbage ... ok
+test sampler::tests::sampler_sees_its_own_leader ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+

@@ -1,0 +1,3 @@
+single-case-start
+value=42
+single-case-end

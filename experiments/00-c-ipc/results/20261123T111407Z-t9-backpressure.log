@@ -1,0 +1,51 @@
+# T9 backpressure with a deliberately slow daemon (--slow-ms 3)
+# The client has a bounded queue; when it is full the client drops
+# and counts instead of growing without bound. max_queue_depth must
+# never exceed the configured cap.
+# host
+Linux HOST 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
+# cpu / memory
+20
+model name	: 13th Gen Intel(R) Core(TM) i7-13700H
+                总计        已用        空闲        共享   缓冲/缓存        可用
+内存：   16361185280  6402179072   698777600  1547120640 12129869824  9959006208
+# limits
+1024
+212992
+4194304
+212992
+4194304
+512
+# user
+uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+# runtime dir
+XDG_RUNTIME_DIR=/run/user/1000
+# versions
+rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+# binaries
+-rwxr-xr-x 2 USER USER 3495800 11月23日 19:12 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+-rwxr-xr-x 2 USER USER 7451528 11月23日 19:02 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+90588aa3345ed0250195da6b38f102c0fb0e08679d2e75aab7e50a5315b5ebb9  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+6d5de782697598996160d1a8acdb8cc4c61aded756019af25a09845952b3a0fd  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+# daemon pid=61490
+--- A: 2000 events, client queue cap 64, policy drop ---
+{"acked":1970,"backoff_ceiling_ms":500,"barrier_rtt_us":1370866.8660000002,"connect_attempts":1,"connect_failures":0,"connect_failures_total":0,"count_requested":2000,"dropped_client_queue_full":30,"elapsed_ms":8293.363811,"max_queue_depth":64,"mode":"sender","policy":"drop","produced":2000,"production_ms":6722.428132,"queue_cap":64,"rate_eps":297.5115480193281,"reader_thread_died":false,"reconnect_events":[],"reconnect_succeeded":0,"send_errors":0,"server_accepted_count":1970,"server_watermark":1999,"session":"t9","timed_out":false,"transport_loss":0,"unacked":30,"unacked_ranges":[[64,64],[129,129],[194,194],[259,259],[324,324],[389,389],[454,454],[519,519],[584,584],[649,649],[714,714],[779,779],[844,844],[909,909],[974,974],[1039,1039],[1104,1104],[1169,1169],[1234,1234],[1299,1299],[1364,1364],[1429,1429],[1494,1494],[1559,1559],[1624,1624],[1689,1689],[1754,1754],[1819,1819],[1884,1884],[1949,1949]],"written_to_socket":1970}
+--- B: client queue cap 8 (aggressive drop) ---
+{"acked":445,"backoff_ceiling_ms":500,"barrier_rtt_us":1538416.022,"connect_attempts":1,"connect_failures":0,"connect_failures_total":0,"count_requested":500,"dropped_client_queue_full":55,"elapsed_ms":2030.60916,"max_queue_depth":8,"mode":"sender","policy":"drop","produced":500,"production_ms":292.107553,"queue_cap":8,"rate_eps":1711.6982935391609,"reader_thread_died":false,"reconnect_events":[],"reconnect_succeeded":0,"send_errors":0,"server_accepted_count":445,"server_watermark":499,"session":"t9b","timed_out":false,"transport_loss":0,"unacked":55,"unacked_ranges":[[8,8],[17,17],[26,26],[35,35],[44,44],[53,53],[62,62],[71,71],[80,80],[89,89],[98,98],[107,107],[116,116],[125,125],[134,134],[143,143],[152,152],[161,161],[170,170],[179,179],[188,188],[197,197],[206,206],[215,215],[224,224],[233,233],[242,242],[251,251],[260,260],[269,269],[278,278],[287,287],[296,296],[305,305],[314,314],[323,323],[332,332],[341,341],[350,350],[359,359],[368,368],[377,377],[386,386],[395,395],[404,404],[413,413],[422,422],[431,431],[440,440],[449,449],[458,458],[467,467],[476,476],[485,485],[494,494]],"written_to_socket":445}
+--- client RSS during a long slow stream ---
+# client VmRSS peak so far: 2868 kB
+# client VmRSS peak so far: 2872 kB
+# client VmRSS peak so far: 2876 kB
+# client VmRSS peak so far: 2880 kB
+# client VmRSS peak so far: 2884 kB
+# client VmRSS peak so far: 2888 kB
+# client VmRSS peak so far: 2892 kB
+# client VmRSS peak so far: 2896 kB
+# client VmRSS peak so far: 2900 kB
+# client VmRSS peak so far: 2904 kB
+# client VmRSS peak so far: 2908 kB
+# client VmRSS peak so far: 2912 kB
+{"acked":1970,"backoff_ceiling_ms":500,"barrier_rtt_us":1153753.486,"connect_attempts":1,"connect_failures":0,"connect_failures_total":0,"count_requested":2000,"dropped_client_queue_full":30,"elapsed_ms":8286.595433,"max_queue_depth":64,"mode":"sender","policy":"drop","produced":2000,"production_ms":6932.740825,"queue_cap":64,"rate_eps":288.4861918951081,"reader_thread_died":false,"reconnect_events":[],"reconnect_succeeded":0,"send_errors":0,"server_accepted_count":1970,"server_watermark":1999,"session":"t9c","timed_out":false,"transport_loss":0,"unacked":30,"unacked_ranges":[[64,64],[129,129],[194,194],[259,259],[324,324],[389,389],[454,454],[519,519],[584,584],[649,649],[714,714],[779,779],[844,844],[909,909],[974,974],[1039,1039],[1104,1104],[1169,1169],[1234,1234],[1299,1299],[1364,1364],[1429,1429],[1494,1494],[1559,1559],[1624,1624],[1689,1689],[1754,1754],[1819,1819],[1884,1884],[1949,1949]],"written_to_socket":1970}
+# client VmRSS peak: 2912 kB
+STATS {"accepted":4385,"acks_dropped":0,"acks_sent":4388,"bad_frames":0,"bytes_read":1150379,"conns_closed":3,"conns_opened":3,"dedup_dropped":0,"events_ingested":4388,"oversize_frames":0,"rejected_uid":0,"seq_violations":115}

@@ -1,0 +1,10 @@
+
+[?2004h⟦LI-P⟧ 
+[?2004l[?2004h⟦LI-P⟧ trap 'printf "PS0 rc=%s cmd=[%s] t=%s\n" "$?" "$BASH_COMMAND" "$EPOCHREALTIME" >&3' DEBUG
+[?2004l[?2004h⟦LI-P⟧ echo alpha
+[?2004lalpha
+[?2004h⟦LI-P⟧ false
+[?2004l[?2004h⟦LI-P⟧ echo beta
+[?2004lbeta
+[?2004h⟦LI-P⟧ exit
+[?2004lexit

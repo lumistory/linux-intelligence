@@ -1,0 +1,5 @@
+{"_shell_proc": {"pid": 74386, "pgrp": 74386, "sid": 34832}}
+{"_unparsable": "PS0 rc=0 cmd=[echo alpha] t=1795432982.836645", "_recv_mono_ns": 2406907544736, "_recv_wall": "2026-11-23T11:23:02Z"}
+{"_unparsable": "PS0 rc=0 cmd=[false] t=1795432983.187796", "_recv_mono_ns": 2407258588027, "_recv_wall": "2026-11-23T11:23:03Z"}
+{"_unparsable": "PS0 rc=1 cmd=[echo beta] t=1795432983.538832", "_recv_mono_ns": 2407609591411, "_recv_wall": "2026-11-23T11:23:03Z"}
+{"_unparsable": "PS0 rc=0 cmd=[exit] t=1795432983.889798", "_recv_mono_ns": 2407960635264, "_recv_wall": "2026-11-23T11:23:03Z"}

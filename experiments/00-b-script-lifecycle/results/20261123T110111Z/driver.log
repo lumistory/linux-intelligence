@@ -1,0 +1,116 @@
+=== experiment 0-B driver ===
+timestamp      : 20261123T110111Z
+kernel         : 7.2.8-zen1-2-zen
+bash           : GNU bash，版本 5.3.20(1)-release (x86_64-pc-linux-gnu)
+rustc          : rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+binary         : <WORKSPACE>/experiments/00-b-script-lifecycle/target/release/li-run-proto
+results dir    : <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T110111Z
+tmp dir        : /tmp/li-phase0-b-20261123T110111Z
+
+=== build ===
+
+=== case: single (single.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":0.8675,"procs":0,"survivors":[]}
+
+=== case: nested (nested.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":206.725738,"procs":5,"survivors":[]}
+
+=== case: background (background.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.129332,"procs":1,"survivors":[31478]}
+
+=== case: execrepl (execrepl.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":502.503259,"procs":2,"survivors":[]}
+
+=== case: execrepl-fast (execrepl-fast.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.199941,"procs":0,"survivors":[]}
+
+=== case: exit3 (exit3.sh) ===
+supervisor exit status: 3
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":3,"term_signal":null,"duration_ms":0.784155,"procs":0,"survivors":[]}
+
+=== case: ctrlc (sleeper.sh) ===
+supervisor exit status: 130
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGINT (2)","duration_ms":400.697445,"procs":2,"survivors":[]}
+
+=== case: kill9 (sleeper.sh) ===
+supervisor exit status: 137
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGKILL (9)","duration_ms":400.530982,"procs":2,"survivors":[]}
+
+=== case: bigoutput (bigoutput.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":869.221159,"procs":1,"survivors":[]}
+
+=== case: boundary (boundary.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":2.408154,"procs":0,"survivors":[]}
+
+=== detection-rate sweep: 200 external commands at 3 sampling rates ===
+
+=== assertions ===
+ASSERT OK   single.exit_code                               0
+ASSERT OK   single.exit_mono_ns                            1095742483938
+ASSERT OK   single.duration_positive                       true
+ASSERT OK   single.program                                 /bin/bash
+ASSERT OK   single.pid_is_sid_and_pgid                     true
+ASSERT OK   single.cwd_recorded                            /tmp/li-phase0-b-20261123T110111Z
+ASSERT OK   single.monotonic_ordering                      true
+ASSERT OK   single.exit_matches_status                     0
+ASSERT OK   nested.bash_procs>=3                           true
+ASSERT OK   nested.sleep_procs>=1                          true
+ASSERT FAIL nested.max_chain_depth>=3                      got=5 want=3
+ASSERT OK   background.survivor_is_sleep                   true
+ASSERT OK   background.survivor_pid                        31478
+ASSERT OK   background.orphan_reparented                   1
+ASSERT OK   execrepl.image_changed_to_sleep                1
+ASSERT FAIL execrepl.pid_preserved                         got=2 want=1
+ASSERT OK   execrepl-fast.no_image_change                  0
+ASSERT OK   exit3.exit_code                                3
+ASSERT OK   exit3.term_signal                              null
+ASSERT OK   exit3.status_match                             3
+ASSERT OK   ctrlc.exit_code_null                           null
+ASSERT OK   ctrlc.term_signal_sigint                       true
+ASSERT OK   ctrlc.signal_injection_ok                      ok
+ASSERT OK   ctrlc.sleep_did_not_finish                     0
+ASSERT OK   ctrlc.supervisor_status_130                    130
+ASSERT OK   kill9.term_signal_sigkill                      true
+ASSERT OK   kill9.exit_code_null                           null
+ASSERT OK   kill9.supervisor_status_137                    137
+ASSERT OK   bigoutput.stdout_lines_4000                    4000
+ASSERT OK   bigoutput.stdout_bytes_gt_30k                  true
+ASSERT OK   bigoutput.procs_far_below_lines                true
+ASSERT OK   boundary.stdout_lines                          6
+ASSERT OK   boundary.stdout_first_line                     BOUNDARY-ECHO-1
+ASSERT OK   boundary.zero_command_events                   0
+ASSERT OK   boundary.event_count_is_2                      2
+boundary.external_cmds_detected=0 of 3
+boundary.process_count=0
+boundary.process_list:
+ASSERT OK   event.sequence_started                         1
+ASSERT OK   event.sequence_finished                        2
+
+=== schema conformance (protocol §2) ===
+ASSERT OK   schema.checked_files                           13
+
+=== summary table ===
+
+=== boundary detail: what the supervisor saw inside boundary.sh ===
+--- the 6 text lines the supervisor received (aggregate, unattributed): ---
+--- redirected content the supervisor never saw at all: ---
+
+RESULT: 2 assertion(s) FAILED
+results: <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T110111Z

@@ -1,0 +1,59 @@
+# T7 deduplication by event_id
+# The client sends N unique events, then resends one byte-identical
+# frame. The daemon must journal N lines, not N+1.
+# host
+Linux HOST 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
+# cpu / memory
+20
+model name	: 13th Gen Intel(R) Core(TM) i7-13700H
+                总计        已用        空闲        共享   缓冲/缓存        可用
+内存：   16361185280  6221570048   939266048  1502883840 12024705024 10139615232
+# limits
+1024
+212992
+4194304
+212992
+4194304
+512
+# user
+uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+# runtime dir
+XDG_RUNTIME_DIR=/run/user/1000
+# versions
+rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+# binaries
+-rwxr-xr-x 2 USER USER 3495800 11月23日 19:12 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+-rwxr-xr-x 2 USER USER 7451528 11月23日 19:02 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+90588aa3345ed0250195da6b38f102c0fb0e08679d2e75aab7e50a5315b5ebb9  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+6d5de782697598996160d1a8acdb8cc4c61aded756019af25a09845952b3a0fd  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+# daemon pid=68396
+--- unique events 0..9, then resend index 5 verbatim ---
+{"duplicate_resend_of_index":5,"lines_written_total":11,"mode":"dup","self_peer_cred":{"gid":1000,"pid":68396,"uid":1000},"session":"dup","unique_events_sent":10}
+--- audit: expect 10 journal lines, 0 duplicates ---
+{"duplicate_lines":0,"expected_events":10,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":0,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":10,"session":"dup","starts_at_zero":true}
+--- repeat 20x with a resend each time, distinct session per round ---
+round 1 "lost":0
+round 2 "lost":0
+round 3 "lost":0
+round 4 "lost":0
+round 5 "lost":0
+round 6 "lost":0
+round 7 "lost":0
+round 8 "lost":0
+round 9 "lost":0
+round 10 "lost":0
+round 11 "lost":0
+round 12 "lost":0
+round 13 "lost":0
+round 14 "lost":0
+round 15 "lost":0
+round 16 "lost":0
+round 17 "lost":0
+round 18 "lost":0
+round 19 "lost":0
+round 20 "lost":0
+--- note: dedup is by event_id only. Re-sending the same sequence with a
+    NEW event_id is accepted (correct: sequence is per session, and a
+    session that restarts at 0 after a reboot must still be ingestable).
+STATS {"accepted":231,"acks_dropped":0,"acks_sent":252,"bad_frames":0,"bytes_read":61114,"conns_closed":21,"conns_opened":21,"dedup_dropped":21,"events_ingested":252,"oversize_frames":0,"rejected_uid":0,"seq_violations":0}

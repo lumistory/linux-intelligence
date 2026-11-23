@@ -1,0 +1,2 @@
+bg:launched pid=38800
+bg:script-exiting-now

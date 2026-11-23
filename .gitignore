@@ -1,0 +1,12 @@
+# build artefacts
+target/
+**/target/
+*.pkg.tar.zst
+
+# locally unpacked toolchain (zsh 5.9.2 for experiments)
+experiments/toolchain/root/
+
+# scratch
+/tmp/
+*.tmp
+*.swp

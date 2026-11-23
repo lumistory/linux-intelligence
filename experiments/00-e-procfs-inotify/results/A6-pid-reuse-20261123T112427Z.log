@@ -1,0 +1,61 @@
+## (a) forced reuse via ns_last_pid, distinct ticks
+# unshare -Urpf gives a private pid namespace where ns_last_pid is writable.
+round 0: pid=4242 starttime=249337 comm=sleep (forced target 4242)
+round 1: pid=4242 starttime=249342 comm=sleep (forced target 4242)
+target_pid               4242
+mode                     pid
+round1_pid               4242
+round1_starttime_ticks   249337
+round2_pid               4242
+round2_starttime_ticks   249342
+pid_reused               true
+starttime_changed        true
+pid_only_key_collides    true
+pid_starttime_key_collides false
+
+## (b) forced reuse inside one clock tick (adversarial for starttime)
+# getconf CLK_TCK = 100, so starttime has 10 ms granularity. Two
+# processes created in the same tick at the same pid share BOTH pid and
+# starttime, which falsifies (pid,starttime) as a unique key.
+trial1 pid_starttime_key_collides true
+trial2 pid_starttime_key_collides true
+trial3 pid_starttime_key_collides true
+trial4 pid_starttime_key_collides true
+trial5 pid_starttime_key_collides true
+trial6 pid_starttime_key_collides true
+trial7 pid_starttime_key_collides true
+trial8 pid_starttime_key_collides true
+trial9 pid_starttime_key_collides true
+trial10 pid_starttime_key_collides true
+trial11 pid_starttime_key_collides true
+trial12 pid_starttime_key_collides true
+trial13 pid_starttime_key_collides true
+trial14 pid_starttime_key_collides true
+trial15 pid_starttime_key_collides true
+trial16 pid_starttime_key_collides true
+trial17 pid_starttime_key_collides true
+trial18 pid_starttime_key_collides true
+trial19 pid_starttime_key_collides true
+trial20 pid_starttime_key_collides true
+same_tick_collision_trials 20
+same_tick_collisions 20
+
+## (c) natural pid-space wraparound (small pid_max in a private pidns)
+# pid_max is writable inside the namespace and does not affect the host.
+pid_max_requested        301
+pid_max_effective        301
+forks_requested          900
+children_sampled         900
+read_failures            0
+fork_failures            0
+distinct_pids            299
+pids_handed_out_twice    1
+pid_starttime_duplicates 0
+distinct_pid_st_keys     900
+
+reuse_examples (pid -> starttimes observed):
+
+conclusion               pid is reused; (pid,starttime) stayed distinct in this run
+
+## (d) host pid_max after namespaced writes (must be unchanged)
+4194304

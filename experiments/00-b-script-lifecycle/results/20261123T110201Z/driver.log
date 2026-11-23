@@ -1,0 +1,65 @@
+=== experiment 0-B driver ===
+timestamp      : 20261123T110201Z
+kernel         : 7.2.8-zen1-2-zen
+bash           : GNU bash，版本 5.3.20(1)-release (x86_64-pc-linux-gnu)
+rustc          : rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+binary         : <WORKSPACE>/experiments/00-b-script-lifecycle/target/release/li-run-proto
+results dir    : <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T110201Z
+tmp dir        : /tmp/li-phase0-b-20261123T110201Z
+
+=== build ===
+
+=== case: single (single.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":0.743301,"procs":0,"survivors":[]}
+
+=== case: nested (nested.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":206.902688,"procs":5,"survivors":[]}
+
+=== case: background (background.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":0.96412,"procs":1,"survivors":[35561]}
+
+=== case: execrepl (execrepl.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":502.690989,"procs":2,"survivors":[]}
+
+=== case: execrepl-fast (execrepl-fast.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.322637,"procs":0,"survivors":[]}
+
+=== case: exit3 (exit3.sh) ===
+supervisor exit status: 3
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":3,"term_signal":null,"duration_ms":0.757922,"procs":0,"survivors":[]}
+
+=== case: ctrlc (sleeper.sh) ===
+supervisor exit status: 130
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGINT (2)","duration_ms":400.664401,"procs":2,"survivors":[]}
+
+=== case: kill9 (sleeper.sh) ===
+supervisor exit status: 137
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGKILL (9)","duration_ms":400.438563,"procs":2,"survivors":[]}
+
+=== case: bigoutput (bigoutput.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":843.220512,"procs":1,"survivors":[]}
+
+=== case: boundary (boundary.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":2.589559,"procs":0,"survivors":[]}
+
+=== detection-rate sweep: short-lived external commands ===
+Each row: N identical external commands of a given lifetime, run under a
+sampler with a fixed period. 'detected' counts distinct recorded processes
+whose comm is that command. The point is P(detected) vs lifetime/period.

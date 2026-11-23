@@ -1,0 +1,7 @@
+pidfd_opened             50
+pidfd_open_failures      0
+readable_while_alive     0
+readable_after_exit      50
+short_lived_spawned      50
+short_lived_observable   0
+conclusion               pidfd reports exit only; 50 short-lived processes were invisible

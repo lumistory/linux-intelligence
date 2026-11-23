@@ -1,0 +1,26 @@
+total_pids_visible       504
+my_pid                   77238
+my_uid                   1000
+
+class                   count  stat_fail  status_fail   cmdline_fail
+foreign_uid                39          0            0              0
+kernel_thread             326          0            0              0
+own_uid                   138          0            0              0
+zombie                      1          0            0              0
+
+zombie_pids              [4549]
+foreign_uid_pids_count   39
+foreign_uid_pids_sample  [1, 484, 499, 521, 527, 757, 766, 767, 768, 769]
+kernel_thread_count      326
+environ_readable         132
+environ_empty            0
+environ_denied           371
+yama                     yama_present
+hidepid_current_mount    26 32 0:24 / /proc rw,nosuid,nodev,noexec,relatime shared:5 - proc proc rw
+
+## hidepid mount attempt (unprivileged)
+# Try to mount a second procfs with hidepid=2 inside a private mount ns.
+mount: /tmp/li-phase0-0e-hidepid: 权限不足.
+       dmesg(1) may have more information after failed mount system call.
+hidepid_mount=FAILED (see errno above)
+hidepid_status=NOT TESTED

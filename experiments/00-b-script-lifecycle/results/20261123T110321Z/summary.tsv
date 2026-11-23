@@ -1,0 +1,11 @@
+case           exit_code  term_signal      duration_ms  procs    survivors 
+single         0          null             0.9          1        0         
+nested         0          null             207.07       5        0         
+background     0          null             0.87         2        1         
+execrepl       0          null             502.31       2        0         
+execrepl-fast  0          null             1.41         1        0         
+exit3          3          null             0.68         1        0         
+ctrlc          null       SIGINT (2)       401.03       2        0         
+kill9          null       SIGKILL (9)      400.65       2        0         
+bigoutput      0          null             840.96       1        0         
+boundary       0          null             2.24         1        0         

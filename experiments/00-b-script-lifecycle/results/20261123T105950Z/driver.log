@@ -1,0 +1,117 @@
+=== experiment 0-B driver ===
+timestamp      : 20261123T105950Z
+kernel         : 7.2.8-zen1-2-zen
+bash           : GNU bash，版本 5.3.20(1)-release (x86_64-pc-linux-gnu)
+rustc          : rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+binary         : <WORKSPACE>/experiments/00-b-script-lifecycle/target/release/li-run-proto
+results dir    : <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T105950Z
+tmp dir        : /tmp/li-phase0-b-20261123T105950Z
+
+=== build ===
+
+=== case: single (single.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":0.959387,"procs":0,"survivors":[]}
+
+=== case: nested (nested.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":206.406409,"procs":5,"survivors":[]}
+
+=== case: background (background.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.252172,"procs":1,"survivors":[25346]}
+
+=== case: execrepl (execrepl.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":502.400239,"procs":2,"survivors":[]}
+
+=== case: execrepl-fast (execrepl-fast.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.293681,"procs":0,"survivors":[]}
+
+=== case: exit3 (exit3.sh) ===
+supervisor exit status: 3
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":3,"term_signal":null,"duration_ms":0.642392,"procs":0,"survivors":[]}
+
+=== case: ctrlc (sleeper.sh) ===
+supervisor exit status: 130
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGINT (2)","duration_ms":400.724507,"procs":2,"survivors":[]}
+
+=== case: kill9 (sleeper.sh) ===
+supervisor exit status: 137
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":null,"term_signal":"SIGKILL (9)","duration_ms":400.59216,"procs":2,"survivors":[]}
+
+=== case: bigoutput (bigoutput.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":862.58128,"procs":1,"survivors":[]}
+
+=== case: boundary (boundary.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":3.606241,"procs":0,"survivors":[]}
+
+=== detection-rate sweep: 200 external commands at 3 sampling rates ===
+
+=== assertions ===
+ASSERT OK   single.exit_code                               0
+ASSERT OK   single.exit_mono_ns                            1015683314041
+ASSERT OK   single.program                                 /bin/bash
+ASSERT OK   single.pid_is_sid_is_pgid                      true
+ASSERT OK   single.duration_positive                       yes
+ASSERT OK   started.cwd_recorded                           /tmp/li-phase0-b-20261123T105950Z
+ASSERT FAIL nested.bash_procs>=3                           got=false
+true want=true
+ASSERT FAIL nested.has_sleep                               got=false
+true want=true
+ASSERT OK   nested.max_depth>=3                            true
+ASSERT FAIL background.survivor_is_sleep                   got=false
+true want=true
+ASSERT OK   background.survivor_pids                       25346
+ASSERT FAIL execrepl.single_process                        got=2 want=1
+ASSERT OK   execrepl.exe_first_is_bash                     true
+ASSERT OK   execrepl.exe_last_is_sleep                     true
+ASSERT FAIL execrepl.pid_preserved                         got=false
+true want=true
+ASSERT FAIL execrepl-fast.no_image_change_observed         got=0
+0 want=0
+ASSERT OK   exit3.exit_code                                3
+ASSERT OK   exit3.term_signal                              null
+ASSERT OK   ctrlc.exit_code_is_null                        null
+ASSERT OK   ctrlc.term_signal_sigint                       true
+ASSERT OK   ctrlc.no_UNEXPECTED_line                       0
+ASSERT OK   kill9.term_signal_sigkill                      true
+ASSERT OK   kill9.exit_code_is_null                        null
+ASSERT FAIL bigoutput.stdout_lines_ge_4000                 got=false
+true want=true
+ASSERT FAIL bigoutput.procs_far_below_4000                 got=true
+true want=true
+ASSERT OK   boundary.stdout_lines                          6
+ASSERT OK   boundary.no_command_events                     0
+ASSERT OK   boundary.event_count                           2
+boundary.external_cmds_detected=0
+0 of 3
+boundary.process_count=0
+boundary.process_list:
+ASSERT OK   event.grep_ScriptStarted                       1
+ASSERT OK   event.grep_ScriptFinished                      2
+
+=== schema conformance (protocol §2) ===
+ASSERT OK   schema.checked_files                           13
+
+=== summary table ===
+
+=== boundary detail: what the supervisor saw inside boundary.sh ===
+--- the 6 text lines the supervisor received (aggregate, unattributed): ---
+--- redirected content the supervisor never saw at all: ---
+
+RESULT: 8 assertion(s) FAILED
+results: <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T105950Z

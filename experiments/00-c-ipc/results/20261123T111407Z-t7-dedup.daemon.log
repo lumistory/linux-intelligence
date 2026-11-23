@@ -1,0 +1,24 @@
+ipcd: listening on /tmp/li-phase0-ipc/ipc.sock (allowed_uid=1000 queue_cap=1024 slow_ms=0 ack=true sock_mode=600)
+ipcd: accept peer pid=61223 uid=1000 gid=1000
+ipcd: accept peer pid=61227 uid=1000 gid=1000
+ipcd: accept peer pid=61228 uid=1000 gid=1000
+ipcd: accept peer pid=61229 uid=1000 gid=1000
+ipcd: accept peer pid=61230 uid=1000 gid=1000
+ipcd: accept peer pid=61231 uid=1000 gid=1000
+ipcd: accept peer pid=61232 uid=1000 gid=1000
+ipcd: accept peer pid=61233 uid=1000 gid=1000
+ipcd: accept peer pid=61234 uid=1000 gid=1000
+ipcd: accept peer pid=61235 uid=1000 gid=1000
+ipcd: accept peer pid=61236 uid=1000 gid=1000
+ipcd: accept peer pid=61237 uid=1000 gid=1000
+ipcd: accept peer pid=61238 uid=1000 gid=1000
+ipcd: accept peer pid=61239 uid=1000 gid=1000
+ipcd: accept peer pid=61240 uid=1000 gid=1000
+ipcd: accept peer pid=61241 uid=1000 gid=1000
+ipcd: accept peer pid=61242 uid=1000 gid=1000
+ipcd: accept peer pid=61243 uid=1000 gid=1000
+ipcd: accept peer pid=61244 uid=1000 gid=1000
+ipcd: accept peer pid=61245 uid=1000 gid=1000
+ipcd: accept peer pid=61246 uid=1000 gid=1000
+ipcd: SIGTERM, shutting down
+STATS {"accepted":231,"acks_dropped":0,"acks_sent":252,"bad_frames":0,"bytes_read":61114,"conns_closed":21,"conns_opened":21,"dedup_dropped":21,"events_ingested":252,"oversize_frames":0,"rejected_uid":0,"seq_violations":0}

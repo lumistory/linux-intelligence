@@ -1,0 +1,27 @@
+
+[?2004h⟦LI-P⟧ 
+[?2004l[?2004h⟦LI-P⟧ PS0='<<<PS0 rc=$? cmd=[$BASH_COMMAND] h=$HISTCMD t=$EPOCHREALTIME >>>\n'
+[?2004l[?2004h⟦LI-P⟧ PROMPT_COMMAND='printf "PC rc=%s h=%s hist=[%s] t=%s\n" "$?" "$HISTCMD" "$(HISTTIMEFORMAT= history 1)" "$EPOCHREALTIME" >&3'
+[?2004l<<<PS0 rc=0 cmd=[PS0='<<<PS0 rc=$? cmd=[$BASH_COMMAND] h=$HISTCMD t=$EPOCHREALTIME >>>\n'] h=3 t=1795432996.750610 >>>
+[?2004h⟦LI-P⟧ echo alpha
+[?2004l<<<PS0 rc=0 cmd=[PROMPT_COMMAND='printf "PC rc=%s h=%s hist=[%s] t=%s\n" "$?" "$HISTCMD" "$(HISTTIMEFORMAT= history 1)" "$EPOCHREALTIME" >&3'] h=4 t=1795432997.103675 >>>
+alpha
+[?2004h⟦LI-P⟧ false
+[?2004l<<<PS0 rc=0 cmd=[echo alpha] h=5 t=1795432997.456506 >>>
+[?2004h⟦LI-P⟧ echo beta
+[?2004l<<<PS0 rc=1 cmd=[false] h=6 t=1795432997.808556 >>>
+beta
+[?2004h⟦LI-P⟧ sleep 0.2 && echo chained
+[?2004l<<<PS0 rc=0 cmd=[echo beta] h=7 t=1795432998.161631 >>>
+chained
+[?2004h⟦LI-P⟧ printf 'a\nb\n' | wc -l
+[?2004l<<<PS0 rc=0 cmd=[echo chained] h=8 t=1795432998.715858 >>>
+2
+[?2004h⟦LI-P⟧ for i in 1 2 3; do echo loop$i; done
+[?2004l<<<PS0 rc=0 cmd=[wc -l] h=9 t=1795432999.070303 >>>
+loop1
+loop2
+loop3
+[?2004h⟦LI-P⟧ exit
+[?2004l<<<PS0 rc=0 cmd=[echo loop$i] h=10 t=1795432999.422845 >>>
+exit

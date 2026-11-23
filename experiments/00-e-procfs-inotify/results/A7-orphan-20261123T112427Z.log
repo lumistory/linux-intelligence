@@ -1,0 +1,5 @@
+intermediate_pid         Some(77229)
+grandchild_pid           Some(77230)
+sample0 ppid=940 state=R comm=sleep
+reparented_to             940 (expected 1 or a subreaper)
+intermediate_still_exists false

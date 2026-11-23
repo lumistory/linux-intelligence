@@ -1,0 +1,38 @@
+=== experiment 0-B driver ===
+timestamp      : 20261123T105842Z
+kernel         : 7.2.8-zen1-2-zen
+bash           : GNU bash，版本 5.3.20(1)-release (x86_64-pc-linux-gnu)
+rustc          : rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+binary         : <WORKSPACE>/experiments/00-b-script-lifecycle/target/release/li-run-proto
+results dir    : <WORKSPACE>/experiments/00-b-script-lifecycle/results/20261123T105842Z
+tmp dir        : /tmp/li-phase0-b-20261123T105842Z
+
+=== build ===
+
+=== case: single (single.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":0.590883,"procs":0,"survivors":[]}
+
+=== case: nested (nested.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":206.267716,"procs":5,"survivors":[]}
+
+=== case: background (background.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":0.835853,"procs":1,"survivors":[23560]}
+
+=== case: execrepl (execrepl.sh) ===
+supervisor exit status: 0
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":0,"term_signal":null,"duration_ms":1.232708,"procs":0,"survivors":[]}
+
+=== case: exit3 (exit3.sh) ===
+supervisor exit status: 3
+{"type":"ScriptStarted","exit_code":null,"term_signal":null,"duration_ms":null,"procs":null,"survivors":null}
+{"type":"ScriptFinished","exit_code":3,"term_signal":null,"duration_ms":0.656735,"procs":0,"survivors":[]}
+
+=== case: ctrlc (sleeper.sh) ===
+supervisor exit status: 64

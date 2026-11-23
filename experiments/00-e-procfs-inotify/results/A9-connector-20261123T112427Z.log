@@ -1,0 +1,14 @@
+## host network namespace
+connector_open           ok
+spawned                  500
+spawn_errors             0
+fork_events              505
+exec_events              501
+exit_events              505
+other_events             3
+exec_vs_spawn_ratio      1.0020
+
+## fresh network namespace (unshare -Urn): no connector registered
+connector_open           FAILED: sendto(connector) failed: errno 111 (Connection refused (os error 111))
+errno                    Some(111)
+status                   NOT AVAILABLE

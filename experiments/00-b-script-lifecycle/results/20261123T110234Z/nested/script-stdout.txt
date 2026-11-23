@@ -1,0 +1,6 @@
+nested:pid=38770 ppid=38768
+child:pid=38773 ppid=38770
+grandchild:pid=38779 ppid=38773
+grandchild:done
+child:done
+nested:done

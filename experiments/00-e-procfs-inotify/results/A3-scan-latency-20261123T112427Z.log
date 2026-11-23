@@ -1,0 +1,20 @@
+# repeated single-scan latency, both depths
+iters          200
+depth          Stat
+procs_last     501
+read_failures  0
+p50_ns         1531879
+p90_ns         1669118
+p99_ns         2149755
+max_ns         4188829
+mean_ns        1578802
+
+iters          200
+depth          Full
+procs_last     501
+read_failures  0
+p50_ns         4166867
+p90_ns         4894643
+p99_ns         5859066
+max_ns         7252248
+mean_ns        4392043

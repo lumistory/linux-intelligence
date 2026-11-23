@@ -1,0 +1,45 @@
+# T10 A: client closes the fd without shutdown(); does the daemon leak
+#      the connection (conns_opened vs conns_closed)?
+# T10 B: unlink the socket file under a live connection; the existing
+#      connection must keep working, new ones must fail.
+# host
+Linux HOST 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
+# cpu / memory
+20
+model name	: 13th Gen Intel(R) Core(TM) i7-13700H
+                总计        已用        空闲        共享   缓冲/缓存        可用
+内存：   16361185280  6369370112   698679296  1542225920 12158046208  9991815168
+# limits
+1024
+212992
+4194304
+212992
+4194304
+512
+# user
+uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+# runtime dir
+XDG_RUNTIME_DIR=/run/user/1000
+# versions
+rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+# binaries
+-rwxr-xr-x 2 USER USER 3495800 11月23日 19:12 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+-rwxr-xr-x 2 USER USER 7451528 11月23日 19:02 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+90588aa3345ed0250195da6b38f102c0fb0e08679d2e75aab7e50a5315b5ebb9  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+6d5de782697598996160d1a8acdb8cc4c61aded756019af25a09845952b3a0fd  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+# daemon pid=65080
+--- A1: 50 abrupt closes ---
+{"conns_closed_abruptly":50,"linger0":false,"mode":"abrupt","write_failures":0}
+--- A2: 50 abrupt closes with SO_LINGER 0 (RST) ---
+{"conns_closed_abruptly":50,"linger0":true,"mode":"abrupt","write_failures":0}
+--- A3: 200 abrupt closes, checking fd count in the daemon ---
+# daemon open fds before: 11
+{"conns_closed_abruptly":200,"linger0":false,"mode":"abrupt","write_failures":0}
+# daemon open fds after: 11
+--- B: unlink the socket file while a client holds a connection ---
+CONNECTED pid=65101
+# unlinking /tmp/li-phase0-ipc/ipc.sock (this is what a crashed-and-restarted daemon leaves)
+{"mode":"unlink","path":"/tmp/li-phase0-ipc/ipc.sock","removed":true}
+{"existing_conn_barrier_ok":true,"existing_conn_write_ok":true,"mode":"hold","new_connection_after_unlink":"NotFound","socket_file_exists":false}
+STATS {"accepted":301,"acks_dropped":0,"acks_sent":3,"bad_frames":0,"bytes_read":78828,"conns_closed":301,"conns_opened":301,"dedup_dropped":0,"events_ingested":303,"oversize_frames":0,"rejected_uid":0,"seq_violations":2}

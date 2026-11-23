@@ -1,0 +1,16 @@
+ipcd: listening on /tmp/li-phase0-ipc/ipc.sock (allowed_uid=1000 queue_cap=1024 slow_ms=0 ack=true sock_mode=600)
+ipcd: accept peer pid=63904 uid=1000 gid=1000
+ipcd: accept peer pid=63907 uid=1000 gid=1000
+ipcd: accept peer pid=63913 uid=1000 gid=1000
+ipcd: accept peer pid=63946 uid=1000 gid=1000
+ipcd: accept peer pid=63993 uid=1000 gid=1000
+ipcd: accept peer pid=63993 uid=1000 gid=1000
+ipcd: accept peer pid=63907 uid=1000 gid=1000
+ipcd: accept peer pid=64057 uid=1000 gid=1000
+ipcd: accept peer pid=64057 uid=1000 gid=1000
+ipcd: accept peer pid=63913 uid=1000 gid=1000
+ipcd: accept peer pid=63946 uid=1000 gid=1000
+ipcd: accept peer pid=64083 uid=1000 gid=1000
+ipcd: accept peer pid=64083 uid=1000 gid=1000
+ipcd: SIGTERM, shutting down
+STATS {"accepted":1393,"acks_dropped":1205,"acks_sent":14,"bad_frames":0,"bytes_read":875923,"conns_closed":13,"conns_opened":13,"dedup_dropped":0,"events_ingested":1396,"oversize_frames":0,"rejected_uid":0,"seq_violations":0}

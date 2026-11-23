@@ -1,0 +1,42 @@
+# T6 daemon kill -9 and restart while a client keeps producing
+# The client keeps producing at a fixed rate and keeps a bounded
+# queue. Events produced while no daemon was reachable are lost;
+# the loss must be visible as a gap in per-session sequence.
+# host
+Linux HOST 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
+# cpu / memory
+20
+model name	: 13th Gen Intel(R) Core(TM) i7-13700H
+                总计        已用        空闲        共享   缓冲/缓存        可用
+内存：   16361185280  6388916224   699604992  1539678208 12134912000  9972269056
+# limits
+1024
+212992
+4194304
+212992
+4194304
+512
+# user
+uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+# runtime dir
+XDG_RUNTIME_DIR=/run/user/1000
+# versions
+rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+# binaries
+-rwxr-xr-x 2 USER USER 3495800 11月23日 19:12 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+-rwxr-xr-x 2 USER USER 7451528 11月23日 19:02 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+90588aa3345ed0250195da6b38f102c0fb0e08679d2e75aab7e50a5315b5ebb9  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+6d5de782697598996160d1a8acdb8cc4c61aded756019af25a09845952b3a0fd  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+# daemon pid=64146
+--- kill -9 the daemon mid-stream ---
+# daemon killed while client pid=64152 is running
+--- restart the daemon (journal append, same path) ---
+# outage_ms=1203 (kill -> new listener bound)
+# daemon pid=64199
+sender: write error: Broken pipe (os error 32)
+{"acked":3976,"backoff_ceiling_ms":500,"barrier_rtt_us":5061.138,"connect_attempts":10,"connect_failures":8,"connect_failures_total":8,"count_requested":4000,"dropped_client_queue_full":24,"elapsed_ms":3294.781012,"max_queue_depth":256,"mode":"sender","policy":"drop","produced":4000,"production_ms":3089.660308,"queue_cap":256,"rate_eps":1294.64070520726,"reader_thread_died":false,"reconnect_events":[{"attempt":1,"down_for_us":0.0,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":10},{"attempt":2,"down_for_us":10057.473,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":20},{"attempt":3,"down_for_us":30116.837,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":40},{"attempt":4,"down_for_us":70211.67,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":80},{"attempt":5,"down_for_us":150273.843,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":160},{"attempt":6,"down_for_us":310381.505,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":320},{"attempt":7,"down_for_us":630493.42,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":500},{"attempt":8,"down_for_us":1130609.858,"err":"ConnectionRefused","event":"connect_failed","sleep_ms":500},{"down_for_us":1630745.541,"event":"reconnected","failed_attempts":8,"last_backoff_ms":500,"queued_at_reconnect":256,"reconnect_number":1}],"reconnect_succeeded":1,"send_errors":1,"server_accepted_count":2952,"server_watermark":3999,"session":"t6","timed_out":false,"transport_loss":1024,"unacked":24,"unacked_ranges":[[256,256],[513,513],[770,770],[1027,1027],[1284,1293],[1550,1550],[1807,1807],[2064,2064],[2321,2321],[2578,2578],[2835,2835],[3092,3092],[3349,3349],[3606,3606],[3863,3863]],"written_to_socket":3976}
+--- audit against the journal (authoritative) ---
+{"duplicate_lines":0,"expected_events":4000,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":0,"lost":24,"lost_ranges":[[256,256],[513,513],[770,770],[1027,1027],[1284,1293],[1550,1550],[1807,1807],[2064,2064],[2321,2321],[2578,2578],[2835,2835],[3092,3092],[3349,3349],[3606,3606],[3863,3863]],"malformed_lines":0,"mode":"audit","present":3976,"session":"t6","starts_at_zero":true}
+--- daemon stats (second instance) ---
+STATS {"accepted":2952,"acks_dropped":0,"acks_sent":2953,"bad_frames":0,"bytes_read":776433,"conns_closed":1,"conns_opened":1,"dedup_dropped":0,"events_ingested":2953,"oversize_frames":0,"rejected_uid":0,"seq_violations":12}

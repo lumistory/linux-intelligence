@@ -1,0 +1,53 @@
+# T1 concurrency: 50 clients x 100 events, one session per client
+# method: each client opens its own connection, batches its 100 events
+#         into one write(), then sends Ping and waits for Pong. Latency
+#         is measured per event as (ack_receipt - event_creation).
+# host
+Linux HOST 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 GNU/Linux
+# cpu / memory
+20
+model name	: 13th Gen Intel(R) Core(TM) i7-13700H
+                总计        已用        空闲        共享   缓冲/缓存        可用
+内存：   16361185280  6405353472   713302016  1540747264 12105809920  9955831808
+# limits
+1024
+212992
+4194304
+212992
+4194304
+512
+# user
+uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+# runtime dir
+XDG_RUNTIME_DIR=/run/user/1000
+# versions
+rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+# binaries
+-rwxr-xr-x 2 USER USER 3495800 11月23日 19:12 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+-rwxr-xr-x 2 USER USER 7451528 11月23日 19:02 <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+90588aa3345ed0250195da6b38f102c0fb0e08679d2e75aab7e50a5315b5ebb9  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcd
+6d5de782697598996160d1a8acdb8cc4c61aded756019af25a09845952b3a0fd  <WORKSPACE>/experiments/00-c-ipc/target/release/ipcclient
+# daemon pid=60394
+--- run 1 (cold) ---
+{"all_acked":true,"client_batch_write":{"max_us":1148.905,"n":50,"p50_us":622.107,"p90_us":879.273,"p99_us":1148.905},"clients":50,"connect_errors":0,"events_acked":5000,"events_per_client":100,"events_total":5000,"latency_event_to_ack":{"max_us":35507.702,"n":5000,"p50_us":18144.096,"p90_us":31907.128,"p99_us":34998.406},"mode":"concurrency","throughput_events_per_sec":135253.4746144241,"wall_ms":36.967627}
+--- run 2 (repeats) ---
+{"all_acked":true,"client_batch_write":{"max_us":1426.545,"n":50,"p50_us":896.459,"p90_us":1225.088,"p99_us":1426.545},"clients":50,"connect_errors":0,"events_acked":5000,"events_per_client":100,"events_total":5000,"latency_event_to_ack":{"max_us":41067.935,"n":5000,"p50_us":18196.711,"p90_us":34546.468,"p99_us":40323.345},"mode":"concurrency","throughput_events_per_sec":115867.95678375487,"wall_ms":43.152569}
+{"all_acked":true,"client_batch_write":{"max_us":1036.213,"n":50,"p50_us":319.165,"p90_us":802.913,"p99_us":1036.213},"clients":50,"connect_errors":0,"events_acked":5000,"events_per_client":100,"events_total":5000,"latency_event_to_ack":{"max_us":37634.202,"n":5000,"p50_us":17970.707,"p90_us":32617.363,"p99_us":37115.901},"mode":"concurrency","throughput_events_per_sec":125995.29669637057,"wall_ms":39.684021}
+--- per-session sequence monotonicity (daemon counter) ---
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c1-c0","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c1-c7","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c1-c49","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c2-c0","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c2-c7","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c2-c49","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c3-c0","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c3-c7","starts_at_zero":true}
+{"duplicate_lines":0,"expected_events":100,"journal":"/tmp/li-phase0-ipc/journal.jsonl","lines_of_other_sessions":14900,"lost":0,"lost_ranges":[],"malformed_lines":0,"mode":"audit","present":100,"session":"c3-c49","starts_at_zero":true}
+--- idle round-trip latency (one event, one ack, no other load) ---
+{"burst_write":{"events":2000,"per_event_us":3.3395525,"total_us":6679.105},"mode":"latency","round_trip":{"max_us":563.255,"n":2000,"p50_us":11.866,"p90_us":12.781,"p99_us":25.28},"session":"lat1"}
+{"burst_write":{"events":2000,"per_event_us":3.517777,"total_us":7035.554},"mode":"latency","round_trip":{"max_us":6436.226,"n":2000,"p50_us":11.852,"p90_us":12.568,"p99_us":15.524},"session":"lat2"}
+--- daemon stats (from <WORKSPACE>/experiments/00-c-ipc/results/20261123T111407Z-t1-concurrency.daemon.log) ---
+ipcd: read error (conn end): Connection reset by peer (os error 104)
+ipcd: read error (conn end): Connection reset by peer (os error 104)
+STATS {"accepted":23000,"acks_dropped":2468,"acks_sent":19706,"bad_frames":0,"bytes_read":6576670,"conns_closed":152,"conns_opened":152,"dedup_dropped":0,"events_ingested":23150,"oversize_frames":0,"rejected_uid":0,"seq_violations":0}

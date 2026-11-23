@@ -1,0 +1,12 @@
+ipcd: listening on /tmp/li-phase0-ipc/ipc.sock (allowed_uid=1000 queue_cap=1024 slow_ms=0 ack=true sock_mode=600)
+ipcd: accept peer pid=63855 uid=1000 gid=1000
+ipcd: accept peer pid=63856 uid=1000 gid=1000
+ipcd: accept peer pid=63857 uid=1000 gid=1000
+ipcd: accept peer pid=63857 uid=1000 gid=1000
+ipcd: accept peer pid=63857 uid=1000 gid=1000
+ipcd: accept peer pid=63857 uid=1000 gid=1000
+ipcd: accept peer pid=63857 uid=1000 gid=1000
+ipcd: accept peer pid=63863 uid=1000 gid=1000
+ipcd: oversized frame exceeded discard cap, dropping connection
+ipcd: SIGTERM, shutting down
+STATS {"accepted":50,"acks_dropped":0,"acks_sent":60,"bad_frames":0,"bytes_read":15249,"conns_closed":8,"conns_opened":8,"dedup_dropped":0,"events_ingested":57,"oversize_frames":2,"rejected_uid":0,"seq_violations":0}

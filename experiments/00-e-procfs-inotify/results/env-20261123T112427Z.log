@@ -1,0 +1,35 @@
+# host
+Linux 7.2.8-zen1-2-zen x86_64
+# os
+PRETTY_NAME="Arch Linux"
+# rust
+rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+# nproc / mem
+20
+15977720 kB
+# inotify limits
+max_user_watches=524288
+max_queued_events=16384
+max_user_instances=1024
+# pid
+pid_max=4194304
+clk_tck=100
+btime=1795430575
+# proc_events
+config_source=/proc/config.gz
+CONFIG_CONNECTOR=y
+CONFIG_PROC_EVENTS=y
+# proc mount
+26 32 0:24 / /proc rw,nosuid,nodev,noexec,relatime shared:5 - proc proc rw
+# user
+uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+# scratch fs
+文件系统       类型   大小  已用  可用 已用% 挂载点
+tmpfs          tmpfs  7.7G   42M  7.6G    1% /tmp
+# toolchain deps (offline)
+li-observer-probe v0.1.0 (<WORKSPACE>/experiments/00-e-procfs-inotify)
+├── libc v0.2.191
+├── nix v0.31.3
+│   [build-dependencies]
+└── thiserror v2.0.21

@@ -1,0 +1,12 @@
+ipcd: listening on /tmp/li-phase0-ipc/ipc.sock (allowed_uid=1000 queue_cap=1024 slow_ms=0 ack=true sock_mode=600)
+ipcd: accept peer pid=61360 uid=1000 gid=1000
+ipcd: listening on /tmp/li-phase0-ipc/ipc.sock (allowed_uid=1000 queue_cap=1024 slow_ms=0 ack=true sock_mode=600)
+ipcd: accept peer pid=61360 uid=1000 gid=1000
+ipcd: SIGTERM, shutting down
+STATS {"accepted":9993,"acks_dropped":0,"acks_sent":9994,"bad_frames":0,"bytes_read":2635989,"conns_closed":1,"conns_opened":1,"dedup_dropped":0,"events_ingested":9994,"oversize_frames":0,"rejected_uid":0,"seq_violations":1}
+ipcd: listening on /tmp/li-phase0-ipc/ipc.sock (allowed_uid=1000 queue_cap=1024 slow_ms=0 ack=true sock_mode=600)
+ipcd: accept peer pid=61391 uid=1000 gid=1000
+ipcd: listening on /tmp/li-phase0-ipc/ipc.sock (allowed_uid=1000 queue_cap=1024 slow_ms=0 ack=true sock_mode=600)
+ipcd: accept peer pid=61391 uid=1000 gid=1000
+ipcd: SIGTERM, shutting down
+STATS {"accepted":6203,"acks_dropped":0,"acks_sent":6204,"bad_frames":0,"bytes_read":1637649,"conns_closed":1,"conns_opened":1,"dedup_dropped":0,"events_ingested":6204,"oversize_frames":0,"rejected_uid":0,"seq_violations":388}
