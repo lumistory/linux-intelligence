@@ -20,8 +20,12 @@ pub fn run() -> R<()> {
 
     let key = ProcKey::new(4242, 900);
     let window = key.start_window_ns();
-    println!("starttime 900 -> tick window [{}, {}) ns, width {} ns",
-        window.0, window.1, window.1 - window.0);
+    println!(
+        "starttime 900 -> tick window [{}, {}) ns, width {} ns",
+        window.0,
+        window.1,
+        window.1 - window.0
+    );
 
     let a_obs = Observation {
         key,
@@ -46,19 +50,55 @@ pub fn run() -> R<()> {
     println!("registry.observe(B) -> {}", describe(&b_attach));
     println!("collisions recorded: {}", reg.collision_count());
     for c in reg.collisions() {
-        println!("  key {} tick {} reason {:?} incarnations {:?}",
-            c.key.as_str(), c.tick_index, c.reason, c.incarnation_ids);
+        println!(
+            "  key {} tick {} reason {:?} incarnations {:?}",
+            c.key.as_str(),
+            c.tick_index,
+            c.reason,
+            c.incarnation_ids
+        );
     }
-    println!("key poisoned (attribution must degrade): {}", reg.is_poisoned(&key));
+    println!(
+        "key poisoned (attribution must degrade): {}",
+        reg.is_poisoned(&key)
+    );
 
-    let a_write = ev("ev-aw", Source::Fs, "s1", 10, TS0 + 1_000_000, "FileModified",
-        serde_json::json!({"path": "/tmp/li/a.txt", "pid": 4242, "starttime": 900}));
-    let b_write = ev("ev-bw", Source::Fs, "s1", 13, TS0 + 4_000_000, "FileModified",
-        serde_json::json!({"path": "/tmp/li/b.txt", "pid": 4242, "starttime": 900}));
-    let a_exit = ev("ev-ax", Source::Proc, "s1", 11, TS0 + 2_000_000, "ProcessExit",
-        serde_json::json!({"pid": 4242, "starttime": 900, "command": "editor a.txt"}));
-    let b_start = ev("ev-bs", Source::Proc, "s1", 12, TS0 + 3_000_000, "ProcessStart",
-        serde_json::json!({"pid": 4242, "starttime": 900, "command": "make b"}));
+    let a_write = ev(
+        "ev-aw",
+        Source::Fs,
+        "s1",
+        10,
+        TS0 + 1_000_000,
+        "FileModified",
+        serde_json::json!({"path": "/tmp/li/a.txt", "pid": 4242, "starttime": 900}),
+    );
+    let b_write = ev(
+        "ev-bw",
+        Source::Fs,
+        "s1",
+        13,
+        TS0 + 4_000_000,
+        "FileModified",
+        serde_json::json!({"path": "/tmp/li/b.txt", "pid": 4242, "starttime": 900}),
+    );
+    let a_exit = ev(
+        "ev-ax",
+        Source::Proc,
+        "s1",
+        11,
+        TS0 + 2_000_000,
+        "ProcessExit",
+        serde_json::json!({"pid": 4242, "starttime": 900, "command": "editor a.txt"}),
+    );
+    let b_start = ev(
+        "ev-bs",
+        Source::Proc,
+        "s1",
+        12,
+        TS0 + 3_000_000,
+        "ProcessStart",
+        serde_json::json!({"pid": 4242, "starttime": 900, "command": "make b"}),
+    );
 
     println!();
     println!("### 3.1 Attribution policy comparison");
@@ -67,7 +107,9 @@ pub fn run() -> R<()> {
     println!("|---|---|---|---|");
     println!("| pid only | pid 4242 | pid 4242 | WRONG: both writes attributed to one actor |");
     println!("| (pid,starttime), blind | 4242:900 | 4242:900 | WRONG: same alias, still merged |");
-    println!("| (pid,starttime) + collision detection | ambiguous | ambiguous | Unknown, no claim |");
+    println!(
+        "| (pid,starttime) + collision detection | ambiguous | ambiguous | Unknown, no claim |"
+    );
 
     // Ground truth: A wrote a.txt, B wrote b.txt.
     println!();
@@ -94,7 +136,11 @@ pub fn run() -> R<()> {
         session_only: Some(false),
     };
     let v = classify(&perfect);
-    println!("classify(perfect evidence, collided key) = {} / {}", v.level.as_str(), v.rule.as_str());
+    println!(
+        "classify(perfect evidence, collided key) = {} / {}",
+        v.level.as_str(),
+        v.rule.as_str()
+    );
     println!("=> R0 is evaluated first: neither more evidence nor a better clock can outvote");
     println!("   a broken identity.");
 
@@ -107,7 +153,11 @@ pub fn run() -> R<()> {
         session_only: Some(false),
     };
     let v2 = classify(&pid_only);
-    println!("classify(pid equality only)             = {} / {}", v2.level.as_str(), v2.rule.as_str());
+    println!(
+        "classify(pid equality only)             = {} / {}",
+        v2.level.as_str(),
+        v2.rule.as_str()
+    );
     println!("=> a hook that reports no starttime can never reach Probable: pid is not identity.");
 
     println!();
@@ -123,9 +173,15 @@ pub fn run() -> R<()> {
     println!("degradation survives a restart instead of being recomputed differently.");
     let same: ActorIdentity = ActorIdentity::Keyed(key);
     println!("keyed, pre-collision: {}", same.as_str());
-    println!("keyed, post-collision: {}", ActorIdentity::Ambiguous(key).as_str());
-    println!("usable for merging: pre={} post={}",
-        same.is_usable_for_merge(), ActorIdentity::Ambiguous(key).is_usable_for_merge());
+    println!(
+        "keyed, post-collision: {}",
+        ActorIdentity::Ambiguous(key).as_str()
+    );
+    println!(
+        "usable for merging: pre={} post={}",
+        same.is_usable_for_merge(),
+        ActorIdentity::Ambiguous(key).is_usable_for_merge()
+    );
 
     let _ = (&a_write, &b_write, &a_exit, &b_start);
     Ok(())

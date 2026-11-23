@@ -31,32 +31,98 @@ INSTALL = {
 
 
 def wrap_code(shell):
-    """Re-wrap the adapter's finish hook so it times itself.
+    """Time the adapter's finish handler from inside the shell.
 
-    The adapter prepends its own function to PROMPT_COMMAND, so the timer has to
-    be spliced around that function rather than replacing PROMPT_COMMAND -- a
-    plain overwrite simply disables the adapter and measures nothing.
+    bash/zsh expose a sub-millisecond clock builtin, so the cost is sampled per
+    command in a real interactive session. fish has no such builtin (its
+    $CMD_DURATION is integer milliseconds and only covers the *command*, not the
+    event handler), so fish is measured in a tight loop inside fish itself and
+    the per-iteration cost is derived from the elapsed time (see bench_fish).
     """
     o = OUTFILE
     if shell == "bash":
         return ("PROMPT_COMMAND='__a=$EPOCHREALTIME; _li_finish; "
-                "__b=$EPOCHREALTIME; "
-                "__d=$(( (${__b/./}-${__a/./})/1000 )); "
+                "__b=$EPOCHREALTIME; __d=$(( (${__b/./}-${__a/./})/1000 )); "
                 "printf \"%s\\n\" \"$__d\" >> " + o + "'")
     if shell == "zsh":
         return ("_li_now(){ local i=${EPOCHREALTIME%%.*} f=${EPOCHREALTIME#*.}; "
                 "print -rn -- $(( i*1000000 + ${f[1,6]}*1 )) }; "
                 "precmd(){ local a=$(_li_now); _li_precmd; local b=$(_li_now); "
                 "print $(( b-a )) >> " + o + " }")
-    # fish: run the adapter body explicitly and time it with fish's builtin
-    # `time`-free clock. `date +%s%N` forks twice, which would swamp a few-us
-    # measurement, so the value is read from fish's own $CMD_DURATION-free
-    # equivalent: `date` is used but its cost is measured in the same window and
-    # reported separately (see hookcost-report).
-    return ("function _li_timed --on-event fish_postexec; "
-            "set -l a (math \"floor($CMD_DURATION*1000)\"); "
-            "set -l b (math \"floor($CMD_DURATION*1000)\"); "
-            "echo $b >> " + o + "; end")
+    return None      # fish: handled by bench_fish
+
+
+def bench_fish(iters=300):
+    """Measure the fish handler by calling it in a loop inside fish."""
+    import pty
+    ev_r, ev_w = os.pipe()
+    pid, fd = pty.fork()
+    if pid == 0:
+        try:
+            signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+            if ev_r == 3:
+                m = os.dup(ev_r)
+                os.close(ev_r)
+                ev_r = m
+            os.dup2(ev_w, 3)
+            os.set_inheritable(3, True)
+            if ev_w != 3:
+                os.close(ev_w)
+            if ev_r != 3:
+                os.close(ev_r)
+            env = dict(os.environ)
+            env.update({"TERM": "dumb", "HISTFILE": os.devnull,
+                        "LC_ALL": "C.UTF-8"})
+            os.execvpe("/usr/bin/fish", ["fish", "--no-config", "-i"], env)
+        except BaseException:
+            os._exit(111)
+    os.close(ev_w)
+    os.set_blocking(fd, False)
+    os.set_blocking(ev_r, False)
+    buf = bytearray()
+
+    def rd(t):
+        end = time.monotonic() + t
+        while time.monotonic() < end:
+            r, _, _ = select.select([fd, ev_r], [], [], 0.02)
+            for f in r:
+                try:
+                    d = os.read(f, 65536)
+                except OSError:
+                    continue
+                if f == fd:
+                    buf.extend(d)
+
+    vals = []
+    try:
+        rd(1.4)
+        os.write(fd, (INSTALL["fish"] + "\r").encode())
+        rd(1.0)
+        # inside fish: measure N calls of the handler body with two date calls
+        # around the whole loop, so the date cost is amortised, not per call.
+        script = ("set -l a (date +" + "%s%N" + "); "
+                  "for i in (seq " + str(iters) + "); _li_postexec 'true'; end; "
+                  "set -l b (date +" + "%s%N" + "); "
+                  "echo BATCH (math \"($b - $a) / " + str(iters) + "\")")
+        buf.clear()
+        os.write(fd, (script + "\r").encode())
+        rd(max(3.0, iters * 0.01))
+        import re
+        m = re.search(rb"BATCH (\d+)", bytes(buf))
+        if m:
+            vals = [int(m.group(1)) // 1000]        # ns -> us per call
+    finally:
+        try:
+            os.kill(pid, 9)
+            os.waitpid(pid, 0)
+        except OSError:
+            pass
+        for f in (fd, ev_r):
+            try:
+                os.close(f)
+            except OSError:
+                pass
+    return vals
 
 
 def run(shell, n=40):
@@ -151,11 +217,13 @@ def run(shell, n=40):
 def main():
     res = {}
     for shell in (sys.argv[1:] or ["bash", "zsh", "fish"]):
-        vals = run(shell)
+        vals = bench_fish() if shell == "fish" else run(shell)
         if vals:
             r = {"n": len(vals), "median_us": statistics.median(vals),
                  "min_us": min(vals), "max_us": max(vals),
-                 "p99_us": sorted(vals)[int(0.99 * (len(vals) - 1))]}
+                 "p99_us": sorted(vals)[int(0.99 * (len(vals) - 1))],
+                 "method": ("batch_loop" if shell == "fish"
+                            else "per_command_clock")}
             res[shell] = r
             print("%-5s hook body cost median=%s us  min=%s max=%s n=%d"
                   % (shell, r["median_us"], r["min_us"], r["max_us"], r["n"]))

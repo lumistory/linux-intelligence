@@ -165,7 +165,11 @@ fn redact_tokens(cmd: &str, sink: &mut Sink, generation: Generation) -> String {
                                 || name.to_ascii_lowercase().contains("token"))));
                 if (flag || env_like) && looks_like_secret_value(value) {
                     sink.hit(
-                        if flag { "flag-value-assign" } else { "env-assign" },
+                        if flag {
+                            "flag-value-assign"
+                        } else {
+                            "env-assign"
+                        },
                         value,
                     );
                     out.push(format!("{name}={MASK}"));
@@ -419,7 +423,11 @@ mod tests {
         let cmd = "export DATABASE_URL=postgres://app:hunter2pw@db.local/app";
         let v1 = redact(cmd, Generation::V1);
         let v2 = redact(cmd, Generation::V2);
-        assert!(v1.text.contains("hunter2pw"), "V1 is expected to miss this: {}", v1.text);
+        assert!(
+            v1.text.contains("hunter2pw"),
+            "V1 is expected to miss this: {}",
+            v1.text
+        );
         assert!(!v2.text.contains("hunter2pw"), "{}", v2.text);
         assert!(v2.rules.contains(&"url-userinfo"));
     }

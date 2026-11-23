@@ -59,9 +59,11 @@ impl Source {
             Source::Proc => SourceClass::KernelProc,
             Source::Fs => SourceClass::KernelFs,
             Source::Recovery | Source::Policy => SourceClass::Declared,
-            Source::ShellBash | Source::ShellZsh | Source::ShellFish | Source::Script | Source::Pty => {
-                SourceClass::Declared
-            }
+            Source::ShellBash
+            | Source::ShellZsh
+            | Source::ShellFish
+            | Source::Script
+            | Source::Pty => SourceClass::Declared,
         }
     }
 }
@@ -117,7 +119,9 @@ impl Event {
             session_id,
             sequence,
             ts_mono_ns,
-            ts_wall: crate::util::iso8601_from_unix_ms(1_763_942_400_000 + u128::from(ts_mono_ns / 1_000_000)),
+            ts_wall: crate::util::iso8601_from_unix_ms(
+                1_763_942_400_000 + u128::from(ts_mono_ns / 1_000_000),
+            ),
             type_: type_.into(),
             payload,
             evidence_status,
@@ -184,8 +188,26 @@ mod tests {
 
     #[test]
     fn hook_and_procfs_end_share_a_type_class() {
-        let a = Event::new("a", Source::ShellBash, Some("s".into()), 1, 0, "CommandFinished", serde_json::json!({}), EvidenceStatus::Declared);
-        let b = Event::new("b", Source::Proc, Some("s".into()), 2, 0, "ProcessExit", serde_json::json!({}), EvidenceStatus::Observed);
+        let a = Event::new(
+            "a",
+            Source::ShellBash,
+            Some("s".into()),
+            1,
+            0,
+            "CommandFinished",
+            serde_json::json!({}),
+            EvidenceStatus::Declared,
+        );
+        let b = Event::new(
+            "b",
+            Source::Proc,
+            Some("s".into()),
+            2,
+            0,
+            "ProcessExit",
+            serde_json::json!({}),
+            EvidenceStatus::Observed,
+        );
         assert_eq!(a.type_class(), b.type_class());
     }
 }

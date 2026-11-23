@@ -70,7 +70,10 @@ impl Relation {
                 self.level.as_str()
             ),
             RelationKind::SpawnedBy => {
-                format!("{subject} was spawned by {object} ({})", self.level.as_str())
+                format!(
+                    "{subject} was spawned by {object} ({})",
+                    self.level.as_str()
+                )
             }
             RelationKind::ModifiedDuring => format!(
                 "{object} was modified during {subject}'s lifetime ({})",

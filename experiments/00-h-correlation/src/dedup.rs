@@ -307,7 +307,13 @@ mod tests {
     #[test]
     fn cross_source_same_command_caught_semantically() {
         let mut d = Deduplicator::new(FingerprintPolicy::default());
-        let a = ev("a", Source::ShellBash, 1_000_000_000, "CommandFinished", "ls -l");
+        let a = ev(
+            "a",
+            Source::ShellBash,
+            1_000_000_000,
+            "CommandFinished",
+            "ls -l",
+        );
         let b = ev("b", Source::Proc, 1_020_000_000, "ProcessExit", "ls  -l");
         assert_eq!(d.offer(&a), Decision::Fresh);
         assert_eq!(d.offer(&b), Decision::DuplicateSemantic);
@@ -316,8 +322,20 @@ mod tests {
     #[test]
     fn same_command_far_apart_is_not_a_duplicate() {
         let mut d = Deduplicator::new(FingerprintPolicy::default());
-        let a = ev("a", Source::ShellBash, 1_000_000_000, "CommandFinished", "ls");
-        let b = ev("b", Source::ShellBash, 9_000_000_000, "CommandFinished", "ls");
+        let a = ev(
+            "a",
+            Source::ShellBash,
+            1_000_000_000,
+            "CommandFinished",
+            "ls",
+        );
+        let b = ev(
+            "b",
+            Source::ShellBash,
+            9_000_000_000,
+            "CommandFinished",
+            "ls",
+        );
         assert_eq!(d.offer(&a), Decision::Fresh);
         assert_eq!(d.offer(&b), Decision::Fresh);
     }
@@ -325,8 +343,20 @@ mod tests {
     #[test]
     fn different_command_in_same_window_is_not_a_duplicate() {
         let mut d = Deduplicator::new(FingerprintPolicy::default());
-        let a = ev("a", Source::ShellBash, 1_000_000_000, "CommandFinished", "ls");
-        let b = ev("b", Source::Proc, 1_010_000_000, "ProcessExit", "rm -rf /tmp/x");
+        let a = ev(
+            "a",
+            Source::ShellBash,
+            1_000_000_000,
+            "CommandFinished",
+            "ls",
+        );
+        let b = ev(
+            "b",
+            Source::Proc,
+            1_010_000_000,
+            "ProcessExit",
+            "rm -rf /tmp/x",
+        );
         assert_eq!(d.offer(&a), Decision::Fresh);
         assert_eq!(d.offer(&b), Decision::Fresh);
     }

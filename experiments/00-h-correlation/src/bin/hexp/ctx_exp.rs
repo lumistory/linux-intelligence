@@ -43,11 +43,23 @@ pub fn run() -> R<()> {
     println!("|---|---|");
     println!("| operations of ev-1 | {} |", join_ops(&s, "ev-1"));
     println!("| operations of ev-2 | {} |", join_ops(&s, "ev-2"));
-    println!("| events of op-edit | {} |", s.events_of("op-edit").join(", "));
-    println!("| events of op-recover | {} |", s.events_of("op-recover").join(", "));
+    println!(
+        "| events of op-edit | {} |",
+        s.events_of("op-edit").join(", ")
+    );
+    println!(
+        "| events of op-recover | {} |",
+        s.events_of("op-recover").join(", ")
+    );
     let all = vec!["ev-1".to_string(), "ev-2".to_string(), "ev-3".to_string()];
-    println!("| events belonging to no operation | {} |",
-        s.orphan_events(&all).iter().map(|x| x.as_str()).collect::<Vec<_>>().join(", "));
+    println!(
+        "| events belonging to no operation | {} |",
+        s.orphan_events(&all)
+            .iter()
+            .map(|x| x.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
 
     println!();
     println!("### 6.1 Retraction keeps history");
@@ -57,7 +69,10 @@ pub fn run() -> R<()> {
     println!("| query | result |");
     println!("|---|---|");
     println!("| operations of ev-2 | {} |", join_ops(&s, "ev-2"));
-    println!("| events of op-recover | `{}` (empty, the operation still exists) |", s.events_of("op-recover").join(", "));
+    println!(
+        "| events of op-recover | `{}` (empty, the operation still exists) |",
+        s.events_of("op-recover").join(", ")
+    );
     println!("| membership rows retained | {} |", s.memberships_count());
 
     println!();
@@ -77,7 +92,11 @@ pub fn run() -> R<()> {
 }
 
 fn join_ops(s: &ContextStore, event: &str) -> String {
-    let ops: Vec<&str> = s.operations_of(event).iter().map(|o| o.id.as_str()).collect();
+    let ops: Vec<&str> = s
+        .operations_of(event)
+        .iter()
+        .map(|o| o.id.as_str())
+        .collect();
     if ops.is_empty() {
         "none".to_string()
     } else {

@@ -73,11 +73,17 @@ pub enum Attach {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Reason {
-    CommDiffers { known: String, seen: String },
+    CommDiffers {
+        known: String,
+        seen: String,
+    },
     CmdlineDiffers,
     /// The key was seen to exit and then reappear without a tick change: with a
     /// monotonic `starttime` this means two processes shared the tick.
-    ExitedThenReappeared { exited_at_ns: u64, seen_at_ns: u64 },
+    ExitedThenReappeared {
+        exited_at_ns: u64,
+        seen_at_ns: u64,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

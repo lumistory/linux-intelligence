@@ -1,7 +1,9 @@
 //! Experiment 1: event-level and semantic deduplication, scored against ground
 //! truth on a synthetic 1000-event population.
 
-use corr0h::dedup::{Decision, Deduplicator, FingerprintPolicy, Labelled, Score, Truth, WindowMode};
+use corr0h::dedup::{
+    Decision, Deduplicator, FingerprintPolicy, Labelled, Score, Truth, WindowMode,
+};
 use corr0h::envelope::Source;
 use corr0h::util::Rng;
 
@@ -105,7 +107,15 @@ fn build_population(seed: u64) -> Population {
             })
         };
         events.push(Labelled {
-            event: ev(&id, source, &session, u64::from(k), t, "CommandFinished", mk_payload(cmd)),
+            event: ev(
+                &id,
+                source,
+                &session,
+                u64::from(k),
+                t,
+                "CommandFinished",
+                mk_payload(cmd),
+            ),
             truth: Truth::Origin,
             origin: None,
         });
@@ -114,7 +124,15 @@ fn build_population(seed: u64) -> Population {
         // 150 resends: identical id.
         if k % 10 < 3 {
             events.push(Labelled {
-                event: ev(&id, source, &session, u64::from(k), t, "CommandFinished", mk_payload(cmd)),
+                event: ev(
+                    &id,
+                    source,
+                    &session,
+                    u64::from(k),
+                    t,
+                    "CommandFinished",
+                    mk_payload(cmd),
+                ),
                 truth: Truth::ResendSameId,
                 origin: Some(id.clone()),
             });
@@ -132,8 +150,15 @@ fn build_population(seed: u64) -> Population {
             };
             let jitter = rng.below(30_000_000);
             events.push(Labelled {
-                event: ev(&dup_id, other, &session, u64::from(k), t + jitter, ty,
-                    serde_json::json!({"command": cmd, "pid": pid, "starttime": starttime})),
+                event: ev(
+                    &dup_id,
+                    other,
+                    &session,
+                    u64::from(k),
+                    t + jitter,
+                    ty,
+                    serde_json::json!({"command": cmd, "pid": pid, "starttime": starttime}),
+                ),
                 truth: Truth::SameFactNewId,
                 origin: Some(id.clone()),
             });
@@ -146,7 +171,14 @@ fn build_population(seed: u64) -> Population {
             let id2 = format!("uuid-{next_id:04x}");
             let other_cmd: &str = &format!("{} --job {}-alt", CMDS[(ci + 3) % CMDS.len()], k);
             let (trap, sess2, cmd2, dt, pid2, start2) = match (k / 2) % 5 {
-                0 => (Trap::IndistinguishableDoubleTap, session.clone(), cmd, 5_000_000u64, pid, starttime),
+                0 => (
+                    Trap::IndistinguishableDoubleTap,
+                    session.clone(),
+                    cmd,
+                    5_000_000u64,
+                    pid,
+                    starttime,
+                ),
                 1 => (
                     Trap::OtherSessionSameWindow,
                     format!("sess-{}", (k + 3) % 8),
@@ -155,7 +187,14 @@ fn build_population(seed: u64) -> Population {
                     pid,
                     starttime,
                 ),
-                2 => (Trap::FarInTime, format!("{session}-far"), cmd, 30_000_000_000, pid, starttime),
+                2 => (
+                    Trap::FarInTime,
+                    format!("{session}-far"),
+                    cmd,
+                    30_000_000_000,
+                    pid,
+                    starttime,
+                ),
                 3 => (
                     Trap::SameCmdDifferentProcess,
                     session.clone(),
@@ -174,9 +213,15 @@ fn build_population(seed: u64) -> Population {
                 ),
             };
             events.push(Labelled {
-                event: ev(&id2, Source::ShellBash, &sess2, u64::from(k) + 1, t + dt,
+                event: ev(
+                    &id2,
+                    Source::ShellBash,
+                    &sess2,
+                    u64::from(k) + 1,
+                    t + dt,
                     "CommandFinished",
-                    serde_json::json!({"command": cmd2, "pid": pid2, "starttime": start2})),
+                    serde_json::json!({"command": cmd2, "pid": pid2, "starttime": start2}),
+                ),
                 truth: Truth::Distinct,
                 origin: None,
             });
@@ -185,7 +230,10 @@ fn build_population(seed: u64) -> Population {
 
         t += 20_000_000 + rng.below(5_000_000);
     }
-    Population { events, trap: traps }
+    Population {
+        events,
+        trap: traps,
+    }
 }
 
 fn exact_only(pop: &Population) -> (Vec<Decision>, Score) {
@@ -255,18 +303,32 @@ fn undecidable_merged(pop: &Population, decisions: &[Decision]) -> (usize, usize
 
 fn fn_rate(s: &Score) -> f64 {
     let d = s.true_pos + s.false_neg;
-    if d == 0 { 0.0 } else { s.false_neg as f64 / d as f64 }
+    if d == 0 {
+        0.0
+    } else {
+        s.false_neg as f64 / d as f64
+    }
 }
 
 pub fn run() -> R<()> {
     println!("## 1. Deduplication (SYNTHETIC streams, ground truth by construction)");
     let pop = build_population(0xC0_11_EA);
-    let dup_count = pop.events.iter().filter(|l| matches!(l.truth, Truth::ResendSameId | Truth::SameFactNewId)).count();
-    let neg_count = pop.events.iter().filter(|l| l.truth == Truth::Distinct).count();
+    let dup_count = pop
+        .events
+        .iter()
+        .filter(|l| matches!(l.truth, Truth::ResendSameId | Truth::SameFactNewId))
+        .count();
+    let neg_count = pop
+        .events
+        .iter()
+        .filter(|l| l.truth == Truth::Distinct)
+        .count();
     println!();
     println!(
         "population: {} events = 500 origins + {} duplicates + {} near-miss negatives",
-        pop.events.len(), dup_count, neg_count
+        pop.events.len(),
+        dup_count,
+        neg_count
     );
 
     println!();
@@ -280,8 +342,14 @@ pub fn run() -> R<()> {
     println!("| missed duplicates (FN) | {} |", exact.false_neg);
     println!("| precision | {:.4} |", exact.precision());
     println!("| recall | {:.4} |", exact.recall());
-    println!("| false-merge rate FP/(TP+FP) | {:.4} |", exact.false_merge_rate());
-    println!("| undetected-duplicate rate FN/(TP+FN) | {:.4} |", fn_rate(&exact));
+    println!(
+        "| false-merge rate FP/(TP+FP) | {:.4} |",
+        exact.false_merge_rate()
+    );
+    println!(
+        "| undetected-duplicate rate FN/(TP+FN) | {:.4} |",
+        fn_rate(&exact)
+    );
 
     println!();
     println!("Ground truth is built in, and the population contains one class that is");
@@ -315,8 +383,16 @@ pub fn run() -> R<()> {
                 let (decisions, s) = fingerprint(&pop, policy);
                 let (tp, fp, _neg) = decidable_score(&pop, &decisions);
                 let (d1m, d1t) = undecidable_merged(&pop, &decisions);
-                let prec = if tp + fp == 0 { 1.0 } else { tp as f64 / (tp + fp) as f64 };
-                let fmr = if tp + fp == 0 { 0.0 } else { fp as f64 / (tp + fp) as f64 };
+                let prec = if tp + fp == 0 {
+                    1.0
+                } else {
+                    tp as f64 / (tp + fp) as f64
+                };
+                let fmr = if tp + fp == 0 {
+                    0.0
+                } else {
+                    fp as f64 / (tp + fp) as f64
+                };
                 println!(
                     "| {window_ms} ms | {} | {label} | {tp} | {fp} | {} | {prec:.4} | {:.4} | {fmr:.4} | {d1m}/{d1t} |",
                     if mode == WindowMode::Single { "single" } else { "triple" },
@@ -338,11 +414,17 @@ pub fn run() -> R<()> {
     let (dec_session, s_session) = fingerprint(&pop, chosen);
     let (dec_nosession, s_nosession) = fingerprint(
         &pop,
-        FingerprintPolicy { require_same_session: false, ..chosen },
+        FingerprintPolicy {
+            require_same_session: false,
+            ..chosen
+        },
     );
     let (dec_proc, s_proc) = fingerprint(
         &pop,
-        FingerprintPolicy { require_same_process: true, ..chosen },
+        FingerprintPolicy {
+            require_same_process: true,
+            ..chosen
+        },
     );
     println!("| trap class | n | key: no session | key: +session | key: +session+process |");
     println!("|---|---|---|---|---|");
@@ -373,15 +455,40 @@ pub fn run() -> R<()> {
                 fp_p += 1;
             }
         }
-        println!("| {} | {} | {} | {} | {} |", trap.as_str(), total, fp_n, fp_s, fp_p);
+        println!(
+            "| {} | {} | {} | {} | {} |",
+            trap.as_str(),
+            total,
+            fp_n,
+            fp_s,
+            fp_p
+        );
     }
     println!();
-    println!("no session    : TP {} FP {} FN {} precision {:.4} recall {:.4}",
-        s_nosession.true_pos, s_nosession.false_pos, s_nosession.false_neg, s_nosession.precision(), s_nosession.recall());
-    println!("+session      : TP {} FP {} FN {} precision {:.4} recall {:.4}",
-        s_session.true_pos, s_session.false_pos, s_session.false_neg, s_session.precision(), s_session.recall());
-    println!("+session+proc : TP {} FP {} FN {} precision {:.4} recall {:.4}",
-        s_proc.true_pos, s_proc.false_pos, s_proc.false_neg, s_proc.precision(), s_proc.recall());
+    println!(
+        "no session    : TP {} FP {} FN {} precision {:.4} recall {:.4}",
+        s_nosession.true_pos,
+        s_nosession.false_pos,
+        s_nosession.false_neg,
+        s_nosession.precision(),
+        s_nosession.recall()
+    );
+    println!(
+        "+session      : TP {} FP {} FN {} precision {:.4} recall {:.4}",
+        s_session.true_pos,
+        s_session.false_pos,
+        s_session.false_neg,
+        s_session.precision(),
+        s_session.recall()
+    );
+    println!(
+        "+session+proc : TP {} FP {} FN {} precision {:.4} recall {:.4}",
+        s_proc.true_pos,
+        s_proc.false_pos,
+        s_proc.false_neg,
+        s_proc.precision(),
+        s_proc.recall()
+    );
     println!();
     println!("Dropping the session from the key is what turns a safe fingerprint into a");
     println!("dangerous one: every D2 row becomes a merge, and D2 is decidable. Adding the");
@@ -399,18 +506,37 @@ pub fn run() -> R<()> {
         let p = build_population(seed);
         let (_, se) = exact_only(&p);
         let (_, sf) = fingerprint(&p, chosen);
-        println!("| {seed:#x} | {} | {:.4} | {:.4} | {:.4} |",
-            p.events.len(), se.recall(), sf.precision(), sf.recall());
+        println!(
+            "| {seed:#x} | {} | {:.4} | {:.4} | {:.4} |",
+            p.events.len(),
+            se.recall(),
+            sf.precision(),
+            sf.recall()
+        );
     }
 
     println!();
     println!("### 1.5 Fingerprint blind spot: same fact, different subject text");
     println!();
     let mut d = Deduplicator::new(chosen);
-    let a = ev("x1", Source::ShellBash, "s1", 1, TS0, "CommandFinished",
-        serde_json::json!({"command": "make -j8"}));
-    let b = ev("x2", Source::Proc, "s1", 2, TS0 + 1_000_000, "ProcessExit",
-        serde_json::json!({"command": "/usr/bin/make -j8"}));
+    let a = ev(
+        "x1",
+        Source::ShellBash,
+        "s1",
+        1,
+        TS0,
+        "CommandFinished",
+        serde_json::json!({"command": "make -j8"}),
+    );
+    let b = ev(
+        "x2",
+        Source::Proc,
+        "s1",
+        2,
+        TS0 + 1_000_000,
+        "ProcessExit",
+        serde_json::json!({"command": "/usr/bin/make -j8"}),
+    );
     println!("hook `make -j8`           -> {:?}", d.offer(&a));
     println!("proc `/usr/bin/make -j8`  -> {:?}", d.offer(&b));
     println!("The subject is normalized command text; a `/proc/<pid>/cmdline` absolute");
@@ -420,9 +546,17 @@ pub fn run() -> R<()> {
     println!();
     println!("### 1.6 Verdict");
     println!();
-    println!("Exact `event_id` is necessary and free, but recall {:.4} on a population where", exact.recall());
-    println!("{:.1}% of all duplicates carry a fresh id. The fingerprint is what recovers them,",
-        (1.0 - exact.recall()) * 100.0);
-    println!("and it costs {:.4} false merges on the chosen config.", s_session.false_merge_rate());
+    println!(
+        "Exact `event_id` is necessary and free, but recall {:.4} on a population where",
+        exact.recall()
+    );
+    println!(
+        "{:.1}% of all duplicates carry a fresh id. The fingerprint is what recovers them,",
+        (1.0 - exact.recall()) * 100.0
+    );
+    println!(
+        "and it costs {:.4} false merges on the chosen config.",
+        s_session.false_merge_rate()
+    );
     Ok(())
 }

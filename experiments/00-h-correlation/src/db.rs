@@ -64,11 +64,7 @@ impl Store {
                 | OpenFlags::SQLITE_OPEN_URI,
         )?;
         Self::configure(&conn, config)?;
-        Ok(Self {
-            conn,
-            path,
-            config,
-        })
+        Ok(Self { conn, path, config })
     }
 
     /// Read-only connection for the concurrent-reader test.
@@ -88,7 +84,9 @@ impl Store {
         // asserting it catches a database created by another tool.
         let mode: String = conn.query_row("PRAGMA journal_mode=WAL", [], |r| r.get(0))?;
         if !mode.eq_ignore_ascii_case("wal") {
-            return Err(DbError::Integrity(format!("journal_mode is {mode}, not wal")));
+            return Err(DbError::Integrity(format!(
+                "journal_mode is {mode}, not wal"
+            )));
         }
         conn.execute_batch("PRAGMA foreign_keys=ON;")?;
         if config.synchronous_normal {
@@ -125,9 +123,9 @@ impl Store {
         if !self.has_migration_table()? {
             return Ok(Vec::new());
         }
-        let mut st = self
-            .conn
-            .prepare("SELECT version, description, checksum FROM schema_version ORDER BY version")?;
+        let mut st = self.conn.prepare(
+            "SELECT version, description, checksum FROM schema_version ORDER BY version",
+        )?;
         let rows = st
             .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -227,9 +225,7 @@ impl Store {
             .conn
             .query_row("PRAGMA wal_checkpoint(PASSIVE)", [], |r| r.get(0))
             .or_else(|_| Ok::<i64, rusqlite::Error>(0))?;
-        let pages: i64 = self
-            .conn
-            .query_row("PRAGMA page_count", [], |r| r.get(0))?;
+        let pages: i64 = self.conn.query_row("PRAGMA page_count", [], |r| r.get(0))?;
         Ok((wal, pages))
     }
 
@@ -389,7 +385,11 @@ impl Store {
 
     // --------------------------------------------------------------- queries
 
-    pub fn events_of_session(&self, session_id: &str, limit: i64) -> Result<Vec<(String, i64, String)>> {
+    pub fn events_of_session(
+        &self,
+        session_id: &str,
+        limit: i64,
+    ) -> Result<Vec<(String, i64, String)>> {
         let mut st = self.conn.prepare_cached(
             "SELECT event_id, sequence, type FROM events
              WHERE session_id=?1 ORDER BY sequence LIMIT ?2",
@@ -438,7 +438,9 @@ impl Store {
              ORDER BY r.relation_id DESC LIMIT 200",
         )?;
         let rows = st
-            .query_map([path_like], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
+            .query_map([path_like], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+            })?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(rows)
     }
@@ -471,7 +473,9 @@ impl Store {
     pub fn trim_by_size(&self, keep: i64, batch: usize) -> Result<usize> {
         let mut removed = 0usize;
         loop {
-            let n: i64 = self.conn.query_row("SELECT count(*) FROM events", [], |r| r.get(0))?;
+            let n: i64 = self
+                .conn
+                .query_row("SELECT count(*) FROM events", [], |r| r.get(0))?;
             if n <= keep {
                 return Ok(removed);
             }
@@ -513,7 +517,9 @@ impl Store {
     }
 
     pub fn synchronous(&self) -> Result<i64> {
-        Ok(self.conn.query_row("PRAGMA synchronous", [], |r| r.get(0))?)
+        Ok(self
+            .conn
+            .query_row("PRAGMA synchronous", [], |r| r.get(0))?)
     }
 
     pub fn busy_timeout(&self) -> Result<i64> {
@@ -616,7 +622,8 @@ mod tests {
         let p = tmp_db("t_kind.db");
         let mut s = Store::open(&p, DbConfig::default()).unwrap();
         s.migrate(migrations(), None).unwrap();
-        s.upsert_session("s1", "bash", None, "now", 0, None).unwrap();
+        s.upsert_session("s1", "bash", None, "now", 0, None)
+            .unwrap();
         for id in ["e1", "e2"] {
             s.insert_event(&EventRow {
                 event_id: id,

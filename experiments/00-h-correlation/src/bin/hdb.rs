@@ -56,9 +56,13 @@ fn wal(args: &[String]) -> R<()> {
     let mut store = Store::open(path, DbConfig::default())?;
     store.migrate(MIGRATIONS, None)?;
     store.upsert_session("sess-0", "bash", None, "2025-11-24T00:00:00.000Z", 0, None)?;
-    println!("journal_mode={} wal_autocheckpoint={}",
+    println!(
+        "journal_mode={} wal_autocheckpoint={}",
         store.journal_mode()?,
-        store.conn.query_row("PRAGMA wal_autocheckpoint", [], |r| r.get::<_, i64>(0))?);
+        store
+            .conn
+            .query_row("PRAGMA wal_autocheckpoint", [], |r| r.get::<_, i64>(0))?
+    );
     drop(store);
 
     let exe = std::env::current_exe()?;
@@ -110,7 +114,9 @@ fn wal(args: &[String]) -> R<()> {
                 }
             }
         }
-        println!("summary: readers_with_errors={crashed} total_busy_retries_across_readers={total_busy}");
+        println!(
+            "summary: readers_with_errors={crashed} total_busy_retries_across_readers={total_busy}"
+        );
     }
 
     // Readers never block under WAL, so `busy_timeout` has to be justified by the
@@ -120,13 +126,25 @@ fn wal(args: &[String]) -> R<()> {
     println!("### two concurrent writers (the case busy_timeout actually covers)");
     for busy_ms in [5_000u64, 0u64] {
         let mut w1 = Command::new(&exe)
-            .args(["writer", path, &seconds.to_string(), &busy_ms.to_string(), "wa"])
+            .args([
+                "writer",
+                path,
+                &seconds.to_string(),
+                &busy_ms.to_string(),
+                "wa",
+            ])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
         std::thread::sleep(std::time::Duration::from_millis(50));
         let mut w2 = Command::new(&exe)
-            .args(["writer", path, &seconds.to_string(), &busy_ms.to_string(), "wb"])
+            .args([
+                "writer",
+                path,
+                &seconds.to_string(),
+                &busy_ms.to_string(),
+                "wb",
+            ])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
@@ -157,8 +175,12 @@ fn migrate(args: &[String]) -> R<()> {
         std::fs::create_dir_all(dir)?;
     }
     let mut store = Store::open(path, DbConfig::default())?;
-    println!("journal_mode={} synchronous={} busy_timeout_ms={} foreign_keys=on",
-        store.journal_mode()?, store.synchronous()?, store.busy_timeout()?);
+    println!(
+        "journal_mode={} synchronous={} busy_timeout_ms={} foreign_keys=on",
+        store.journal_mode()?,
+        store.synchronous()?,
+        store.busy_timeout()?
+    );
     let before = store.schema_version()?;
     let applied = store.migrate(MIGRATIONS, target)?;
     let after = store.schema_version()?;
@@ -189,7 +211,14 @@ fn populate(store: &Store, n: usize, seed: u64) -> R<()> {
     let mut rng = Rng::new(seed);
     let sessions: Vec<String> = (0..8).map(|i| format!("sess-{i}")).collect();
     for s in &sessions {
-        store.upsert_session(s, "bash", Some("5.3.20"), "2025-11-24T00:00:00.000Z", 0, Some("/home/u"))?;
+        store.upsert_session(
+            s,
+            "bash",
+            Some("5.3.20"),
+            "2025-11-24T00:00:00.000Z",
+            0,
+            Some("/home/u"),
+        )?;
     }
     let t0 = Instant::now();
     store.conn.execute_batch("BEGIN")?;
@@ -205,8 +234,12 @@ fn populate(store: &Store, n: usize, seed: u64) -> R<()> {
         for i in 0..n {
             let session = &sessions[i % sessions.len()];
             let ts = 1_763_942_400_000_000_000i64 + (i as i64) * 1_000_000;
-            let ty = ["CommandStarted", "CommandFinished", "FileModified", "ProcessExit"]
-                [rng.below(4) as usize];
+            let ty = [
+                "CommandStarted",
+                "CommandFinished",
+                "FileModified",
+                "ProcessExit",
+            ][rng.below(4) as usize];
             let class = match ty {
                 "CommandStarted" => "proc.start",
                 "CommandFinished" | "ProcessExit" => "proc.end",
@@ -235,10 +268,12 @@ fn populate(store: &Store, n: usize, seed: u64) -> R<()> {
     }
     store.conn.execute_batch("COMMIT")?;
     let elapsed = t0.elapsed();
-    println!("inserted={n} wall_ms={} per_row_us={:.2} rows_per_s={:.0}",
+    println!(
+        "inserted={n} wall_ms={} per_row_us={:.2} rows_per_s={:.0}",
         elapsed.as_millis(),
         elapsed.as_secs_f64() * 1e6 / n as f64,
-        n as f64 / elapsed.as_secs_f64());
+        n as f64 / elapsed.as_secs_f64()
+    );
     Ok(())
 }
 
@@ -253,7 +288,11 @@ fn bench(args: &[String]) -> R<()> {
     let mut store = Store::open(path, DbConfig::default())?;
     store.migrate(MIGRATIONS, None)?;
     populate(&store, n, 0x5EED)?;
-    println!("db_file_bytes={} page_count={}", store.file_size(), store.wal_pages()?.1);
+    println!(
+        "db_file_bytes={} page_count={}",
+        store.file_size(),
+        store.wal_pages()?.1
+    );
 
     // Some operations and memberships so the third query shape is real.
     store.conn.execute_batch("BEGIN")?;
@@ -279,8 +318,11 @@ fn bench(args: &[String]) -> R<()> {
         }
     }
     store.conn.execute_batch("COMMIT")?;
-    println!("operations={} event_operations={}",
-        store.count("operations")?, store.count("event_operations")?);
+    println!(
+        "operations={} event_operations={}",
+        store.count("operations")?,
+        store.count("event_operations")?
+    );
 
     // Relations: the third query shape needs real rows on both sides.
     store.conn.execute_batch("BEGIN")?;
@@ -297,7 +339,11 @@ fn bench(args: &[String]) -> R<()> {
             rusqlite::params![
                 from,
                 to,
-                if i % 2 == 0 { "modified_during" } else { "observed_within" },
+                if i % 2 == 0 {
+                    "modified_during"
+                } else {
+                    "observed_within"
+                },
                 if i % 3 == 0 { "Probable" } else { "Weak" }
             ],
         )?;
@@ -362,7 +408,10 @@ fn bench(args: &[String]) -> R<()> {
     store
         .conn
         .execute_batch("CREATE INDEX IF NOT EXISTS idx_events_payload_path ON events(json_extract(payload,'$.path'))")?;
-    println!("create_expression_index elapsed_ms={}", t.elapsed().as_millis());
+    println!(
+        "create_expression_index elapsed_ms={}",
+        t.elapsed().as_millis()
+    );
     lat.clear();
     rows_out = 0;
     for i in 0..iters {
@@ -492,10 +541,12 @@ fn reader(args: &[String]) -> R<()> {
             Err(_) => other += 1,
         }
     }
-    println!("{id} ok={ok} busy={busy} other_errors={other} p50_us={:.1} p99_us={:.1} max_us={:.1}",
+    println!(
+        "{id} ok={ok} busy={busy} other_errors={other} p50_us={:.1} p99_us={:.1} max_us={:.1}",
         percentile(&lat, 50.0) as f64 / 1000.0,
         percentile(&lat, 99.0) as f64 / 1000.0,
-        lat.iter().copied().max().unwrap_or(0) as f64 / 1000.0);
+        lat.iter().copied().max().unwrap_or(0) as f64 / 1000.0
+    );
     Ok(())
 }
 
@@ -640,10 +691,17 @@ fn integrity_impl(path: &str) -> R<()> {
     let store = Store::open(path, DbConfig::default())?;
     let t = Instant::now();
     let ic = store.integrity_check()?;
-    println!("integrity_check={ic} elapsed_ms={}", t.elapsed().as_millis());
+    println!(
+        "integrity_check={ic} elapsed_ms={}",
+        t.elapsed().as_millis()
+    );
     println!("foreign_key_violations={}", store.foreign_key_violations()?);
-    println!("events={} event_relations={} schema_version={}",
-        store.count("events")?, store.count("event_relations")?, store.schema_version()?);
+    println!(
+        "events={} event_relations={} schema_version={}",
+        store.count("events")?,
+        store.count("event_relations")?,
+        store.schema_version()?
+    );
     // A committed row must still be readable, and the largest visible sequence
     // must not contain a hole caused by the crash: SQLite rolls back whole
     // transactions, so the max committed sequence is the boundary.
@@ -683,7 +741,10 @@ fn retention(args: &[String]) -> R<()> {
              CREATE INDEX idx_event_relations_to_fk ON event_relations(to_event);
              CREATE INDEX idx_event_operations_event_fk ON event_operations(event_id);",
         )?;
-        println!("fk_child_indexes_created elapsed_ms={}", t.elapsed().as_millis());
+        println!(
+            "fk_child_indexes_created elapsed_ms={}",
+            t.elapsed().as_millis()
+        );
     }
     populate(&store, n, 0x5EED)?;
     let before = store.file_size();
@@ -698,24 +759,37 @@ fn retention(args: &[String]) -> R<()> {
         r
     } else {
         let r = store.trim_by_size((n as i64) * 9 / 10, 5000)?;
-        println!("trim_by_size keep={} batch=5000 removed={r}", (n as i64) * 9 / 10);
+        println!(
+            "trim_by_size keep={} batch=5000 removed={r}",
+            (n as i64) * 9 / 10
+        );
         r
     };
     let trim_ms = t.elapsed().as_millis();
-    println!("trim removed={removed} elapsed_ms={trim_ms} rows_now={} file_bytes={}",
-        store.count("events")?, store.file_size());
+    println!(
+        "trim removed={removed} elapsed_ms={trim_ms} rows_now={} file_bytes={}",
+        store.count("events")?,
+        store.file_size()
+    );
 
     let t = Instant::now();
     store.vacuum()?;
     let vacuum_ms = t.elapsed().as_millis();
-    println!("vacuum elapsed_ms={vacuum_ms} file_bytes={} rows={}",
-        store.file_size(), store.count("events")?);
+    println!(
+        "vacuum elapsed_ms={vacuum_ms} file_bytes={} rows={}",
+        store.file_size(),
+        store.count("events")?
+    );
 
     let t = Instant::now();
     store.incremental_vacuum(1000)?;
-    println!("incremental_vacuum auto_vacuum_mode={} elapsed_ms={}",
-        store.conn.query_row("PRAGMA auto_vacuum", [], |r| r.get::<_, i64>(0))?,
-        t.elapsed().as_millis());
+    println!(
+        "incremental_vacuum auto_vacuum_mode={} elapsed_ms={}",
+        store
+            .conn
+            .query_row("PRAGMA auto_vacuum", [], |r| r.get::<_, i64>(0))?,
+        t.elapsed().as_millis()
+    );
     println!("integrity_check={}", store.integrity_check()?);
     Ok(())
 }
@@ -729,7 +803,11 @@ fn verify(args: &[String]) -> R<()> {
     println!("events columns: {}", cols.join(", "));
     let scols = columns(&store, "sessions")?;
     println!("sessions columns: {}", scols.join(", "));
-    println!("events={} sessions={}", store.count("events")?, store.count("sessions")?);
+    println!(
+        "events={} sessions={}",
+        store.count("events")?,
+        store.count("sessions")?
+    );
     for (v, desc, ck) in store.applied_migrations()? {
         println!("  v{v} {desc} checksum={ck}");
     }
@@ -740,9 +818,7 @@ fn verify(args: &[String]) -> R<()> {
 /// Column names of a table, via `PRAGMA table_info`. A helper rather than an
 /// inline block because the prepared statement must outlive the iterator.
 fn columns(store: &Store, table: &str) -> R<Vec<String>> {
-    let mut st = store
-        .conn
-        .prepare(&format!("PRAGMA table_info({table})"))?;
+    let mut st = store.conn.prepare(&format!("PRAGMA table_info({table})"))?;
     let rows = st.query_map([], |r| r.get::<_, String>(1))?;
     Ok(rows.collect::<Result<Vec<_>, _>>()?)
 }

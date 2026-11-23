@@ -312,8 +312,17 @@ mod tests {
 
     #[test]
     fn independence_matrix() {
-        assert!(independent_pair(SourceClass::Declared, SourceClass::KernelFs));
-        assert!(!independent_pair(SourceClass::Declared, SourceClass::Declared));
-        assert!(!independent_pair(SourceClass::KernelProc, SourceClass::KernelProc));
+        assert!(independent_pair(
+            SourceClass::Declared,
+            SourceClass::KernelFs
+        ));
+        assert!(!independent_pair(
+            SourceClass::Declared,
+            SourceClass::Declared
+        ));
+        assert!(!independent_pair(
+            SourceClass::KernelProc,
+            SourceClass::KernelProc
+        ));
     }
 }

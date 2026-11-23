@@ -55,7 +55,11 @@ fn ids(v: &[Event]) -> Vec<String> {
     v.iter().map(|e| e.event_id.clone()).collect()
 }
 
-fn run_reorder(arrived: &[(Event, u64)], grace_ns: u64, max_hold: usize) -> (Vec<Event>, corr0h::ordering::ReorderStats) {
+fn run_reorder(
+    arrived: &[(Event, u64)],
+    grace_ns: u64,
+    max_hold: usize,
+) -> (Vec<Event>, corr0h::ordering::ReorderStats) {
     let mut r = SeqReorderer::new(ReorderPolicy {
         max_hold,
         grace_ns,
@@ -78,7 +82,11 @@ pub fn run() -> R<()> {
     println!();
     println!("## 2. Out-of-order streams (SYNTHETIC, single session, 500 events, 1 ms apart)");
     for (idx, quantised) in [(1, false), (2, true)] {
-        let label = if quantised { "timestamps quantised to the 10 ms CLK_TCK grid" } else { "distinct timestamps" };
+        let label = if quantised {
+            "timestamps quantised to the 10 ms CLK_TCK grid"
+        } else {
+            "distinct timestamps"
+        };
         let truth = session_stream(500, 1_000_000, quantised, 7);
         let true_order = ids(&truth);
         println!();
@@ -95,8 +103,10 @@ pub fn run() -> R<()> {
             let ts = order_agreement(&true_order, &ids(&by_ts));
             let (out, st) = run_reorder(&arrived, 8_000_000, 64);
             let seq = order_agreement(&true_order, &ids(&out));
-            println!("| {depth} | {rec:.4} | {ts:.4} | {seq:.4} | {} | {} | {} |",
-                st.forced_gaps, st.late_arrivals, st.max_hold_observed);
+            println!(
+                "| {depth} | {rec:.4} | {ts:.4} | {seq:.4} | {} | {} | {} |",
+                st.forced_gaps, st.late_arrivals, st.max_hold_observed
+            );
         }
     }
 
@@ -113,7 +123,10 @@ pub fn run() -> R<()> {
         .collect();
     let mut delays: Vec<u64> = Vec::new();
     for w in truth.windows(2) {
-        if let (Some(&a), Some(&b)) = (pos.get(w[0].event_id.as_str()), pos.get(w[1].event_id.as_str())) {
+        if let (Some(&a), Some(&b)) = (
+            pos.get(w[0].event_id.as_str()),
+            pos.get(w[1].event_id.as_str()),
+        ) {
             if b < a {
                 delays.push((a - b) as u64 * 100_000);
             }
@@ -121,8 +134,14 @@ pub fn run() -> R<()> {
     }
     delays.sort_unstable();
     let pick = |p: usize| delays.get(delays.len() * p / 100).copied().unwrap_or(0);
-    println!("reorder delay distribution: n={} p50={} ns p90={} ns p99={} ns max={} ns",
-        delays.len(), pick(50), pick(90), pick(99), delays.last().copied().unwrap_or(0));
+    println!(
+        "reorder delay distribution: n={} p50={} ns p90={} ns p99={} ns max={} ns",
+        delays.len(),
+        pick(50),
+        pick(90),
+        pick(99),
+        delays.last().copied().unwrap_or(0)
+    );
     println!();
     println!("`grace_ns` is measured on the stream clock, so it also fires on a quiet");
     println!("session. A grace keyed on *more events arriving* would never fire exactly when");
@@ -133,8 +152,10 @@ pub fn run() -> R<()> {
     for grace_us in [1u64, 2, 5, 10, 20, 50, 100, 250, 1000] {
         let (out, st) = run_reorder(&arrived, grace_us * 1_000, 64);
         let agree = order_agreement(&true_order, &ids(&out));
-        println!("| {grace_us} us | {} | {} | {} | {agree:.4} |",
-            st.forced_gaps, st.late_arrivals, st.max_hold_observed);
+        println!(
+            "| {grace_us} us | {} | {} | {} | {agree:.4} |",
+            st.forced_gaps, st.late_arrivals, st.max_hold_observed
+        );
     }
 
     println!();
@@ -162,8 +183,10 @@ pub fn run() -> R<()> {
     emitted += r.finish().len();
     let st = r.stats();
     println!("attached at sequence 100 of 200, fed the remaining 100 events:");
-    println!("  emitted={emitted} still_held={} forced_gaps={} late_arrivals={}",
-        st.still_held, st.forced_gaps, st.late_arrivals);
+    println!(
+        "  emitted={emitted} still_held={} forced_gaps={} late_arrivals={}",
+        st.still_held, st.forced_gaps, st.late_arrivals
+    );
     println!("With `initial_sequence: None` the first arrival defines the watermark, so the");
     println!("100 later events flow in order and nothing stalls. With a stored checkpoint the");
     println!("policy must pass `initial_sequence: Some(n)`; anything older then becomes a");

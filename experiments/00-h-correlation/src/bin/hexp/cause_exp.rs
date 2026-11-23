@@ -35,8 +35,14 @@ pub fn run() -> R<()> {
     .zip(whys)
     {
         let (k, l) = c.defensible();
-        println!("| {} | \"{} caused the file change\" | {} | `{}` | {} |",
-            c.as_str(), c.as_str(), why, k.as_str(), l.as_str());
+        println!(
+            "| {} | \"{} caused the file change\" | {} | `{}` | {} |",
+            c.as_str(),
+            c.as_str(),
+            why,
+            k.as_str(),
+            l.as_str()
+        );
     }
 
     println!();
@@ -44,7 +50,15 @@ pub fn run() -> R<()> {
     println!();
     println!("| kind string | parses | directional |");
     println!("|---|---|---|");
-    for k in ["observed_within", "spawned_by", "modified_during", "caused_by", "causes", "led_to", "result_of"] {
+    for k in [
+        "observed_within",
+        "spawned_by",
+        "modified_during",
+        "caused_by",
+        "causes",
+        "led_to",
+        "result_of",
+    ] {
         match RelationKind::parse(k) {
             Some(kind) => println!("| `{k}` | yes | {} |", kind.is_directional()),
             None => println!("| `{k}` | REJECTED | - |"),
@@ -61,10 +75,30 @@ pub fn run() -> R<()> {
     println!("| claim | fork edge | observed input | result |");
     println!("|---|---|---|---|");
     for (kind, edge, observed, label) in [
-        (RelationKind::SpawnedBy, false, true, "spawned_by with no fork edge"),
-        (RelationKind::ObservedWithin, false, false, "Confirmed from inferred inputs only"),
-        (RelationKind::ModifiedDuring, false, true, "modified_during with a real file event"),
-        (RelationKind::SpawnedBy, true, true, "spawned_by with a kernel fork edge"),
+        (
+            RelationKind::SpawnedBy,
+            false,
+            true,
+            "spawned_by with no fork edge",
+        ),
+        (
+            RelationKind::ObservedWithin,
+            false,
+            false,
+            "Confirmed from inferred inputs only",
+        ),
+        (
+            RelationKind::ModifiedDuring,
+            false,
+            true,
+            "modified_during with a real file event",
+        ),
+        (
+            RelationKind::SpawnedBy,
+            true,
+            true,
+            "spawned_by with a kernel fork edge",
+        ),
     ] {
         let r = validate(kind, Level::Confirmed, edge, observed);
         let text = match r {
@@ -79,16 +113,41 @@ pub fn run() -> R<()> {
     println!();
     println!("### 5.4 Rendering is capped by kind, not by level");
     println!();
-    let causal = ["caused", "because", "triggered", "result of", "wrote", "produced"];
-    for kind in [RelationKind::ObservedWithin, RelationKind::ModifiedDuring, RelationKind::SpawnedBy] {
+    let causal = [
+        "caused",
+        "because",
+        "triggered",
+        "result of",
+        "wrote",
+        "produced",
+    ];
+    for kind in [
+        RelationKind::ObservedWithin,
+        RelationKind::ModifiedDuring,
+        RelationKind::SpawnedBy,
+    ] {
         let r = Relation::new(kind, Level::Confirmed, "R3");
         let text = r.render("cmd:npm test", "./dist/bundle.js");
-        let dirty: Vec<&str> = causal.iter().copied().filter(|w| text.contains(w)).collect();
-        println!("- `{}` at Confirmed -> \"{}\"{}", kind.as_str(), text,
-            if dirty.is_empty() { " (no causal verb)".to_string() } else { format!(" (CAUSAL: {dirty:?})") });
+        let dirty: Vec<&str> = causal
+            .iter()
+            .copied()
+            .filter(|w| text.contains(w))
+            .collect();
+        println!(
+            "- `{}` at Confirmed -> \"{}\"{}",
+            kind.as_str(),
+            text,
+            if dirty.is_empty() {
+                " (no causal verb)".to_string()
+            } else {
+                format!(" (CAUSAL: {dirty:?})")
+            }
+        );
     }
     println!();
-    println!("`modified_during` renders \"was modified during\", never \"was modified by\", even at");
+    println!(
+        "`modified_during` renders \"was modified during\", never \"was modified by\", even at"
+    );
     println!("Confirmed. The kind caps the verb; the level only caps confidence in the claim");
     println!("that is actually being made.");
 

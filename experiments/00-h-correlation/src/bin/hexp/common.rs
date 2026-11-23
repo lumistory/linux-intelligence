@@ -21,5 +21,14 @@ pub fn ev(
         Source::Proc | Source::Fs => EvidenceStatus::Observed,
         _ => EvidenceStatus::Declared,
     };
-    Event::new(id, source, Some(session.to_string()), seq, ts, ty, payload, status)
+    Event::new(
+        id,
+        source,
+        Some(session.to_string()),
+        seq,
+        ts,
+        ty,
+        payload,
+        status,
+    )
 }

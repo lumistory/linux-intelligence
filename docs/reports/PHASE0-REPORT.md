@@ -20,7 +20,7 @@ Eight experiments, all executed on this machine, all with raw logs retained:
 | 0-D | PTY across shells | **PASS** | 49/49 assertions, 30/30 steps, 4 concurrent sessions |
 | 0-E | procfs and inotify | **PASS-WITH-LIMITS** | 20 tests, 2 hypotheses falsified |
 | 0-F | Arch/Ubuntu/Debian/Fedora | **PASS-WITH-LIMITS** | 4 distros × 21 probe fields, 58 logs |
-| 0-G | Privilege model + helper | **PASS** | 28/28 checks, 2 driver defects found and fixed |
+| 0-G | Privilege model + helper | **PASS** | 29/29 checks, 5 defects found and fixed in the driver/helper |
 | 0-H | Dedup/correlation/context | **PASS** | 24 credibility scenarios, 100k-row bench |
 
 Reports total 3 485 lines. Supporting documents: 6 ADRs (`docs/adr/`),
@@ -52,7 +52,7 @@ Individual suites (all `run.sh`, exit 0):
 | 0-D | 49 assertions pass; 30/30 shell steps; 4 sessions zero cross-talk |
 | 0-E | 7 hypotheses: 4 PASS, 1 PASS-PARTIAL, 2 FAIL (recorded as such) |
 | 0-F | 21 fields × 5 environments; 12 SAME (kernel), 9 DIFFERS (user space) |
-| 0-G | 28/28 checks; `ALL CHECKS PASSED` |
+| 0-G | 29/29 checks; `ALL CHECKS PASSED` |
 | 0-H | 7/7 hypotheses; 24/24 credibility assertions |
 
 Failures that were **found and kept in the record** (not deleted, not softened):
@@ -62,8 +62,12 @@ Failures that were **found and kept in the record** (not deleted, not softened):
   syscall.
 - 0-A H-A6 a raw write to a dead sink is survivable → **FALSIFIED**, it kills the
   shell.
-- 0-G deviation 1: the allowlist gate was untested at first (parent dir 0700).
-- 0-G deviation 2: an assertion matched its own source text.
+- 0-G: five real defects found and fixed in the driver/helper — `PR_GET_NO_NEW_PRIVS`
+  misuse, oversize frames not audited, a no-newline oversize frame being
+  re-enterable (request-smuggling shape), the helper unconditionally rewriting
+  its socket parent's permissions (which made the filesystem gate masquerade as
+  the allowlist gate), and a `strace` wrapper's pid taken for the helper's pid.
+- 0-G: one assertion matched its own source text (T6) — found and fixed.
 
 ## 4. Architecture changes
 
@@ -101,7 +105,11 @@ Open, and not hidden:
    be trusted for anything but "same value seen again".
 6. **`hidepid` hosts, musl/Alpine, ARM, nushell** all `NOT TESTED`.
 7. **Half-frame stall in the helper's framing** (0-G T7) is reproduced and
-   documented, not fixed.
+   documented, not fixed: a frame with no newline and under the discard cap
+   blocks that one connection in `read()` (1500 ms timeout measured; new
+   connections unaffected).
+8. **The audit log's `0600` protects it from other users, not from its owner.**
+   Any claim of tamper-evidence is unsupported; marked `NOT TESTED`.
 
 ## 6. Security risks
 
@@ -136,6 +144,12 @@ Phase 1 (core infrastructure), in dependency order:
 
 Acceptance criteria are in `docs/spec/phase1-implementation-spec.md §6`, all
 phrased as measurements rather than claims.
+
+**Explicitly not in Phase 1**, per the gates: no privileged helper (0-G defers
+it to Phase 3 *at the earliest*, and only if a Phase 2 measurement shows a
+capability that cannot be obtained otherwise); no destructive restore (0-F never
+exercised snapshot or rollback); no file→process attribution (0-E: inotify
+carries no pid, non-privileged fanotify is denied); no eBPF, no kernel audit.
 
 ## 8. Git status
 

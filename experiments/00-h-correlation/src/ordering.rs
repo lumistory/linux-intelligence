@@ -352,7 +352,13 @@ mod tests {
         assert_eq!(r.push(ev("e5", 5, 50), 0).len(), 1);
         let out = r.push(ev("e3", 3, 30), 1);
         assert_eq!(out.len(), 1);
-        assert!(matches!(out[0].kind, Emit::LateArrival { watermark: 6, got: 3 }));
+        assert!(matches!(
+            out[0].kind,
+            Emit::LateArrival {
+                watermark: 6,
+                got: 3
+            }
+        ));
         assert_eq!(r.still_held(), 0);
         assert_eq!(r.stats().late_arrivals, 1);
     }
