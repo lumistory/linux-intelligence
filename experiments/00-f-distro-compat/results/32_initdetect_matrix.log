@@ -1,3 +1,17 @@
-### Does the systemctl binary correctly indicate a running systemd?
-DISTRO       systemctl_bin  is-system-running pid1_comm    VERDICT       
-arch         PRESENT        list-units rc -> 1 sh           false (PID 1 is NOT systemd; the binary lies)
+### Does the presence of the systemctl binary indicate a running systemd?
+### Method A = test -x systemctl ; Method B = systemctl is-system-running
+### Method C = /run/systemd/system exists ; Method D = /proc/1/comm
+
+DISTRO       methodA     methodB          methodC   methodD     correct
+arch         PRESENT     offline          ABSENT    sh          false  
+ubuntu2404   ABSENT      n/a              ABSENT    sh          false  
+debian13     ABSENT      n/a              ABSENT    sh          false  
+fedora42     ABSENT      n/a              ABSENT    sh          false  
+
+### truth: no container runs systemd as PID 1; PID 1 is the probe shell
+### therefore methodA (binary) is a false positive wherever the package is installed,
+### methodB is 'offline' (a real systemd answer) even though systemd is NOT init,
+### methodC is a side effect of the image, and methodD is the only sound test.
+
+### host contrast (systemd really is init there), from 01_probe_host_bash.json:
+pid1_comm=systemd pid1_is_systemd=true systemctl=true is_system_running=running

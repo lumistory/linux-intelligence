@@ -1,14 +1,14 @@
 ### image:  docker.io/library/archlinux:latest
-### utc:    2026-11-23T13:40:14Z
+### utc:    2026-11-23T13:46:37Z
 ### script: src/probes/p8_dist.sh
 ### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/archlinux:latest sh /probe/p8_dist.sh
 ### ---
 --- host container libc
 ldd (GNU libc) 2.44
 --- artefact properties as seen from inside
-hello_dyn: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 4.4.0, BuildID[sha1]=301d4e83386629e6621b893b695c2f9712a15134, not stripped
-hello_static: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), static-pie linked, for GNU/Linux 4.4.0, BuildID[sha1]=d0f7e14b0ef01a29699dcc90e95dc28f24cc6f14, not stripped
-hello_newer: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a43baa1f5011738bf8e22c9b575044e200941207, for GNU/Linux 4.4.0, not stripped
+hello_dyn      size=444616    magic=ELF
+hello_static   size=1440344   magic=ELF
+hello_newer    size=16088     magic=ELF
 --- run 1/3: Rust dynamic (Arch glibc 2.44 build)
 hello-rust
 hello_dyn exit = 0

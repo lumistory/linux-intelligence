@@ -4,13 +4,13 @@ Q: PS0 runs in a subshell; which assignment forms survive to the
 
 === $( ) command substitution ===
 code: PS0='$( _LI_T=via_subst )'
-terminal tail: ⟦LI-P⟧ PROMPT_COMMAND='printf "result=[%s]\n" "$_LI_T" >&3; unset _LI_T' | ⟦LI-P⟧ unset _LI_T | ⟦LI-P⟧ PS0='$( _LI_T=via_subst )' | ⟦LI-P⟧ echo MARKER-$( | >
+terminal tail: echo MARKER-$( | >
 === ${v:=word} plain expansion ===
 code: PS0='${_LI_T:=via_default}'
-terminal tail: ; unset _LI_T' | ⟦LI-P⟧ unset _LI_T | ⟦LI-P⟧ PS0='$( _LI_T=via_subst )' | ⟦LI-P⟧ echo MARKER-$( | > unset _LI_T | > PS0='${_LI_T:=via_default}' | > echo MARKER-${v:=word} | >
+terminal tail: echo MARKER-${v:=word} | >
 === assignment inside arithmetic subscript ===
 code: PS0='${_LI_D[$((_LI_T:=via_subscript))]}'
-terminal tail: KER-$( | > unset _LI_T | > PS0='${_LI_T:=via_default}' | > echo MARKER-${v:=word} | > unset _LI_T | > PS0='${_LI_D[$((_LI_T:=via_subscript))]}' | > echo MARKER-assignment | >
+terminal tail: echo MARKER-assignment | >
 
 --- FD 3 events ---
 result=[]

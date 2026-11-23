@@ -5,11 +5,11 @@ Q: how expensive is each primitive a hook might use per command?
 itself is ~1 us, so the numbers are the marginal cost of the operation.
 
 bash       1 us/op   (x=1)
-bash       3 us/op   (builtin history 1 >/dev/null)
-bash     203 us/op   (x=)
+bash       4 us/op   (builtin history 1 >/dev/null)
+bash     262 us/op   (x=)
 zsh        0 us/op   (x=1)
-zsh      259 us/op   (x=hello)
-zsh      248 us/op   (x=hello)
+zsh      284 us/op   (x=hello)
+zsh      279 us/op   (x=hello)
 
 Cross-check with an external clock (python time.monotonic):
   200 zsh command substitutions  ~257 us/op

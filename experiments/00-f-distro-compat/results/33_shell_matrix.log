@@ -1,0 +1,60 @@
+### Same commands, different /bin/sh.  Raw output: results/11_shell_*.log
+### TEST C = echo -e 'a<TAB>b' ; TEST D = echo 'a<TAB>b' ; TEST E = printf
+### C/D bytes: 4 = TAB expanded (3 chars + newline);
+###            7 = the literal 2-char '\t' plus a stray '-e' (5+2)
+###            5 = literal backslash-t (4+1); debian-style 7 = '-e a\tb'
+
+DISTRO       bin_sh  BASH_VERSION     local       C_bytes   D_bytes   E_bytes   pipefail 
+arch         bash    set(5.3.20(1)-release) LOCAL_OK    4         5         4         SUPPORTED
+ubuntu2404   dash    EMPTY            LOCAL_OK    7         4         4         ?        
+debian13     dash    EMPTY            LOCAL_OK    7         4         4         SUPPORTED
+fedora42     bash    set(5.2.37(1)-release) LOCAL_OK    4         5         4         SUPPORTED
+
+### bashisms accepted by /bin/sh (should be REJECTED everywhere if POSIX)
+DISTRO       [[ ]]              source           set -o pipefail 
+arch         ACCEPTED           ACCEPTED(2)      SUPPORTED       
+ubuntu2404   REJECTED           REJECTED(1)      ?               
+debian13     REJECTED           REJECTED(1)      SUPPORTED       
+fedora42     ACCEPTED           ACCEPTED(2)      SUPPORTED       
+
+### raw od -c output for TEST C/D/E, per distro (the arbiter):
+--- arch
+    --- TEST C: echo -e (od -c)
+    0000000   a  \t   b  \n
+    --- TEST C: echo -e (byte count, includes trailing newline)
+    --- TEST D: echo, no -e (od -c)
+    0000000   a   \   t   b  \n
+    --- TEST D: echo, no -e (byte count)
+    --- TEST E: printf (the portable way; identical everywhere)
+    0000000   a  \t   b  \n
+    --- TEST E: printf (byte count)
+--- ubuntu2404
+    --- TEST C: echo -e (od -c)
+    0000000   -   e       a  \t   b  \n
+    --- TEST C: echo -e (byte count, includes trailing newline)
+    --- TEST D: echo, no -e (od -c)
+    0000000   a  \t   b  \n
+    --- TEST D: echo, no -e (byte count)
+    --- TEST E: printf (the portable way; identical everywhere)
+    0000000   a  \t   b  \n
+    --- TEST E: printf (byte count)
+--- debian13
+    --- TEST C: echo -e (od -c)
+    0000000   -   e       a  \t   b  \n
+    --- TEST C: echo -e (byte count, includes trailing newline)
+    --- TEST D: echo, no -e (od -c)
+    0000000   a  \t   b  \n
+    --- TEST D: echo, no -e (byte count)
+    --- TEST E: printf (the portable way; identical everywhere)
+    0000000   a  \t   b  \n
+    --- TEST E: printf (byte count)
+--- fedora42
+    --- TEST C: echo -e (od -c)
+    0000000   a  \t   b  \n
+    --- TEST C: echo -e (byte count, includes trailing newline)
+    --- TEST D: echo, no -e (od -c)
+    0000000   a   \   t   b  \n
+    --- TEST D: echo, no -e (byte count)
+    --- TEST E: printf (the portable way; identical everywhere)
+    0000000   a  \t   b  \n
+    --- TEST E: printf (byte count)

@@ -3,10 +3,10 @@
 | Exp | Title | Report | Status |
 |-----|-------|--------|--------|
 | 0-A | Bash/Zsh/Fish interactive hooks | `experiments/00-a-shell-hooks/REPORT.md` | in progress |
-| 0-B | Non-interactive script lifecycle | `experiments/00-b-script-lifecycle/REPORT.md` | in progress |
+| 0-B | Non-interactive script lifecycle | `experiments/00-b-script-lifecycle/REPORT.md` | PASS-WITH-LIMITS (41/41 assertions) |
 | 0-C | UDS concurrency and reliability | `experiments/00-c-ipc/REPORT.md` | PASS 10/10 |
 | 0-D | PTY cross-shell compatibility | `experiments/00-d-pty/REPORT.md` | in progress |
-| 0-E | procfs and inotify | `experiments/00-e-procfs-inotify/REPORT.md` | in progress |
+| 0-E | procfs and inotify | `experiments/00-e-procfs-inotify/REPORT.md` | PASS-WITH-LIMITS (581 lines) |
 | 0-F | Distro compatibility (Arch/Ubuntu/Debian/Fedora) | `experiments/00-f-distro-compat/REPORT.md` | in progress |
 | 0-G | User privilege and simulated privileged helper | `experiments/00-g-privilege/REPORT.md` | in progress |
 | 0-H | Dedup, correlation, Operation Context | `experiments/00-h-correlation/REPORT.md` | in progress |

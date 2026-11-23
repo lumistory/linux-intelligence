@@ -4,10 +4,10 @@ Q: a hook writes to a sink that died. Does the shell survive?
 Setup: FD 3 is a process-substitution pipe whose reader (`true`) exits
 immediately, so every later write hits a closed pipe.
 
-raw write to dead pipe             shell_survived=False SIGPIPE_died=True  output='⟦LI-P⟧ exec 3> >(true); sleep 0.4\n⟦LI-P⟧'
-write inside trap '' PIPE          shell_survived=True  SIGPIPE_died=False output='⟦LI-P⟧ exec 3> >(true); sleep 0.4\n⟦LI-P⟧'
-write from a subshell              shell_survived=True  SIGPIPE_died=False output='⟦LI-P⟧ exec 3> >(true); sleep 0.4\n⟦LI-P⟧'
-python connect to dead socket      shell_survived=True  SIGPIPE_died=False output='⟦LI-P⟧ exec 3> >(true); sleep 0.4\n⟦LI-P⟧'
+raw write to dead pipe             shell_survived=False SIGPIPE_died=True  output='echo STILL-ALIVE'
+write inside trap '' PIPE          shell_survived=True  SIGPIPE_died=False output='echo STILL-ALIVE\nSTILL-ALIVE\n⟦LI-P⟧'
+write from a subshell              shell_survived=True  SIGPIPE_died=False output='echo STILL-ALIVE\nSTILL-ALIVE\n⟦LI-P⟧'
+python connect to dead socket      shell_survived=True  SIGPIPE_died=False output='echo STILL-ALIVE\nSTILL-ALIVE\n⟦LI-P⟧'
 
 CONCLUSION: a raw write to a dead pipe KILLS the interactive shell -- the
 hook must never trust the sink. `trap '' PIPE` around the write, writing

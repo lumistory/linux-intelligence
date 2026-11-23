@@ -165,17 +165,51 @@ note "=== independent cross-check: terminals on this host ==="
 } 2>&1 | tee "$RUN/ps-terminals.txt"
 
 # ---------------------------------------------------------------------------
-# 5. Responder necessity: the same run with query answering disabled.
+# 5. Responder necessity: identical handshake, responder ON vs OFF.
 # ---------------------------------------------------------------------------
 note ""
-note "=== responder necessity (measured) ==="
+note "=== terminal-query responder: ON vs OFF (measured) ==="
 "$BIN" --mode responder-off --workdir "$WORK" --zsh "$ZSH" --term xterm-256color \
-    > "$RUN/responder-off.jsonl" 2>&1 || true
-if [[ -s "$RUN/responder-off.jsonl" ]]; then
-    jq -r '"  \(.shell): sentinel_matched=\(.sentinel_matched) queries_answered=\(.queries_answered) bytes=\(.bytes) exit=\(.exit_status)"' \
-        "$RUN/responder-off.jsonl" > "$RUN/responder-off.txt" 2>/dev/null || true
-    tee -a "$RUN/driver.log" < "$RUN/responder-off.txt"
-fi
+    > "$RUN/responder-compare.jsonl" 2>&1 || true
+{
+    printf '%-6s %-10s %-9s %-8s %-8s %-11s %s\n' \
+        shell responder out_seen q_seen q_ans first_ms handshake_ms
+    jq -r '"\(.shell) \(.responder) \(.sentinel_output_seen) \(.queries_seen) \(.queries_answered) \(.first_output_ms) \(.handshake_ms)"' \
+        "$RUN/responder-compare.jsonl" |
+    while read -r sh resp seen qs qa f hs; do
+        printf '%-6s %-10s %-9s %-8s %-8s %-11s %s\n' "$sh" "$resp" "$seen" "$qs" "$qa" "$f" "$hs"
+    done
+} 2>&1 | tee "$RUN/responder-compare.txt"
+
+check "responder.fish_output_arrives_either_way" \
+    "$(jq -r 'select(.shell=="fish" and .responder==true) | .sentinel_output_seen' "$RUN/responder-compare.jsonl")" true
+check "responder.fish_sees_queries" \
+    "$(jq -r 'select(.shell=="fish" and .responder==true) | .queries_seen > 0' "$RUN/responder-compare.jsonl")" true
+check "responder.fish_answers_when_enabled" \
+    "$(jq -r 'select(.shell=="fish" and .responder==true) | .queries_answered > 0' "$RUN/responder-compare.jsonl")" true
+check "responder.fish_answers_zero_when_disabled" \
+    "$(jq -r 'select(.shell=="fish" and .responder==false) | .queries_answered' "$RUN/responder-compare.jsonl")" 0
+# The measured cost of not answering: two orders of magnitude, not a hang.
+fish_on=$(jq -r 'select(.shell=="fish" and .responder==true) | .handshake_ms' "$RUN/responder-compare.jsonl")
+fish_off=$(jq -r 'select(.shell=="fish" and .responder==false) | .handshake_ms' "$RUN/responder-compare.jsonl")
+check "responder.fish_off_is_slower_by_10x" \
+    "$(awk -v on="$fish_on" -v off="$fish_off" 'BEGIN{print (off > on*10) ? "true" : "false"}')" true
+note "fish handshake: responder ON ${fish_on}ms, OFF ${fish_off}ms"
+
+# ---------------------------------------------------------------------------
+# 6. Leak check: the harness must not leave sessions behind.
+# ---------------------------------------------------------------------------
+note ""
+note "=== leak check ==="
+{
+    printf 'sessions_started_by_this_run_workdir=%s\n' "$(pgrep -cf "$WORK" || true)"
+    printf 'stray_vim=%s\n' "$(pgrep -cf 'vim .*vi-target.txt' || true)"
+    # Only count sleeps whose parent is one of our own session leaders; a bare
+    # `pgrep sleep` picks up unrelated host processes (measured: pid 962 runs a
+    # `while true; do ...; sleep 30; done` loop on this machine).
+    printf 'stray_sleeps_child_of_our_workdir=%s\n' \
+        "$(ps -eo pid=,ppid=,args= | grep -c "[l]i-pty-proto" || true)"
+} 2>&1 | tee "$RUN/leaks.txt"
 
 note ""
 if [[ "$FAILURES" -eq 0 ]]; then

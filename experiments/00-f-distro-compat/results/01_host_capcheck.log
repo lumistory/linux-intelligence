@@ -11,11 +11,11 @@
     "bind_tmp": "ok",
     "listen": "ok",
     "connect": "ok",
-    "path": "/tmp/li-0f-cap-115700.sock"
+    "path": "/tmp/li-0f-cap-146314.sock"
   },
   "procfs": {
     "opendir_proc": "ok",
-    "numeric_entries": 565,
+    "numeric_entries": 647,
     "read_proc_1_comm": "ok",
     "pid1_comm": "systemd"
   },

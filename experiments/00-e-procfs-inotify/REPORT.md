@@ -50,7 +50,7 @@ Hypotheses as pre-registered in `README.md` §2, with the measured verdict.
 | pid / clocks | `pid_max=4194304`, `CLK_TCK=100` (10 ms `starttime` granularity), `btime=1795430575` |
 | connector config | `CONFIG_CONNECTOR=y`, `CONFIG_PROC_EVENTS=y` (source: `/proc/config.gz`) |
 | `/proc` mount | `rw,nosuid,nodev,noexec,relatime shared:5 - proc proc` |
-| user | `uid=1000(USER)`, in group `wheel` — **no sudo used, nothing run as root** |
+| user | `uid=1000(USER)`, in group `wheel`. **No sudo.** Sub-tests that needed namespace rights used rootless `unshare -Urpf` / `unshare -Urn` — inside those uid 0 is namespace-mapped only and confers no host privilege. |
 | scratch fs | `/tmp` = tmpfs 7.7 G; experiment dir on btrfs `/dev/nvme1n1p3` |
 
 ### 3.2 Code file roles
@@ -124,16 +124,16 @@ across rows.
 | life_ms | caught | truth | loss_pct | model `1-(life+p50)/200` (*derived*) | delta (pp) |
 |---|---|---|---|---|---|
 | 0 | 0 | 120 | 100.00 | 98.70 | +1.30 |
-| 5 | 4 | 120 | 96.67 | 96.20 | +0.47 |
-| 15 | 7 | 120 | 94.17 | 91.20 | +2.97 |
-| 30 | 14 | 120 | 88.33 | 83.70 | +4.63 |
-| 60 | 34 | 120 | 71.67 | 68.70 | +2.97 |
-| 120 | 70 | 120 | 41.67 | 38.70 | +2.97 |
+| 5 | 4 | 120 | 96.67 | 96.21 | +0.46 |
+| 15 | 7 | 120 | 94.17 | 91.19 | +2.98 |
+| 30 | 14 | 120 | 88.33 | 83.69 | +4.64 |
+| 60 | 34 | 120 | 71.67 | 68.65 | +3.02 |
+| 120 | 70 | 120 | 41.67 | 38.64 | +3.03 |
 | 250 | 120 | 120 | 0.00 | 0 (censored) | 0.00 |
 
 The model column is the pre-registered formula from `README.md` §3 with the
 row's own `scan_latency_ns_p50`; it is arithmetic, not a measurement. It tracks
-the curve within 0.5–4.6 pp.
+the curve within 0.46–4.64 pp.
 
 ### 4.3 A2/A3 — scan cost, both depths (`A2-poll-depth`, `A3-scan-latency`)
 
@@ -288,8 +288,8 @@ root).
 | `dd bs=100M count=1` | 104857600 (0.0414 s) | 1 | **1** | 1 |
 | `dd bs=1M count=100` | 104857600 (0.0199 s) | 100 | **100** | 1 |
 
-`total_events 105` = 1 CREATE + 1 MODIFY + 1 CLOSE_WRITE + 1 CREATE + 100 MODIFY
-+ 1 CLOSE_WRITE. The `IN_MODIFY` count equals the `write()` count.
+`total_events 105` = (1 CREATE + 1 MODIFY + 1 CLOSE_WRITE) + (1 CREATE + 100
+MODIFY + 1 CLOSE_WRITE). The `IN_MODIFY` count equals the `write()` count.
 
 > **Log defect, recorded not papered over.** The four `MODIFY counts per file`
 > summary lines at the end of `B3-large-write-STAMP.log` read `MODIFY=0` /
@@ -308,9 +308,13 @@ root).
 | 2: recursive + `auto_add` on new dirs | `case2_preexisting_seen 3`, `case2_immediate_seen 0`, `case2_after_gap_seen 3` |
 | watch count vs dirs (60 dirs) | `directories 60`, `watches_needed_recursive 60`, `max_user_watches 524288`, `max_depth_components 6` |
 
-`auto_add` (inotify's own `IN_MASK_ADD`-style recursion) removed the *permanent*
-blind spot but left a **window**: events created between the `mkdir` and the
-watch appearing are lost (`case2_immediate_seen 0`).
+`auto-add` here is the observer's own logic (`fs_observer.rs:156`: on
+`IN_CREATE|IN_ISDIR`, call `inotify_add_watch` on the new directory) — inotify
+itself never recurses. It removed the *permanent* blind spot but left a
+**window**: events that happen between the directory's creation and the
+watcher's `inotify_add_watch` are lost (`case2_immediate_seen 0`). The gap is
+inherent to userspace auto-add, not a bug in this code, and its width is
+unbounded under load.
 
 ### 4.14 B5 — overflow (`B5-overflow`)
 
@@ -342,14 +346,15 @@ does not say which.
 
 | step | measured |
 |---|---|
-| vim `-E -s` `:wq` (default `backupcopy=auto`) | `.doc.txt.swp`/`.swx` CREATE→CLOSE_WRITE→DELETE, then `doc.txt` **MODIFY → ATTRIB → CLOSE_WRITE** — in-place write, **no rename pair** |
-| vim `set backupcopy=no` | same in-place shape on `doc.txt` (MODIFY×2 → ATTRIB → CLOSE_WRITE → ATTRIB) |
-| `nano --tempfile` | `nano.txt` CREATE → MODIFY → CLOSE_WRITE — in-place |
+| vim `-E -s` `:wq` (default `backupcopy=auto`) | `.doc.txt.swp`/`.swx` CREATE→CLOSE_WRITE→DELETE, then `doc.txt` **MODIFY → ATTRIB → CLOSE_WRITE → ATTRIB** — in-place write, **no rename pair**, and no `CREATE` for `doc.txt` because it already existed |
+| vim `set backupcopy=no` | same in-place shape on `doc.txt` (`MODIFY×2 → ATTRIB → CLOSE_WRITE → ATTRIB`) — note this is the opposite of what `backupcopy=no` is usually assumed to imply |
+| `nano --saveonexit --tempfile </dev/null` | `nano.txt` CREATE → MODIFY → CLOSE_WRITE. **This row does not establish nano's save pattern**: nano was driven with stdin closed and cannot have edited anything, so the three events are the shell's own `printf` that created the file. Whether nano renames a temp file over the target is **NOT TESTED**. |
 | explicit atomic replace (`mv .doc.txt.tmp doc.txt`) | `MOVED_FROM cookie=11530` + `MOVED_TO cookie=11530` — **the only rename pair in the log** |
 
 The practical consequence: the "atomic replace" pattern that correlation logic
-must handle was **not** what vim or nano did here. A daemon that keys on
-`MOVED_TO cookie` would have seen nothing for three of four real editor saves.
+is usually designed around was **not** what vim did here, under either
+`backupcopy` setting. A daemon that keys on `MOVED_TO cookie` would have seen
+nothing for both real vim saves, and would have missed the write entirely.
 
 ### 4.17 B8 / B10 — attribution (`B8-attribution`, `B10-attribution-limits`)
 
@@ -357,7 +362,7 @@ must handle was **not** what vim or nano did here. A daemon that keys on
 |---|---|
 | fields in every event | `wd, mask, cookie, name` — no pid, no uid |
 | 4 writer processes, 2 files + 1 shared file | 17 records: 3 CREATE, 7 MODIFY, 7 CLOSE_WRITE |
-| two writers on `shared.txt` | 7 records, interleaved, **completely unattributable** |
+| two writers on `shared.txt` | 11 records (1 CREATE + 5 MODIFY + 5 CLOSE_WRITE), interleaved, **completely unattributable** |
 | `struct inotify_event` | `{s32 wd; u32 mask; u32 cookie; u32 len; char name[];}` |
 | `grep -c pid /usr/include/linux/inotify.h` | **0** |
 | fanotify probe (`FAN_REPORT_PIDFD`) | **did not compile**: `O_LARGEFILE` undeclared → `compile failed`; no errno was ever observed |
@@ -385,9 +390,9 @@ broken observer. The zombie control row (identical pattern, `--no-reap`, loss
 0.00 %, 500/500, mean 701.3 procs/scan) proves the observer is fine and the
 target is simply not alive at any sample instant. A1b then shows the loss is a
 smooth function of lifetime, and the pre-registered model
-`1-(life+scan_p50)/interval` reproduces it within 0.5–4.6 pp across five
-decades of loss. Phase 1 can therefore *declare* its blind spot numerically
-instead of hand-waving: at 200 ms, anything living ≲60 ms is mostly invisible
+`1-(life+scan_p50)/interval` reproduces it within 0.46–4.64 pp across the whole
+measured range from 100 % to 0 % loss. Phase 1 can therefore *declare* its blind
+spot numerically instead of hand-waving: at 200 ms, anything living ≲60 ms is mostly invisible
 (71.67 % lost), and only ≥250 ms lifetimes are captured reliably (0.00 % lost).
 
 **5.2 Cost is not the constraint; interval is not free either.**
@@ -426,22 +431,23 @@ Three independent ways it loses the story:
   SQLite write will hit. Phase 1 must treat `IN_Q_OVERFLOW` as a **data-loss
   event that invalidates a subtree scan**, not as a warning line.
 - **Structural blind spots.** B4: unwatched subdirectories deliver nothing, and
-  even `auto_add` has a gap. B2: cross-device moves are not renames at all
+  even the observer's auto-add has a gap. B2: cross-device moves are not renames at all
   (`move_pairs_seen 0`) — a `mv /tmp/x /home/y` is indistinguishable from someone
   writing a new file.
 - **No actor.** B8/B10: no pid, no uid, ever. Two writers on one file produce
-  seven records that cannot be split. Nothing in the unprivileged toolchain
+  eleven records that cannot be split. Nothing in the unprivileged toolchain
   fixes this.
 
 **5.6 The semantic traps worth encoding in the schema.**
 `IN_MODIFY` counts `write()` calls, not bytes and not "a save" (B3: 1 vs 100 for
 the same 100 MB). `CREATE` is emitted for hard links and symlinks alike (B1), so
 `CREATE` ≠ "new content". `MOVED_FROM` with no matching `MOVED_TO` means "moved
-into an unwatched directory" and must not be dropped (B1). And editors do not
-do what the folklore says: vim (both `backupcopy` settings) and nano wrote
-in place here, producing `MODIFY`+`ATTRIB`+`CLOSE_WRITE` on the real file and no
+into an unwatched directory" and must not be dropped (B1). And vim did not do
+what the folklore says: under both `backupcopy=auto` and `backupcopy=no` it
+wrote in place, producing `MODIFY`+`ATTRIB`+`CLOSE_WRITE` on `doc.txt` and no
 rename pair at all (B7) — only the hand-rolled `mv` produced `MOVED_TO cookie`.
-A recovery correlator that assumes atomic-replace will mis-handle the common case.
+A recovery correlator that assumes atomic-replace will mis-handle both measured
+vim saves.
 
 **5.7 Reading `/proc` is not the hard part.**
 A8: 504 processes, 0 failures on `stat`/`status`/`cmdline` across kernel threads,
@@ -457,12 +463,13 @@ wrong here — the correct test is "ppid changed away from the recorded parent".
 
 | item | status | reason |
 |---|---|---|
-| `hidepid=2` / `hidepid=1` visibility | **NOT TESTED** | `mount -t proc -o hidepid=2` inside `unshare -Urpf` failed with permission denied (A8). Mounting procfs needs privilege in the init mount namespace; no sudo available. The 0-failure result in A8.8 therefore applies to a `hidepid=0` mount only. |
+| `hidepid=2` / `hidepid=1` visibility | **NOT TESTED** | `mount -t proc -o hidepid=2` inside `unshare -Urpf` failed with permission denied (A8). Mounting procfs needs privilege in the init mount namespace; no sudo available. The 0-failure result in §4.8 therefore applies to a `hidepid=0` mount only. |
 | fanotify privilege requirement (`EPERM` on `FAN_CLASS_NOTIF` / `FAN_REPORT_PIDFD`) | **NOT TESTED** | The probe in B10 failed to *compile* (`O_LARGEFILE` undeclared), so `fanotify_init` was never called and **no errno was observed**. The claim "fanotify needs privilege" in this report is from documentation, not measurement. What *is* measured: the inotify ABI has no pid field. |
 | eBPF / audit-based file attribution | **NOT TESTED** | Out of scope for 0-E; requires `CAP_BPF`/`CAP_PERFMON` or root-installed audit rules. Recorded only as the named escape hatch. |
 | inotify on network filesystems (NFS/CIFS/sshfs) | **NOT TESTED** | No such mount was available or created; all watches were tmpfs or btrfs. |
 | btrfs-specific behaviour (snapshots, subvolumes, `send`/`receive`) | **NOT TESTED** | Only plain files on btrfs were tested (B2 target). Snapshot creation and subvolume moves emit nothing we characterised. |
-| more than a handful of inotify instances / `max_user_instances=1024` exhaustion | **NOT TESTED** | Only 1 instance at a time was used; `max_user_watches` was computed (60 dirs → 60 watches) but never approached. |
+| more than a handful of inotify instances / `max_user_instances=1024` exhaustion | **NOT TESTED** | Only 1 instance at a time was used; `max_user_watches` was computed (60 dirs → 61 watches) but never approached. |
+| nano / other editors' rename-over-target save pattern | **NOT TESTED** | nano was driven with `</dev/null` and produced only the creating shell's events; the pattern was never exercised (B7). |
 | behaviour above ~500 processes and under real load | **NOT TESTED** | Host had 500–510 processes; scans were measured on an otherwise idle machine. Loss under contention (scan latency 150 ms on a loaded box) is unmeasured — and since loss depends on scan duration as well as interval (§4.2 model), the published loss curve is an *idle-host* curve. |
 | poll stability over hours (drift, fd leaks, RSS growth) | **NOT TESTED** | Longest run was 60.038 s (A4). |
 | `pidfd` across pid namespaces, `pidfd_getfd`, `PIDFD_THREAD` | **NOT TESTED** | A5 covers same-namespace open/exit only. |
@@ -520,11 +527,11 @@ machine-readable capability record (protocol §3), not hidden.**
 | parameter | recommended | basis |
 |---|---|---|
 | default process poll interval | **200 ms** | 3.93 % of one core, p99 scan 7.82 ms, 2.7 MB RSS (A4). Worst scan 11.1 ms leaves 94 % of the period idle. |
-| never go below | **100 ms** | At 50 ms the cost doubles (6.72 %, A1) while 0 ms-lifetime loss stays 100 % — no accuracy is bought. |
+| never go below | **100 ms** (the 50 ms row is the measured warning; nothing between 50 and 200 ms was measured) | At 50 ms, 2.28× the CPU of 200 ms (6.72 % vs 2.95 %, both A1 rows including the in-process spawner) while 0 ms-lifetime loss stays 100 % — no accuracy is bought. |
 | idle / battery profile | 500–1000 ms | 1000 ms cost 1.84 % (A1 row 3); acceptable only where sub-second process history is not promised. |
 | scan depth | `Stat` for the poll loop, `Full` on demand for a specific pid | 1.53 ms vs 4.17 ms p50 per scan (A3) for the same 501 processes. |
 | inotify read buffer | ≥ 64 KiB, drain always, never block in business logic | B5: a fast reader never overflowed at 50000 files; a 300 ms stall truncated 50000 files to 16384 records. |
-| watch budget | one watch per directory, computed up front | 60 dirs → 60 watches against `max_user_watches=524288` (B4); the failure mode is a *missing* watch, not exhaustion. |
+| watch budget | one watch per directory, computed up front | B4 tree: 60 directories → 61 watches counting the root, against `max_user_watches=524288`; the failure mode is a *missing* watch, not exhaustion. |
 
 ### 8.2 Declared capability boundary for Phase 1
 

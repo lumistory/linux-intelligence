@@ -1,5 +1,5 @@
 ### image:  docker.io/library/debian:13
-### utc:    2026-11-23T13:40:17Z
+### utc:    2026-11-23T13:46:40Z
 ### script: src/probes/p1_ident.sh
 ### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/debian:13 sh /probe/p1_ident.sh
 ### ---
@@ -39,7 +39,7 @@ comm:    sh
 cmdline: sh /probe/p1_ident.sh 
 --- container markers
 ls: cannot access '/.dockerenv': No such file or directory
--rw-r--r-- 1 root root 0 Nov 23 13:40 /run/.containerenv
+-rw-r--r-- 1 root root 0 Nov 23 13:46 /run/.containerenv
 --- user / arch
 uid=0(root) gid=0(root) groups=0(root)
 x86_64

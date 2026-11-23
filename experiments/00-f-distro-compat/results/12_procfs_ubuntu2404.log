@@ -1,14 +1,14 @@
 ### image:  docker.io/library/ubuntu:24.04
-### utc:    2026-11-23T13:40:15Z
+### utc:    2026-11-23T13:46:38Z
 ### script: src/probes/p3_procfs.sh
 ### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/ubuntu:24.04 sh /probe/p3_procfs.sh
 ### ---
 --- uname (container shares the host kernel)
-Linux 55e2809652dd 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 x86_64 x86_64 GNU/Linux
+Linux eaa440b5e5db 7.2.8-zen1-2-zen #1 ZEN SMP PREEMPT_DYNAMIC Thu, 01 Oct 2026 18:14:15 +0000 x86_64 x86_64 x86_64 GNU/Linux
 --- /proc/self/stat field count
 52
 --- /proc/self/stat first 200 chars
-9 (cut) R 1 1 1 0 -1 4194304 58 0 0 0 0 0 0 0 20 0 1 0 1063932 2781184 342 18446744073709551615 94692731170816 94692731191073 140737001498240 0 0 0 0 0 0 0 0 0 17 9 0 0 0 0 0 94692731202128 9469273120
+9 (cut) R 1 1 1 0 -1 4194304 58 0 0 0 0 0 0 0 20 0 1 0 1102291 2781184 342 18446744073709551615 94217520398336 94217520418593 140736728691664 0 0 0 0 0 0 0 0 0 17 8 0 0 0 0 0 94217520429648 9421752043
 --- /proc/self/status selected fields
 Name:	grep
 State:	R (running)
@@ -23,7 +23,7 @@ Seccomp:	2
 kernel/pid_max = 4194304
 kernel/ns_last_pid = 12
 kernel/threads-max = 123598
-kernel/hostname = 55e2809652dd
+kernel/hostname = eaa440b5e5db
 fs/inotify/max_user_watches = 524288
 fs/inotify/max_user_instances = 1024
 fs/inotify/max_queued_events = 16384
@@ -36,7 +36,7 @@ ulimit -s = 8192
 --- visible numeric /proc entries (PID namespace size)
 3
 --- /proc/1 exe and cmdline
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 /proc/1/exe -> /usr/bin/dash
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 /proc/1/exe -> /usr/bin/dash
 cmdline: sh /probe/p3_procfs.sh 
 --- cgroup version and limits as seen inside
 cgroup_version = v2
@@ -46,14 +46,14 @@ cpu.max        = max 100000
 pids.max       = 2048
 --- namespaces
 total 0
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 cgroup -> cgroup:[4026533982]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 ipc -> ipc:[4026533980]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 mnt -> mnt:[4026533978]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 net -> net:[4026533983]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 pid -> pid:[4026533981]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 pid_for_children -> pid:[4026533981]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 time -> time:[4026531834]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 time_for_children -> time:[4026531834]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 user -> user:[4026533172]
-lrwxrwxrwx 1 root root 0 Nov 23 13:40 uts -> uts:[4026533979]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 cgroup -> cgroup:[4026534252]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 ipc -> ipc:[4026534250]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 mnt -> mnt:[4026534248]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 net -> net:[4026534253]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 pid -> pid:[4026534251]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 pid_for_children -> pid:[4026534251]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 time -> time:[4026531834]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 time_for_children -> time:[4026531834]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 user -> user:[4026533172]
+lrwxrwxrwx 1 root root 0 Nov 23 13:46 uts -> uts:[4026534249]
 ### done

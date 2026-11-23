@@ -1,0 +1,3 @@
+sessions_started_by_this_run_workdir=0
+stray_vim=0
+stray_sleep_30=1

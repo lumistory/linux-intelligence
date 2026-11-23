@@ -1,5 +1,5 @@
 ### image:  docker.io/library/archlinux:latest
-### utc:    2026-11-23T13:40:11Z
+### utc:    2026-11-23T13:46:35Z
 ### script: src/probes/p2_shell.sh
 ### cmd:    timeout 120 podman run --rm --network none -v src/probes:/probe:ro -v results/bin:/probe-bin:ro docker.io/library/archlinux:latest sh /probe/p2_shell.sh
 ### ---
@@ -21,15 +21,21 @@ yash: ABSENT
 BASH_VERSION_SET=5.3.20(1)-release
 --- TEST B: local builtin under /bin/sh
 LOCAL_OK x=1
---- TEST C: echo -e under /bin/sh (od -c shows whether TAB is a real tab)
+--- TEST C: echo -e (od -c)
 0000000   a  \t   b  \n
 0000004
---- TEST D: echo with backslash, no -e
+--- TEST C: echo -e (byte count, includes trailing newline)
+4
+--- TEST D: echo, no -e (od -c)
 0000000   a   \   t   b  \n
 0000005
---- TEST E: printf (the portable way)
+--- TEST D: echo, no -e (byte count)
+5
+--- TEST E: printf (the portable way; identical everywhere)
 0000000   a  \t   b  \n
 0000004
+--- TEST E: printf (byte count)
+4
 --- TEST F: [[ ]] acceptance
 DOUBLE_BRACKET_OK
 --- TEST G: source builtin vs . (POSIX)

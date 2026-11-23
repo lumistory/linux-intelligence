@@ -40,7 +40,7 @@
     "self_stat_fields": 52,
     "pid_max": null,
     "ns_last_pid": null,
-    "visible_numeric_proc_entries": 568
+    "visible_numeric_proc_entries": 650
   },
   "inotify_limits": {
     "max_user_watches": null,
