@@ -1,0 +1,119 @@
+## 1. Deduplication (SYNTHETIC streams, ground truth by construction)
+
+population: 1050 events = 500 origins + 300 duplicates + 250 near-miss negatives
+
+### 1.1 Scheme A — exact `event_id` only (baseline)
+
+| metric | value |
+|---|---|
+| duplicates found (TP) | 150 |
+| false merges (FP) | 0 |
+| missed duplicates (FN) | 150 |
+| precision | 1.0000 |
+| recall | 0.5000 |
+| false-merge rate FP/(TP+FP) | 0.0000 |
+| undetected-duplicate rate FN/(TP+FN) | 0.5000 |
+
+Ground truth is built in, and the population contains one class that is
+**undecidable by content** (D1: same command text, same session, inside the
+window — a human double-tap or a genuine double-report). D1 merges are
+reported in their own column and are NOT counted as false positives, because
+no content-based scheme can separate them. Every other negative is decidable.
+
+### 1.2 Scheme B — semantic fingerprint, parameter sweep
+
+key = `type_class | session? | subject | ts_bucket`; `session?` is `-`
+unless `require_same_session`. Every row is a full re-run of the stream.
+precision is TP/(TP+decidable FP); `D1 merged` is the irreducible residue.
+
+| window | mode | key | TP | FP (decidable) | FN | precision | recall | false-merge | D1 merged |
+|---|---|---|---|---|---|---|---|---|---|
+| 10 ms | single | no session | 171 | 74 | 129 | 0.6980 | 0.5700 | 0.3020 | 25/50 |
+| 10 ms | single | +session | 171 | 37 | 129 | 0.8221 | 0.5700 | 0.1779 | 25/50 |
+| 10 ms | single | +session+process | 171 | 0 | 129 | 1.0000 | 0.5700 | 0.0000 | 25/50 |
+| 10 ms | triple | no session | 266 | 100 | 34 | 0.7268 | 0.8867 | 0.2732 | 50/50 |
+| 10 ms | triple | +session | 266 | 50 | 34 | 0.8418 | 0.8867 | 0.1582 | 50/50 |
+| 10 ms | triple | +session+process | 266 | 0 | 34 | 1.0000 | 0.8867 | 0.0000 | 50/50 |
+| 50 ms | single | no session | 246 | 96 | 54 | 0.7193 | 0.8200 | 0.2807 | 45/50 |
+| 50 ms | single | +session | 246 | 49 | 54 | 0.8339 | 0.8200 | 0.1661 | 45/50 |
+| 50 ms | single | +session+process | 246 | 0 | 54 | 1.0000 | 0.8200 | 0.0000 | 45/50 |
+| 50 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 50 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 50 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 100 ms | single | no session | 271 | 97 | 29 | 0.7364 | 0.9033 | 0.2636 | 47/50 |
+| 100 ms | single | +session | 271 | 50 | 29 | 0.8442 | 0.9033 | 0.1558 | 47/50 |
+| 100 ms | single | +session+process | 271 | 0 | 29 | 1.0000 | 0.9033 | 0.0000 | 47/50 |
+| 100 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 100 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 100 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 250 ms | single | no session | 289 | 99 | 11 | 0.7448 | 0.9633 | 0.2552 | 49/50 |
+| 250 ms | single | +session | 289 | 49 | 11 | 0.8550 | 0.9633 | 0.1450 | 49/50 |
+| 250 ms | single | +session+process | 289 | 0 | 11 | 1.0000 | 0.9633 | 0.0000 | 49/50 |
+| 250 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 250 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 250 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 500 ms | single | no session | 295 | 100 | 5 | 0.7468 | 0.9833 | 0.2532 | 49/50 |
+| 500 ms | single | +session | 295 | 50 | 5 | 0.8551 | 0.9833 | 0.1449 | 49/50 |
+| 500 ms | single | +session+process | 295 | 0 | 5 | 1.0000 | 0.9833 | 0.0000 | 49/50 |
+| 500 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 500 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 500 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 1000 ms | single | no session | 297 | 100 | 3 | 0.7481 | 0.9900 | 0.2519 | 49/50 |
+| 1000 ms | single | +session | 297 | 50 | 3 | 0.8559 | 0.9900 | 0.1441 | 49/50 |
+| 1000 ms | single | +session+process | 297 | 0 | 3 | 1.0000 | 0.9900 | 0.0000 | 49/50 |
+| 1000 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 1000 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 1000 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 2000 ms | single | no session | 298 | 100 | 2 | 0.7487 | 0.9933 | 0.2513 | 50/50 |
+| 2000 ms | single | +session | 298 | 50 | 2 | 0.8563 | 0.9933 | 0.1437 | 50/50 |
+| 2000 ms | single | +session+process | 298 | 0 | 2 | 1.0000 | 0.9933 | 0.0000 | 50/50 |
+| 2000 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 2000 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 2000 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+
+### 1.3 False merges by trap class (chosen: 200 ms triple, three key variants)
+
+| trap class | n | key: no session | key: +session | key: +session+process |
+|---|---|---|---|---|
+| D1 same cmd+session+window (UNDECIDABLE) | 50 | 50 | 50 | 50 |
+| D2 same cmd, other session, same window | 50 | 50 | 0 | 0 |
+| D3 same cmd, far in time | 50 | 0 | 0 | 0 |
+| D4 other cmd, same window | 50 | 0 | 0 | 0 |
+| D5 same cmd+session+window, different pid:starttime | 50 | 50 | 50 | 0 |
+| origin (decidable) | 500 | 0 | 0 | 0 |
+
+no session    : TP 300 FP 150 FN 0 precision 0.6667 recall 1.0000
++session      : TP 300 FP 100 FN 0 precision 0.7500 recall 1.0000
++session+proc : TP 300 FP 50 FN 0 precision 0.8571 recall 1.0000
+
+Dropping the session from the key is what turns a safe fingerprint into a
+dangerous one: every D2 row becomes a merge, and D2 is decidable. Adding the
+process key fixes D5 at no cost to recall **in this population**, because
+cross-source duplicates carry the same (pid,starttime); it breaks the moment a
+hook reports no starttime, which is why the flag is a policy choice and not a
+constant.
+
+### 1.4 Stability across three seeds (chosen config)
+
+`precision (decidable)` excludes the D1 double-tap class; `precision (all)` counts
+it as a false positive.
+
+| seed | events | exact recall | precision (decidable) | precision (all) | fingerprint recall |
+|---|---|---|---|---|---|
+| 0xc011ea | 1050 | 0.5000 | 0.8571 | 0.7500 | 1.0000 |
+| 0x5ec011 | 1050 | 0.5000 | 0.8571 | 0.7500 | 1.0000 |
+| 0x11ea | 1050 | 0.5000 | 0.8571 | 0.7500 | 1.0000 |
+
+### 1.5 Fingerprint blind spot: same fact, different subject text
+
+hook `make -j8`           -> Fresh
+proc `/usr/bin/make -j8`  -> Fresh
+The subject is normalized command text; a `/proc/<pid>/cmdline` absolute
+path does not hash equal to the typed command. Measured miss, not a bug to
+hide: basename-stripping is a Phase 1 decision, not a Phase 0 result.
+
+### 1.6 Verdict
+
+Exact `event_id` is necessary and free, but recall 0.5000 on a population where
+50.0% of all duplicates carry a fresh id. The fingerprint is what recovers them,
+and it costs 0.2500 false merges on the chosen config.

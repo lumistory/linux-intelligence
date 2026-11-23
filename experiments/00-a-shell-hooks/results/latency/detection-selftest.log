@@ -2,14 +2,14 @@
 # A detector that fires on the echo of the typed text would report
 # `sleep 0.5` as ~0 ms. It must report >= 500 ms.
 
-bash  sleep 0.5   detected=501826 us  expected>=  480  PASS
-bash  true        detected=   336 us  expected>=    0  PASS
-bash  sleep 1.2   detected=1201758 us  expected>= 1150  PASS
-zsh   sleep 0.5   detected=502585 us  expected>=  480  PASS
-zsh   true        detected=   294 us  expected>=    0  PASS
-zsh   sleep 1.2   detected=1202985 us  expected>= 1150  PASS
-fish  sleep 0.5   detected=503446 us  expected>=  480  PASS
-fish  true        detected=  1584 us  expected>=    0  PASS
-fish  sleep 1.2   detected=1204382 us  expected>= 1150  PASS
+bash  sleep 0.5   detected=501845 us  expected>=  480  PASS
+bash  true        detected=   213 us  expected>=    0  PASS
+bash  sleep 1.2   detected=1201856 us  expected>= 1150  PASS
+zsh   sleep 0.5   detected=502850 us  expected>=  480  PASS
+zsh   true        detected=   322 us  expected>=    0  PASS
+zsh   sleep 1.2   detected=1203029 us  expected>= 1150  PASS
+fish  sleep 0.5   detected=503447 us  expected>=  480  PASS
+fish  true        detected=  2053 us  expected>=    0  PASS
+fish  sleep 1.2   detected=1203569 us  expected>= 1150  PASS
 
 OVERALL: PASS

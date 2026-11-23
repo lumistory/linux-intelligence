@@ -172,3 +172,34 @@ In a fresh process the lowest free fds are 3 and 4, so `ev_r` was often already
 failed with EBADF, aborting the child (exit 111). Symptom: every FD-3 based
 measurement reported "no prompt". Both `harness/drive.py` and
 `harness/latency.py` now move the read end aside before claiming fd 3.
+
+**F14 — a second false lead, corrected with evidence.** When the zsh adapter
+produced no events, the cause looked like `add-zsh-hook` replacing an
+already-defined function. Measured with a correct fpath, it does not: the
+function still runs (`results/probe-zsh-addzshhook.log`). The real cause was that
+`add-zsh-hook` could not be autoloaded at all -- this host has no system zsh, so
+fpath points nowhere and the failure is `function definition file not found`.
+The adapter keeps appending to `precmd_functions`/`preexec_functions` directly
+because that works regardless of fpath and allows hand-written de-duplication
+for idempotent re-sourcing. Two wrong diagnoses in a row is the lesson: a
+"no events" symptom had at least three distinct causes here (fpath, module_path,
+and harness fd misuse).
+
+**F15 — the two shells disagree on EPOCHREALTIME precision.** bash 5.3 reports a
+6-digit fraction (microseconds); this zsh build reports 10 digits (nanoseconds).
+A zsh adapter that copies the bash arithmetic either overflows 64-bit or emits
+`ts_wall` values like `...:29.3777232170Z`, which is not ISO-8601. The zsh
+adapter truncates the fraction to 6 digits before both arithmetic and formatting.
+Evidence: `results/probe-clock-precision.log`.
+
+**F16 — the hook body itself is cheap; the prompt is not.** Measured from inside
+`/bin/sh` with the shell's own clock (`results/latency/hookcost.json`):
+
+| shell | hook body, median | notes |
+|---|---|---|
+| bash | **3 µs** | one `history 1` fork included |
+| zsh | **2348 µs** | dominated by `$( )` for the start clock and event line |
+| fish | **1085 µs** | batch loop, `date` cost amortised |
+
+The bash adapter is therefore effectively free. The zsh and fish adapters cost
+about 1-2 ms per command, which is real and visible to a user typing fast.

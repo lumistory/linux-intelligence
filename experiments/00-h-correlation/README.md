@@ -1,7 +1,12 @@
 # 0-H — Event deduplication, correlation and Operation Context
 
-Status: **in progress** (README written before any measurement, per
-`docs/00-phase0-protocol.md` §0.2).
+Status: **complete**. Written before any measurement, per
+`docs/00-phase0-protocol.md` §0.2; hypotheses below are the pre-registered ones
+and §2 of `REPORT.md` records which of them survived. Results of record:
+`results/20261123T142301Z-*`.
+
+Note for readers: `results/hexp-full-20261123T141333Z.log` is a stale artifact
+from an intermediate build and is not used by the report.
 
 ## 1. Objective
 
@@ -61,9 +66,19 @@ Everything runs through `./run.sh` (`set -euo pipefail`), each step bounded by
 README.md            this file (written first)
 run.sh               driver, exits non-zero on failure
 Cargo.toml
-src/lib.rs           envelope, dedup, ordering, identity, confidence, relations, redact, db
-src/bin/hexp.rs      logic experiments (dedup, reorder, pidreuse, confidence, causality, context, redact)
-src/bin/hdb.rs       SQLite experiments (migrate, bench, wal-concurrency, kill9, retention)
+src/lib.rs           module root
+src/envelope.rs      the shared event envelope, source/type classes
+src/dedup.rs         exact-id + semantic fingerprint, scoring against truth
+src/ordering.rs      sequence reorderer, grace window, LateArrival
+src/identity.rs      (pid, starttime) registry, collision detection
+src/confidence.rs    the five levels as one total function + rule table
+src/relations.rs     the three relation kinds, validation, render cap
+src/context.rs       0..n operation membership with retraction
+src/redact.rs        V1/V2 secret redaction
+src/db.rs            schema, migrations, WAL config, queries, retention
+src/util.rs          PRNG, FNV, ISO-8601, percentiles
+src/bin/hexp/        logic experiments, one module per section
+src/bin/hdb.rs       SQLite experiments (migrate, bench, wal, kill9, context, retention)
 migrations/0001_init.sql, 0002_add_event_redaction.sql
 results/             raw logs, never hand-edited
 REPORT.md            8-section report

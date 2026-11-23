@@ -4,44 +4,53 @@ Q: is the DEBUG trap a usable CommandStarted/Finished source?
 For each typed line the probe counts how many DEBUG firings occur.
 
 === typed: echo one ===
-DEBUG fired 1 time(s):
-   DEBUG cmd=[echo one] rc=0
-=== typed: printf 'a\n' | wc -l ===
 DEBUG fired 2 time(s):
+   DEBUG cmd=[echo one] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
+=== typed: printf 'a\n' | wc -l ===
+DEBUG fired 3 time(s):
    DEBUG cmd=[printf 'a\n'] rc=0
    DEBUG cmd=[wc -l] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
 === typed: true && echo chained ===
-DEBUG fired 2 time(s):
+DEBUG fired 3 time(s):
    DEBUG cmd=[true] rc=0
    DEBUG cmd=[echo chained] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
 === typed: echo A; echo B; echo C ===
-DEBUG fired 3 time(s):
+DEBUG fired 4 time(s):
    DEBUG cmd=[echo A] rc=0
    DEBUG cmd=[echo B] rc=0
    DEBUG cmd=[echo C] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
 === typed: for i in 1 2 3; do echo L$i; done ===
-DEBUG fired 6 time(s):
+DEBUG fired 7 time(s):
    DEBUG cmd=[for i in 1 2 3] rc=0
    DEBUG cmd=[echo L$i] rc=0
    DEBUG cmd=[for i in 1 2 3] rc=0
    DEBUG cmd=[echo L$i] rc=0
    DEBUG cmd=[for i in 1 2 3] rc=0
    DEBUG cmd=[echo L$i] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
 === typed: ( echo S1; echo S2 ) ===
-DEBUG fired 0 time(s):
-=== typed: f() { echo in-f; }; f ===
 DEBUG fired 1 time(s):
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
+=== typed: f() { echo in-f; }; f ===
+DEBUG fired 2 time(s):
    DEBUG cmd=[f] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
 === typed: set -T; g() { echo in-g; }; g; set +T ===
-DEBUG fired 5 time(s):
+DEBUG fired 6 time(s):
    DEBUG cmd=[set -T] rc=0
    DEBUG cmd=[g] rc=0
    DEBUG cmd=[g] rc=0
    DEBUG cmd=[echo in-g] rc=0
    DEBUG cmd=[set +T] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
 === typed: echo x=$(echo sub) ===
-DEBUG fired 1 time(s):
+DEBUG fired 2 time(s):
    DEBUG cmd=[echo x=$(echo sub)] rc=0
+   DEBUG cmd=[printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"] rc=0
 === with `set -x` ===
 set -x; echo traced; set +x
 ++ printf 'DEBUG cmd=[%s] rc=%s\n' 'echo traced' 0
@@ -50,7 +59,7 @@ traced
 ++ printf 'DEBUG cmd=[%s] rc=%s\n' 'set +x' 0
 + set +x
 ⟦LI-P⟧
-DEBUG fired 3 time(s) during xtrace
+DEBUG fired 4 time(s) during xtrace
 
 CONCLUSION: REJECTED.
   1. It fires once per *simple* command, not per command line: a pipeline

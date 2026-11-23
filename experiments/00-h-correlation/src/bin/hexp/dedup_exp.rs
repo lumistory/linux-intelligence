@@ -500,14 +500,23 @@ pub fn run() -> R<()> {
     println!();
     println!("### 1.4 Stability across three seeds (chosen config)");
     println!();
-    println!("| seed | events | exact recall | fingerprint precision | fingerprint recall |");
-    println!("|---|---|---|---|---|");
+    println!("`precision (decidable)` excludes the D1 double-tap class; `precision (all)` counts");
+    println!("it as a false positive.");
+    println!();
+    println!("| seed | events | exact recall | precision (decidable) | precision (all) | fingerprint recall |");
+    println!("|---|---|---|---|---|---|");
     for seed in [0xC0_11_EAu64, 0x5E_C0_11, 0x00_11_EA] {
         let p = build_population(seed);
         let (_, se) = exact_only(&p);
-        let (_, sf) = fingerprint(&p, chosen);
+        let (dec, sf) = fingerprint(&p, chosen);
+        let (tp, fp, _) = decidable_score(&p, &dec);
+        let dec_prec = if tp + fp == 0 {
+            1.0
+        } else {
+            tp as f64 / (tp + fp) as f64
+        };
         println!(
-            "| {seed:#x} | {} | {:.4} | {:.4} | {:.4} |",
+            "| {seed:#x} | {} | {:.4} | {dec_prec:.4} | {:.4} | {:.4} |",
             p.events.len(),
             se.recall(),
             sf.precision(),

@@ -1,0 +1,54 @@
+
+## 5. "Time adjacency" is not "cause"
+
+### 5.1 Four counterexamples, each observed as a shape rather than argued
+
+| counterexample | naive claim | why it is false | defensible relation | level |
+|---|---|---|---|---|
+| background task outlives its command | "make modified build/out.o" | the hook fires at command exit; children keep writing for seconds afterwards (`make -j` is the canonical case) | `spawned_by` | Confirmed |
+| delayed writeback | "echo modified notes.txt" | `echo x > f` returns after write(2); writeback lands later, so the file event can postdate the process exit | `modified_during` | Weak |
+| editor rename-save | "vim modified init.lua" | vim writes a temp file and rename(2)s it over the target; the modified path is the temp path, and the target only appears as a rename destination | `observed_within` | Weak |
+| two writers, one file | "cmd-a modified shared.log" | inotify carries no pid (0-E), so a file two processes appended to cannot be attributed to either one | `observed_within` | Unknown |
+
+### 5.2 API constraint: three kinds, no way to spell a cause
+
+| kind string | parses | directional |
+|---|---|---|
+| `observed_within` | yes | false |
+| `spawned_by` | yes | true |
+| `modified_during` | yes | false |
+| `caused_by` | REJECTED | - |
+| `causes` | REJECTED | - |
+| `led_to` | REJECTED | - |
+| `result_of` | REJECTED | - |
+
+Enforced twice: `RelationKind::parse` returns None, and the schema CHECK in
+migrations/0001_init.sql rejects the row. The unit test
+`caused_by_is_rejected_by_the_schema` asserts the INSERT fails.
+
+### 5.3 Validation rejects the two illegal shapes
+
+| claim | fork edge | observed input | result |
+|---|---|---|---|
+| spawned_by with no fork edge | false | true | REJECTED NoForkEvidence |
+| Confirmed from inferred inputs only | false | false | REJECTED InferredCannotConfirm |
+| modified_during with a real file event | false | true | accepted |
+| spawned_by with a kernel fork edge | true | true | accepted |
+
+### 5.4 Rendering is capped by kind, not by level
+
+- `observed_within` at Confirmed -> "cmd:npm test was observed within ./dist/bundle.js's window (Confirmed)" (no causal verb)
+- `modified_during` at Confirmed -> "./dist/bundle.js was modified during cmd:npm test's lifetime (Confirmed)" (no causal verb)
+- `spawned_by` at Confirmed -> "cmd:npm test was spawned by ./dist/bundle.js (Confirmed)" (no causal verb)
+
+`modified_during` renders "was modified during", never "was modified by", even at
+Confirmed. The kind caps the verb; the level only caps confidence in the claim
+that is actually being made.
+
+### 5.5 The one relation with a real direction
+
+`spawned_by` is directional because the kernel reported a parent edge at fork
+time (`ppid` at the moment the child was created, walked over
+/proc/<pid>/stat`). It is still not causation: a parent that spawns `sh -c
+"rm -rf build"` did not itself compute anything. It is the *strongest* relation
+Phase 0 supports, and it is a containment relation, not a causal one.

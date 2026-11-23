@@ -1,0 +1,8 @@
+fk_child_indexes_created elapsed_ms=0
+inserted=100000 wall_ms=639 per_row_us=6.40 rows_per_s=156331
+before rows=100000 file_bytes=33169408
+trim_by_time batch=5000 removed=10000
+trim removed=10000 elapsed_ms=76 rows_now=90000 file_bytes=33169408
+vacuum elapsed_ms=68 file_bytes=28618752 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok

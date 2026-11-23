@@ -1,0 +1,27 @@
+journal_mode=wal wal_autocheckpoint=1000
+
+### busy_timeout_ms=5000
+writer w attempted=189740 errors=0
+r0 ok=47814 busy=0 other_errors=0 p50_us=148.3 p99_us=498.0 max_us=1326.1
+r1 ok=48140 busy=0 other_errors=0 p50_us=147.0 p99_us=402.6 max_us=1260.2
+r2 ok=48419 busy=0 other_errors=0 p50_us=149.0 p99_us=348.8 max_us=1240.4
+r3 ok=48434 busy=0 other_errors=0 p50_us=147.1 p99_us=356.9 max_us=794.2
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### busy_timeout_ms=0
+writer w attempted=370593 errors=0
+r0 ok=112868 busy=0 other_errors=0 p50_us=11.6 p99_us=946.0 max_us=1962.2
+r1 ok=115068 busy=0 other_errors=0 p50_us=11.3 p99_us=955.1 max_us=2406.4
+r2 ok=118614 busy=0 other_errors=0 p50_us=11.0 p99_us=942.1 max_us=2793.6
+r3 ok=115503 busy=0 other_errors=0 p50_us=11.2 p99_us=949.8 max_us=2140.7
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### two concurrent writers (the case busy_timeout actually covers)
+busy_timeout_ms=5000
+  writer A: writer wa attempted=249883 errors=0
+  writer B: writer wb attempted=194790 errors=0
+busy_timeout_ms=0
+  writer A: writer wa attempted=475422 errors=225229
+  writer B: writer wb attempted=391843 errors=161255
+  writer A stderr: writer error #1: sqlite: database is locked
+  writer B stderr: writer error #1: sqlite: database is locked

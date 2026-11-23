@@ -1,0 +1,174 @@
+
+=== environment ===
+stamp=20261123T143036Z
+host=Linux 7.2.8-zen1-2-zen x86_64
+rustc=rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+sqlite3=3.53.4 2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e0945alt1 (64-bit)
+nproc=20
+kernel_clk_tck=100
+ulimit_nofile=1024
+
+=== build (offline, release) ===
+    Finished `release` profile [optimized] target(s) in 0.05s
+    Finished `release` profile [optimized] target(s) in 0.01s
+test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== unit + logic experiments ===
+wrote results/20261123T143036Z-dedup.log (119 lines)
+wrote results/20261123T143036Z-reorder.log (65 lines)
+wrote results/20261123T143036Z-pidreuse.log (54 lines)
+wrote results/20261123T143036Z-confidence.log (91 lines)
+wrote results/20261123T143036Z-causality.log (54 lines)
+wrote results/20261123T143036Z-context.log (32 lines)
+wrote results/20261123T143036Z-redact.log (58 lines)
+wrote results/20261123T143036Z-all.log (473 lines)
+
+=== kernel anchor: (pid, starttime) tick granularity (REAL, not synthetic) ===
+
+=== SQLite: v1 -> v2 migration with data, then verify ===
+v1 created: 31 lines
+v1 column set: events columns: event_id, schema_version, source, session_id, process_row_id, sequence, ts_mono_ns, ts_wall, type, type_class, payload, evidence_status, dedup_group, duplicate_of, redaction_digest, ingested_mono_ns
+  idx_processes_session
+  idx_relations_from
+  idx_relations_to
+
+--- verify after upgrade ---
+schema_version=2
+events columns: event_id, schema_version, source, session_id, process_row_id, sequence, ts_mono_ns, ts_wall, type, type_class, payload, evidence_status, dedup_group, duplicate_of, redaction_digest, ingested_mono_ns, command_text, redaction_rules
+sessions columns: session_id, parent_session, adapter, adapter_version, shell_pid, started_wall, started_mono_ns, ended_wall, ended_mono_ns, cwd, host, capability_json
+events=5000 sessions=2
+  v1 0001_init checksum=546433d699109e0d
+  v2 0002_add_event_redaction checksum=c03348a47a47c7a6
+integrity_check=ok
+
+=== SQLite: 100k-row insert + three query shapes ===
+inserted=100000 wall_ms=507 per_row_us=5.08 rows_per_s=196902
+db_file_bytes=32161792 page_count=7852
+operations=200 event_operations=10000
+event_relations=5000
+q1_events_by_session n=200 p50_us=75.309 p95_us=86.075 p99_us=96.655 max_us=221.638 rows_returned_total=40000
+q2_events_by_time_range n=200 p50_us=142.369 p95_us=168.758 p99_us=196.726 max_us=233.384 rows_returned_total=200000
+q3_events_by_operation n=200 p50_us=32.936 p95_us=38.392 p99_us=40.829 max_us=107.707 rows_returned_total=10000
+q4_relations_by_path_NO_index n=200 p50_us=2651.838 p95_us=2942.027 p99_us=3343.526 max_us=3719.116 rows_returned_total=514
+create_expression_index elapsed_ms=31
+q4b_relations_by_path_expr_index n=200 p50_us=16.371 p95_us=20.462 p99_us=24.812 max_us=149.753 rows_returned_total=514
+db_file_bytes_after_index=36233216
+w1_single_row_upsert n=200 p50_us=8.708 p95_us=10.659 p99_us=14.758 max_us=79.622 rows_returned_total=0
+
+=== SQLite: 1 writer + 4 readers under WAL ===
+journal_mode=wal wal_autocheckpoint=1000
+
+### busy_timeout_ms=5000
+writer w attempted=189740 errors=0
+r0 ok=47814 busy=0 other_errors=0 p50_us=148.3 p99_us=498.0 max_us=1326.1
+r1 ok=48140 busy=0 other_errors=0 p50_us=147.0 p99_us=402.6 max_us=1260.2
+r2 ok=48419 busy=0 other_errors=0 p50_us=149.0 p99_us=348.8 max_us=1240.4
+r3 ok=48434 busy=0 other_errors=0 p50_us=147.1 p99_us=356.9 max_us=794.2
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### busy_timeout_ms=0
+writer w attempted=370593 errors=0
+r0 ok=112868 busy=0 other_errors=0 p50_us=11.6 p99_us=946.0 max_us=1962.2
+r1 ok=115068 busy=0 other_errors=0 p50_us=11.3 p99_us=955.1 max_us=2406.4
+r2 ok=118614 busy=0 other_errors=0 p50_us=11.0 p99_us=942.1 max_us=2793.6
+r3 ok=115503 busy=0 other_errors=0 p50_us=11.2 p99_us=949.8 max_us=2140.7
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### two concurrent writers (the case busy_timeout actually covers)
+busy_timeout_ms=5000
+  writer A: writer wa attempted=249883 errors=0
+  writer B: writer wb attempted=194790 errors=0
+busy_timeout_ms=0
+  writer A: writer wa attempted=475422 errors=225229
+  writer B: writer wb attempted=391843 errors=161255
+  writer A stderr: writer error #1: sqlite: database is locked
+  writer B stderr: writer error #1: sqlite: database is locked
+
+=== SQLite: kill -9 a writer mid-transaction ===
+
+=== SQLite: Operation Context is 0..n against the real schema ===
+### 6.3 SQLite: 0..n membership queries against the real schema
+
+| query | rows |
+|---|---|
+| operations of ev-2 | 2 |
+| events of op-recover | 1 |
+| events with no operation | 1 |
+| operations with no event | 1 |
+
+ev-2 per-operation credibility (the reason level lives on the edge, not the event):
+| operation | level | attached_by |
+|---|---|---|
+| op-edit | Probable | R5 |
+| op-recover | Strong | R4 |
+
+--- retraction: ev-2 leaves op-recover, history kept ---
+live memberships of ev-2 = 1, membership rows retained = 2
+
+--- the single-column alternative, shown failing ---
+With `events.operation_id`, ev-2 would need one value. The two rows above
+differ in level (Probable vs Strong) and in attached_by, so no single value
+can represent ev-2's state without discarding a measured fact.
+
+integrity_check=ok
+foreign_key_violations=0
+
+=== SQLite: retention — trim then VACUUM on 100k rows ===
+retention(mode=time fk_indexes=no):
+before rows=100000 file_bytes=32161792
+trim removed=10000 elapsed_ms=77067 rows_now=90000 file_bytes=32161792
+vacuum elapsed_ms=84 file_bytes=27811840 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+retention(mode=time fk_indexes=yes):
+fk_child_indexes_created elapsed_ms=0
+before rows=100000 file_bytes=33169408
+trim removed=10000 elapsed_ms=102 rows_now=90000 file_bytes=33169408
+vacuum elapsed_ms=85 file_bytes=28618752 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+retention(mode=size fk_indexes=no):
+before rows=100000 file_bytes=32161792
+trim removed=10000 elapsed_ms=75255 rows_now=90000 file_bytes=32161792
+vacuum elapsed_ms=53 file_bytes=27811840 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+retention(mode=size fk_indexes=yes):
+fk_child_indexes_created elapsed_ms=0
+before rows=100000 file_bytes=33169408
+trim removed=10000 elapsed_ms=57 rows_now=90000 file_bytes=33169408
+vacuum elapsed_ms=50 file_bytes=28618752 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+
+=== summary ===
+results directory: results
+20261123T143036Z-all.log
+20261123T143036Z-bench-100k.log
+20261123T143036Z-causality.log
+20261123T143036Z-confidence.log
+20261123T143036Z-context.log
+20261123T143036Z-context-sql.log
+20261123T143036Z-dedup.log
+20261123T143036Z-kill9.log
+20261123T143036Z-kill9-migrate.log
+20261123T143036Z-mig-after.log
+20261123T143036Z-mig-populate-v1.log
+20261123T143036Z-mig-v1.log
+20261123T143036Z-mig-v1-verify.log
+20261123T143036Z-mig-v2.log
+20261123T143036Z-pidns-anchor.log
+20261123T143036Z-pidreuse.log
+20261123T143036Z-redact.log
+20261123T143036Z-reorder.log
+20261123T143036Z-retention-size-idx-no.log
+20261123T143036Z-retention-size-idx-yes.log
+20261123T143036Z-retention-time-idx-no.log
+20261123T143036Z-retention-time-idx-yes.log
+20261123T143036Z-run.log
+20261123T143036Z-wal-concurrency.log
+
+OK: all steps completed

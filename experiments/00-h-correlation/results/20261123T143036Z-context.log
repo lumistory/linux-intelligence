@@ -1,0 +1,32 @@
+
+## 6. Operation Context — one event, many operations; one event, none
+
+| query | result |
+|---|---|
+| operations of ev-1 | op-edit |
+| operations of ev-2 | op-edit, op-recover |
+| events of op-edit | ev-1, ev-2 |
+| events of op-recover | ev-2 |
+| events belonging to no operation | ev-3 |
+
+### 6.1 Retraction keeps history
+
+after retracting ev-2 from op-recover:
+| query | result |
+|---|---|
+| operations of ev-2 | op-edit |
+| events of op-recover | `` (empty, the operation still exists) |
+| membership rows retained | 3 |
+
+### 6.2 Why a single `events.operation_id` column cannot work
+
+| requirement | single FK column | join table |
+|---|---|---|
+| ev-2 in two operations | impossible without duplicating the event | one row per (event, operation) |
+| ev-3 in no operation | forces a synthetic "misc" operation, destroying the distinction between "belongs to nothing" and "not ingested" | simply absent from the join table |
+| per-membership credibility | one level for the event, so a Strong recovery link forces the edit link to Strong too | level is per membership |
+| audit trail for a wrong link | no place to record which rule attached it | `attached_by` + `detached_mono_ns` |
+| retraction | UPDATE the column, losing the fact that a link ever existed | set `detached_mono_ns` |
+
+This is the schema in migrations/0001_init.sql (`event_operations`), and the
+uniqueness constraint is on (event_id, operation_id), not on event_id.

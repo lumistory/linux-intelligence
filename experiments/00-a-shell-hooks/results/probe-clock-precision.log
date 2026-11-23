@@ -1,0 +1,18 @@
+# EPOCHREALTIME precision: bash vs zsh
+Q: is the fractional part the same width in both shells?
+
+bash 5.3.20 : value=1795443647.561259  fraction_digits=6
+zsh  5.9.2  : value=1795443647.5582363605  fraction_digits=10
+  (zsh needs `zmodload zsh/datetime`; without the module $EPOCHREALTIME is
+   empty, and ${#...} on it is 0 -- that is a trap for any adapter.)
+
+CONCLUSION: NO. bash gives 6 digits (microseconds); this zsh gives 10 digits
+(nanoseconds). Consequences for an adapter:
+  1. `$(( (${b/./} - ${a/./}) / 1000 ))` overflows signed 64-bit in zsh: a
+     10-digit seconds value concatenated with a 10-digit fraction is a
+     20-digit integer. zsh then truncates with a warning or returns garbage;
+     during development a 0 ms command was reported as 115 ms.
+  2. Formatting ts_wall from the raw fraction yields
+     '2026-11-23T22:19:29.3777232170Z', which is not ISO-8601.
+The zsh adapter truncates the fraction to 6 digits for arithmetic and for
+formatting; bash needs no truncation.

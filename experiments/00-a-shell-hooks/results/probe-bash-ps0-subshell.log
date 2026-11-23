@@ -4,13 +4,13 @@ Q: PS0 runs in a subshell; which assignment forms survive to the
 
 === $( ) command substitution ===
 code: PS0='$( _LI_T=via_subst )'
-terminal tail: echo MARKER-$( | >
+terminal tail: echo MARKER-$( | ⟦LI-P2⟧
 === ${v:=word} plain expansion ===
 code: PS0='${_LI_T:=via_default}'
-terminal tail: echo MARKER-${v:=word} | >
+terminal tail: echo MARKER-${v:=word} | ⟦LI-P2⟧
 === assignment inside arithmetic subscript ===
 code: PS0='${_LI_D[$((_LI_T:=via_subscript))]}'
-terminal tail: echo MARKER-assignment | >
+terminal tail: echo MARKER-assignment | ⟦LI-P2⟧
 
 --- FD 3 events ---
 result=[]

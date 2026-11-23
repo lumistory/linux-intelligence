@@ -1,0 +1,91 @@
+
+## 4. Five-level credibility — 24 scenarios
+
+Rule table, evaluated in this order, first match wins:
+
+| rule | level | predicate (all conjuncts required) |
+|---|---|---|
+| R0 | Unknown | actor identity `Ambiguous` — (pid,starttime) collided |
+| R1 | Unknown | no process identity, and the only link is a shared session_id |
+| R2 | Unknown | a file event exists and lies outside the actor's interval |
+| R3 | Confirmed | keyed actor AND (self-observed OR fork edge) AND inside interval AND path tied to the command |
+| R4 | Strong | >= 2 independent source classes AND >= 1 kernel-observed |
+| R5 | Probable | keyed actor AND (self-observed OR fork edge) AND inside interval AND NO file evidence tied to the command |
+| R6 | Weak | inside the interval and nothing more |
+| R7 | Unknown | residual |
+
+Independence is defined, not felt: classes differ AND neither source is marked
+derived AND the pair is in INDEPENDENT_PAIRS (declared/proc, declared/fs,
+proc/fs). Two hooks firing twice are ONE source.
+
+| # | scenario | expected | rule | actual | rule | verdict |
+|---|---|---|---|---|---|---|
+| S01 | actor itself is the reported writer, path tied, inside interval | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S02 | one-hop fork chain, path tied, inside interval | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S03 | four-hop fork chain (pipeline), path tied | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S04 | (pid,starttime) collision, everything else perfect | Unknown | R0 (pid,starttime) collision | Unknown | R0 (pid,starttime) collision | PASS |
+| S05 | collision plus two independent corroborations | Unknown | R0 (pid,starttime) collision | Unknown | R0 (pid,starttime) collision | PASS |
+| S06 | only a shared session_id | Unknown | R1 session identity only | Unknown | R1 session identity only | PASS |
+| S07 | no actor at all, file event present | Unknown | R1 session identity only | Unknown | R1 session identity only | PASS |
+| S08 | file event strictly outside the actor's interval | Unknown | R2 no overlapping time window | Unknown | R2 no overlapping time window | PASS |
+| S09 | declared hook + kernel fs agree, path tied, no fork chain | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S10 | declared hook + kernel proc agree, no file evidence | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S11 | kernel proc + kernel fs agree | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S12 | two declared shells report the same command (hook fired twice) | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S13 | kernel fs claim marked derived from kernel proc | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S14 | fork chain inside interval, no filesystem evidence at all | Probable | R5 pid chain inside window, no file-side evidence | Probable | R5 pid chain inside window, no file-side evidence | PASS |
+| S15 | fork chain inside interval, untied path observed | Probable | R5 pid chain inside window, no file-side evidence | Probable | R5 pid chain inside window, no file-side evidence | PASS |
+| S16 | actor is the reported writer, but path untied | Probable | R5 pid chain inside window, no file-side evidence | Probable | R5 pid chain inside window, no file-side evidence | PASS |
+| S17 | pid-only actor with a tied path inside the interval | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S18 | pid-only actor, pid equality, no window overlap | Unknown | R7 residual (nothing to stand on) | Unknown | R7 residual (nothing to stand on) | PASS |
+| S19 | keyed actor, no lineage, untied path, inside interval | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S20 | keyed actor, no file event, no lineage, inside interval | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S21 | three independent classes (declared + proc + fs) | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S22 | inferred-only corroboration, fork chain otherwise perfect | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S23 | keyed actor, tied path, no time containment recorded | Unknown | R2 no overlapping time window | Unknown | R2 no overlapping time window | PASS |
+| S24 | one kernel source corroborating only itself | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+
+24/24 scenarios match the specified level AND rule.
+
+### 4.0 Why each scenario sits where it does
+
+| # | scenario | note |
+|---|---|---|
+| S01 | actor itself is the reported writer, path tied, inside interval | same-source direct evidence |
+| S02 | one-hop fork chain, path tied, inside interval | kernel-reported parent edge |
+| S03 | four-hop fork chain (pipeline), path tied | depth does not weaken a real edge |
+| S04 | (pid,starttime) collision, everything else perfect | collision detected -> refuse |
+| S05 | collision plus two independent corroborations | more evidence cannot outvote a broken identity |
+| S06 | only a shared session_id | session is not attribution |
+| S07 | no actor at all, file event present | 0-E: inotify carries no pid |
+| S08 | file event strictly outside the actor's interval | temporal impossibility |
+| S09 | declared hook + kernel fs agree, path tied, no fork chain | two independent classes, one kernel |
+| S10 | declared hook + kernel proc agree, no file evidence | kernel proc corroborates the command itself |
+| S11 | kernel proc + kernel fs agree | two kernel sources, still not Confirmed |
+| S12 | two declared shells report the same command (hook fired twice) | same class twice is one source, not two |
+| S13 | kernel fs claim marked derived from kernel proc | independence is per-source, not assumed from class alone |
+| S14 | fork chain inside interval, no filesystem evidence at all | the canonical 'probably, but unproven' case |
+| S15 | fork chain inside interval, untied path observed | a path nobody tied to the command does not confirm it |
+| S16 | actor is the reported writer, but path untied | writer identity strong, artefact link weak |
+| S17 | pid-only actor with a tied path inside the interval | missing starttime removes the identity, keeps the interval |
+| S18 | pid-only actor, pid equality, no window overlap | nothing holds |
+| S19 | keyed actor, no lineage, untied path, inside interval | time overlap only |
+| S20 | keyed actor, no file event, no lineage, inside interval | still only time |
+| S21 | three independent classes (declared + proc + fs) | three sources still cap at Strong without a fork edge |
+| S22 | inferred-only corroboration, fork chain otherwise perfect | inferred inputs are filtered from R4, not from R3 |
+| S23 | keyed actor, tied path, no time containment recorded | unknown containment is treated as no containment |
+| S24 | one kernel source corroborating only itself | a single source is never 'two independent sources' |
+
+### 4.1 Level distribution over the 24 scenarios
+
+| level | count |
+|---|---|
+| Confirmed | 4 |
+| Strong | 4 |
+| Probable | 3 |
+| Weak | 6 |
+| Unknown | 7 |
+
+### 4.2 Monotonicity: adding a corroboration never lowers the level
+
+violations: 0 (must be 0)

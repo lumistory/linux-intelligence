@@ -4,11 +4,11 @@ Q: zsh EPOCHREALTIME has nanosecond precision; what does the naive
 
 --- format ---
 f=${EPOCHREALTIME#*.}; s=${EPOCHREALTIME%.*}; print "seconds=$s fraction=$f frac_digits=$(( ${#EPOCHREALTIME} - ${#s} - 1 ))"
-seconds=1795441728 fraction=6676306725 frac_digits=10
+seconds=1795443818 fraction=5338957310 frac_digits=10
 
 --- `sleep 0.3`, then subtract both ways ---
-naive  : print "naive_ms=$(( (${b/./}-${a/./})/1000 ))" | naive_ms=302543
-correct: f1=${a#*.}; s1=${a%.*}; f2=${b#*.}; s2=${b%.*}; u1=$(( s1*1000000 + ${f1[1,6]}*1 )); u2=$(( s2*1000000 + ${f2[1,6]}*1 )); print "correct_ms=$(( (u2-u1)/1000 ))" | correct_ms=302
+naive  : print "naive_ms=$(( (${b/./}-${a/./})/1000 ))" | naive_ms=303161
+correct: f1=${a#*.}; s1=${a%.*}; f2=${b#*.}; s2=${b%.*}; u1=$(( s1*1000000 + ${f1[1,6]}*1 )); u2=$(( s2*1000000 + ${f2[1,6]}*1 )); print "correct_ms=$(( (u2-u1)/1000 ))" | correct_ms=303
 
 CONCLUSION: the naive form concatenates a 10-digit second count with a
 9-digit fraction, overflows signed 64-bit, and zsh then either truncates

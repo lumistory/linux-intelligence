@@ -55,9 +55,13 @@ _li_esc() {
 }
 
 # zsh: strftime builtin from zsh/datetime, microsecond-resolution input
+# The fraction must be truncated to 6 digits: this zsh reports a 10-digit
+# nanosecond fraction, which would emit "...:29.3777232170Z" -- not ISO-8601 and
+# not parseable as microseconds. Truncating keeps the field a valid msec/µsec
+# timestamp (seen in results/t01.zsh.events.jsonl before the fix).
 _li_ts() {
-  local frac=${EPOCHREALTIME#*.}
-  local sec=${EPOCHREALTIME%.*}
+  local sec=${EPOCHREALTIME%%.*} frac=${EPOCHREALTIME#*.}
+  frac=${frac[1,6]}
   strftime -s _LI_TS '%Y-%m-%dT%H:%M:%S' $sec 2>/dev/null || _LI_TS=$sec
   _LI_TS=$_LI_TS.$frac'Z'
 }
@@ -143,11 +147,15 @@ typeset -ga fpath=($LI_ZSH_FPATH $fpath)
 autoload -Uz add-zsh-hook 2>/dev/null
 _li_sess
 : >&3 2>/dev/null && _LI_FD3_OK=1
-if whence -w add-zsh-hook >/dev/null 2>&1; then
-  add-zsh-hook preexec _li_preexec
-  add-zsh-hook precmd  _li_precmd
-else
+# add-zsh-hook runs `autoload -- <fn>` on whatever name it is given. Passing it
+# the name of an already-defined function marks that function as an autoload
+# stub, which REPLACES the definition ("command not found: _li_now" was the
+# symptom). Register the raw function lists instead; that is exactly what
+# add-zsh-hook appends to, minus the destructive autoload.
+typeset -ga preexec_functions precmd_functions
+[[ ${preexec_functions[(r)_li_preexec]} == _li_preexec ]] || \
   preexec_functions+=( _li_preexec )
+[[ ${precmd_functions[(r)_li_precmd]} == _li_precmd ]] || \
   precmd_functions+=( _li_precmd )
-fi
+_LI_REGISTERED=direct
 true

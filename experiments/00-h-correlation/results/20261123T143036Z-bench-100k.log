@@ -1,0 +1,12 @@
+inserted=100000 wall_ms=507 per_row_us=5.08 rows_per_s=196902
+db_file_bytes=32161792 page_count=7852
+operations=200 event_operations=10000
+event_relations=5000
+q1_events_by_session n=200 p50_us=75.309 p95_us=86.075 p99_us=96.655 max_us=221.638 rows_returned_total=40000
+q2_events_by_time_range n=200 p50_us=142.369 p95_us=168.758 p99_us=196.726 max_us=233.384 rows_returned_total=200000
+q3_events_by_operation n=200 p50_us=32.936 p95_us=38.392 p99_us=40.829 max_us=107.707 rows_returned_total=10000
+q4_relations_by_path_NO_index n=200 p50_us=2651.838 p95_us=2942.027 p99_us=3343.526 max_us=3719.116 rows_returned_total=514
+create_expression_index elapsed_ms=31
+q4b_relations_by_path_expr_index n=200 p50_us=16.371 p95_us=20.462 p99_us=24.812 max_us=149.753 rows_returned_total=514
+db_file_bytes_after_index=36233216
+w1_single_row_upsert n=200 p50_us=8.708 p95_us=10.659 p99_us=14.758 max_us=79.622 rows_returned_total=0

@@ -4,12 +4,12 @@ Q: how expensive is each primitive a hook might use per command?
 300 iterations of `true`-equivalent work in a loop; the loop overhead
 itself is ~1 us, so the numbers are the marginal cost of the operation.
 
-bash       1 us/op   (x=1)
+bash       0 us/op   (x=1)
 bash       3 us/op   (builtin history 1 >/dev/null)
-bash     291 us/op   (x=)
+bash     272 us/op   (x=)
 zsh        0 us/op   (x=1)
-zsh      302 us/op   (x=hello)
-zsh      313 us/op   (x=hello)
+zsh      353 us/op   (x=hello)
+zsh      287 us/op   (x=hello)
 
 Cross-check with an external clock (python time.monotonic):
   200 zsh command substitutions  ~257 us/op

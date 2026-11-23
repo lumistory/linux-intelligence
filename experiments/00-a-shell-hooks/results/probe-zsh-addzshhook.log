@@ -1,0 +1,26 @@
+# zsh: add-zsh-hook with a correct fpath, applied to an already-defined function
+
+Q: does add-zsh-hook break a function that is already defined?
+
+fpath includes the unpacked function directory, so autoload succeeds.
+
+--- session ---
+fpath=(<WORKSPACE>/experiments/toolchain/root/usr/share/zsh/functions/Misc $fpath); autoload -Uz add-zsh-hook; _li_t() { echo AAA-BODY-RAN; }; add-zsh-hook precmd _li_t; echo '--- call ---'; _li_t; echo RC=$?; echo '--- when resolved ---'; whence -w _li_t
+--- call ---
+AAA-BODY-RAN
+RC=0
+--- when resolved ---
+_li_t: function
+%                                                                              
+AAA-BODY-RAN
+HOST% 
+
+CONCLUSION: with fpath correct, add-zsh-hook runs and the function body still
+executes (AAA-BODY-RAN appears). An earlier version of this experiment claimed
+that add-zsh-hook replaced the definition; that was wrong -- the real failure
+was simply `function definition file not found` because zsh here is an unpacked
+copy whose fpath does not include its own function directory.
+
+The adapter appends to precmd_functions/preexec_functions directly anyway,
+because that works whether or not add-zsh-hook can be autoloaded, and it lets
+the adapter de-duplicate by hand so re-sourcing stays idempotent.

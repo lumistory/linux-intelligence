@@ -14,7 +14,7 @@ Eight experiments, all executed on this machine, all with raw logs retained:
 
 | Exp | Subject | Verdict | Evidence |
 |---|---|---|---|
-| 0-A | bash/zsh/fish interactive hooks | **PASS-WITH-LIMITS** | 39/39 cases (13×3), 180 latency samples × 12 modes |
+| 0-A | bash/zsh/fish interactive hooks | **PASS-WITH-LIMITS** | 39/39 cases (13×3), hook-body cost 3 µs (bash) / 2.3 ms (zsh) / 1.1 ms (fish) |
 | 0-B | Non-interactive script lifecycle | **PASS-WITH-LIMITS** | 41/41 assertions, 10 cases |
 | 0-C | UDS concurrency and reliability | **PASS** | 10/10 tests, 3 full repeat runs |
 | 0-D | PTY across shells | **PASS** | 49/49 assertions, 30/30 steps, 4 concurrent sessions |
@@ -76,7 +76,10 @@ Three decisions were changed *because* of measurement, not preference:
 1. **IPC client policy hardened** (ADR 0002). A blocking write with no timeout
    never returned against a SIGSTOPped daemon. Non-blocking or
    `SO_SNDTIMEO ≤ 5 ms` is now mandatory; on `EAGAIN` the client drops, counts,
-   and advances `sequence` so the gap is detectable.
+   and advances `sequence` so the gap is detectable. 0-A additionally proved
+   that **no shell can open an AF_UNIX socket by redirection** (ENXIO on bash,
+   zsh, fish), so the sink must be a launcher-supplied inherited FD, not a
+   shell-opened socket.
 2. **Per-event `Ack` demoted** from "delivery proof" to "best effort". 12.0 % of
    acks were dropped under a 50-client burst. Delivery proof is a watermark.
 3. **Recovery scope narrowed** (ADR 0006). 0-F measured that no test container
@@ -115,7 +118,7 @@ Open, and not hidden:
 
 | risk | status |
 |---|---|
-| A wedged daemon hanging every shell | **mitigated by design** (write timeout); the residual cost is 1.2–1.5 ms per command in bash/zsh |
+| A wedged daemon hanging every shell | **mitigated by design**: write timeout plus an inherited FD, so a dead sink and a live one cost the same (bash 1148 µs vs 1140 µs prompt-to-prompt, i.e. inside the noise) |
 | A dead sink killing the shell via SIGPIPE | **mitigated** (subshell write); `trap '' PIPE` rejected because it leaks `SigIgn` into children |
 | `SO_PEERCRED` pid being reused after the client exits | **demonstrated**; mitigation is to authorise on uid only and treat pid as attribution |
 | `(pid,starttime)` colliding within a tick | **demonstrated 20/20**; mitigation is to drop to `Unknown` rather than guess |

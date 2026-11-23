@@ -1,0 +1,15 @@
+# fish prompt cost with and without a hook
+Q: is the fish `empty` latency cell (918 us) a hook cost or fish itself?
+
+15 commands per configuration, pty, TERM=dumb, prompt marker detection as in
+harness/latency.py.
+
+no hook at all                 median= 2087 us  min= 1234 max= 2743
+empty fish_postexec handler    median= 1839 us  min= 1395 max= 2561
+handler writing to /dev/null   median= 1932 us  min= 1271 max= 3016
+
+CONCLUSION: fish costs ~1.8-2.1 ms per prompt cycle with NO hook installed at
+all, and an empty or writing handler is indistinguishable from that within the
+noise (medians 2087 / 1839 / 1932 us, ranges overlapping). So the fish numbers
+in 4.3 must be read as 'fish is intrinsically expensive per prompt (~2 ms), and
+the hook adds nothing measurable', not as a comparison of sink costs.

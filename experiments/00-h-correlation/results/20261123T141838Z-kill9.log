@@ -1,0 +1,27 @@
+starting writer (one transaction per event, synchronous=NORMAL, WAL),
+will SIGKILL after 1.5 s of steady commits
+writer killed with SIGKILL; its stdout was:
+
+--- WAL sidecar files present at the moment of the crash ---
+-rw-r--r-- 1 USER USER  18866176 11月23日 22:19 kill9.db
+-rw-r--r-- 1 USER USER     32768 11月23日 22:19 kill9.db-shm
+-rw-r--r-- 1 USER USER   4185952 11月23日 22:19 kill9.db-wal
+(a -wal file here is the uncommitted tail that recovery must discard)
+
+--- recovery: open, integrity_check, foreign_key_check ---
+integrity_check=ok elapsed_ms=143
+foreign_key_violations=0
+events=74070 event_relations=0 schema_version=2
+writer_rows_visible=74070 max_sequence=74069
+OK: visible rows form a contiguous committed prefix (no torn transaction)
+
+--- sidecar files after a clean open (WAL checkpointed and removed) ---
+-rw-r--r-- 1 USER USER  18882560 11月23日 22:19 kill9.db
+
+--- second open after the crash must also succeed and commit ---
+writer post attempted=44234 errors=0
+integrity_check=ok elapsed_ms=239
+foreign_key_violations=0
+events=118304 event_relations=0 schema_version=2
+writer_rows_visible=74070 max_sequence=74069
+OK: visible rows form a contiguous committed prefix (no torn transaction)

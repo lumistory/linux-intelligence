@@ -1,0 +1,25 @@
+### 6.3 SQLite: 0..n membership queries against the real schema
+
+| query | rows |
+|---|---|
+| operations of ev-2 | 2 |
+| events of op-recover | 1 |
+| events with no operation | 1 |
+| operations with no event | 1 |
+
+ev-2 per-operation credibility (the reason level lives on the edge, not the event):
+| operation | level | attached_by |
+|---|---|---|
+| op-edit | Probable | R5 |
+| op-recover | Strong | R4 |
+
+--- retraction: ev-2 leaves op-recover, history kept ---
+live memberships of ev-2 = 1, membership rows retained = 2
+
+--- the single-column alternative, shown failing ---
+With `events.operation_id`, ev-2 would need one value. The two rows above
+differ in level (Probable vs Strong) and in attached_by, so no single value
+can represent ev-2's state without discarding a measured fact.
+
+integrity_check=ok
+foreign_key_violations=0

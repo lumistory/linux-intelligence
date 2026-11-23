@@ -20,3 +20,8 @@ summary: readers_with_errors=0 total_busy_retries_across_readers=0
 busy_timeout_ms=5000
   writer A: writer wa attempted=121330 errors=0
   writer B: writer wb attempted=198567 errors=0
+busy_timeout_ms=0
+  writer A: writer wa attempted=324228 errors=144561
+  writer B: writer wb attempted=429372 errors=236937
+  writer A stderr: writer error #1: sqlite: database is locked
+  writer B stderr: writer error #1: sqlite: database is locked
