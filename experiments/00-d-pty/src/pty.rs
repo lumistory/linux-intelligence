@@ -23,6 +23,10 @@ pub struct Session {
     pub winsize: Winsize,
     raw: Vec<u8>,
     bytes_read: u64,
+    /// When false, terminal queries are observed but not answered.
+    responder_enabled: bool,
+    /// Every query seen, answered or not.
+    pub queries_seen: u64,
     eof: bool,
     /// Terminal queries answered so far (fish/vim/less block until answered).
     pub answered: Vec<crate::responder::Answered>,
@@ -52,6 +56,16 @@ impl Session {
     ///
     /// All four are async-signal-safe, so doing them in `pre_exec` is legal.
     pub fn spawn(spec: SpawnSpec<'_>) -> Result<Session> {
+        Session::spawn_inner(spec, true)
+    }
+
+    /// Same as `spawn`, but terminal queries are recorded and **not** answered.
+    /// This exists to measure what the absence of a responder does.
+    pub fn spawn_disabled_responder(spec: SpawnSpec<'_>) -> Result<Session> {
+        Session::spawn_inner(spec, false)
+    }
+
+    fn spawn_inner(spec: SpawnSpec<'_>, responder_enabled: bool) -> Result<Session> {
         let openpty = nix::pty::openpty(Some(&spec.winsize), None)
             .map_err(|e| Error::Sys { call: "openpty", source: e })?;
         let master = openpty.master;
@@ -119,7 +133,7 @@ impl Session {
         drop(slave);
         set_nonblocking(master.as_raw_fd())?;
 
-        Ok(Session {
+        let mut session = Session {
             name: spec.name.to_string(),
             pid,
             master,
@@ -127,12 +141,16 @@ impl Session {
             winsize: spec.winsize,
             raw: Vec::new(),
             bytes_read: 0,
+            responder_enabled: true,
+            queries_seen: 0,
             eof: false,
             answered: Vec::new(),
             reaped: false,
             exit: None,
             exit_signal: None,
-        })
+        };
+        session.responder_enabled = responder_enabled;
+        Ok(session)
     }
 
     pub fn master_fd(&self) -> RawFd {
@@ -219,6 +237,10 @@ impl Session {
                             self.winsize.ws_col,
                         );
                         if !seen.is_empty() {
+                            self.queries_seen = self.queries_seen.saturating_add(seen.len() as u64);
+                        }
+                        let reply = if self.responder_enabled { reply } else { Vec::new() };
+                        if !seen.is_empty() && self.responder_enabled {
                             self.answered.extend(seen);
                         }
                         if !reply.is_empty() {
@@ -522,6 +544,14 @@ impl Session {
 
     pub fn slave_path(&self) -> &str {
         &self.slave_path
+    }
+
+    pub fn queries_seen(&self) -> u64 {
+        self.queries_seen
+    }
+
+    pub fn exit_status(&self) -> Option<i32> {
+        self.exit
     }
 }
 

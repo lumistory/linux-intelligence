@@ -1,0 +1,755 @@
+warning: variant `Scene` is never constructed
+  --> src/error.rs:22:5
+   |
+ 4 | pub enum Error {
+   |          ----- variant in this enum
+...
+22 |     Scene(String),
+   |     ^^^^^
+   |
+   = note: `Error` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `name` is never read
+  --> src/pty.rs:19:9
+   |
+18 | pub struct Session {
+   |            ------- field in this struct
+19 |     pub name: String,
+   |         ^^^^
+
+warning: method `master_fd` is never used
+   --> src/pty.rs:156:12
+    |
+ 47 | impl Session {
+    | ------------ method in this implementation
+...
+156 |     pub fn master_fd(&self) -> RawFd {
+    |            ^^^^^^^^^
+
+warning: fields `elapsed`, `bytes`, `occurrences_raw`, and `occurrences_debackspaced` are never read
+   --> src/pty.rs:560:9
+    |
+558 | pub struct ReadOutcome {
+    |            ----------- fields in this struct
+559 |     pub matched: bool,
+560 |     pub elapsed: Duration,
+    |         ^^^^^^^
+561 |     pub bytes: u64,
+    |         ^^^^^
+562 |     /// Occurrences in the raw byte stream.
+563 |     pub occurrences_raw: usize,
+    |         ^^^^^^^^^^^^^^^
+564 |     /// Occurrences after applying terminal backspaces.
+565 |     pub occurrences_debackspaced: usize,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `query` and `reply` are never read
+  --> src/responder.rs:18:9
+   |
+17 | pub struct Answered {
+   |            -------- fields in this struct
+18 |     pub query: String,
+   |         ^^^^^
+19 |     pub reply: String,
+   |         ^^^^^
+   |
+   = note: `Answered` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: function `summarise` is never used
+   --> src/responder.rs:199:8
+    |
+199 | pub fn summarise(seen: &[Answered]) -> Value {
+    |        ^^^^^^^^^
+
+warning: `li-pty-proto` (bin "li-pty-proto") generated 6 warnings
+    Finished `release` profile [optimized] target(s) in 0.03s
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:94:
+ 
+ fn run() -> Result<i32> {
+     let args = parse_args()?;
+-    std::fs::create_dir_all(&args.workdir)
+-        .map_err(|e| Error::io(args.workdir.clone(), e))?;
++    std::fs::create_dir_all(&args.workdir).map_err(|e| Error::io(args.workdir.clone(), e))?;
+     match args.mode.as_str() {
+         "matrix" => matrix(&args),
+         "concurrent" => concurrent(&args),
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:107:
+ }
+ 
+ fn emit(v: &serde_json::Value) {
+-    println!("{}", serde_json::to_string(v).unwrap_or_else(|_| "{}".into()));
++    println!(
++        "{}",
++        serde_json::to_string(v).unwrap_or_else(|_| "{}".into())
++    );
+ }
+ 
+ /// Run the full matrix for every shell, sequentially, one PTY each.
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:177:
+         let workdir = args.workdir.clone();
+         let shell_id = spec.id.to_string();
+         handles.push(std::thread::spawn(move || -> Result<serde_json::Value> {
+-            let winsize = Winsize { ws_row: 24 + id as u16, ws_col: 80 + id as u16, ws_xpixel: 0, ws_ypixel: 0 };
++            let winsize = Winsize {
++                ws_row: 24 + id as u16,
++                ws_col: 80 + id as u16,
++                ws_xpixel: 0,
++                ws_ypixel: 0,
++            };
+             let mut argv = vec![shell_path];
+             argv.extend(shell_args);
+             let mut s = Session::spawn(SpawnSpec {
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:242:
+     for h in handles {
+         match h.join() {
+             Ok(Ok(v)) => {
+-                if v["foreign_tokens_seen"].as_array().map(|a| !a.is_empty()).unwrap_or(true)
++                if v["foreign_tokens_seen"]
++                    .as_array()
++                    .map(|a| !a.is_empty())
++                    .unwrap_or(true)
+                     || !v["winsize_isolated"].as_bool().unwrap_or(false)
+                 {
+                     ok = false;
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:323:
+     }
+ 
+     // Our own PTY, for the negative side of the comparison.
+-    let winsize = Winsize { ws_row: 24, ws_col: 80, ws_xpixel: 0, ws_ypixel: 0 };
++    let winsize = Winsize {
++        ws_row: 24,
++        ws_col: 80,
++        ws_xpixel: 0,
++        ws_ypixel: 0,
++    };
+     let mut argv = vec!["/bin/bash".to_string(), "--norc".into(), "-i".into()];
+     let env = vec![
+         ("TERM".to_string(), args.term.clone()),
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:330:
+-        ("HOME".to_string(), args.workdir.to_string_lossy().into_owned()),
++        (
++            "HOME".to_string(),
++            args.workdir.to_string_lossy().into_owned(),
++        ),
+         ("PS1".to_string(), "LI-OWN> ".to_string()),
+     ];
+     argv.insert(0, "/bin/bash".to_string());
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:334:
+     let mut own = Session::spawn(SpawnSpec {
+         name: "own-probe",
+-        argv: &["/bin/bash".to_string(), "--norc".into(), "--noprofile".into(), "-i".into()],
++        argv: &[
++            "/bin/bash".to_string(),
++            "--norc".into(),
++            "--noprofile".into(),
++            "-i".into(),
++        ],
+         env: &env,
+         winsize,
+         cwd: &args.workdir,
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:370:
+ /// Diagnostic mode: run one command in a bash PTY and dump exactly what the
+ /// master side received. Used to debug the read path and quoted in the report.
+ fn probe(args: &Args) -> Result<i32> {
+-    let winsize = Winsize { ws_row: 40, ws_col: 120, ws_xpixel: 0, ws_ypixel: 0 };
++    let winsize = Winsize {
++        ws_row: 40,
++        ws_col: 120,
++        ws_xpixel: 0,
++        ws_ypixel: 0,
++    };
+     let env = vec![
+         ("TERM".to_string(), args.term.clone()),
+-        ("HOME".to_string(), args.workdir.to_string_lossy().into_owned()),
++        (
++            "HOME".to_string(),
++            args.workdir.to_string_lossy().into_owned(),
++        ),
+         ("PS1".to_string(), "LI-BASH> ".to_string()),
+         ("LC_ALL".to_string(), "C".to_string()),
+-        ("PATH".to_string(), "/usr/local/bin:/usr/bin:/bin".to_string()),
++        (
++            "PATH".to_string(),
++            "/usr/local/bin:/usr/bin:/bin".to_string(),
++        ),
+     ];
+     let mut s = Session::spawn(SpawnSpec {
+         name: "probe",
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:383:
+-        argv: &["/bin/bash".into(), "--norc".into(), "--noprofile".into(), "-i".into()],
++        argv: &[
++            "/bin/bash".into(),
++            "--norc".into(),
++            "--noprofile".into(),
++            "-i".into(),
++        ],
+         env: &env,
+         winsize,
+         cwd: &args.workdir,
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:387:
+     })?;
+     let m0 = s.mark();
+     let _ = s.wait_quiet(300, 4_000);
+-    emit(&json!({ "record": "probe", "phase": "startup", "bytes": s.bytes_read(),
+-                  "escaped": s.since_escaped(m0) }));
++    emit(
++        &json!({ "record": "probe", "phase": "startup", "bytes": s.bytes_read(),
++                  "escaped": s.since_escaped(m0) }),
++    );
+ 
+     let m1 = s.mark();
+     s.send_line("top -b -n1 -o %MEM")?;
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:401:
+     let m2 = s.mark();
+     s.send_line("echo PROBE-AFTER-TOP")?;
+     let r = s.read_until_any("PROBE-AFTER-TOP", Duration::from_secs(8))?;
+-    emit(&json!({ "record": "probe", "phase": "after_top", "matched": r.matched,
+-                  "escaped": s.since_escaped(m2).chars().take(2000).collect::<String>() }));
++    emit(
++        &json!({ "record": "probe", "phase": "after_top", "matched": r.matched,
++                  "escaped": s.since_escaped(m2).chars().take(2000).collect::<String>() }),
++    );
+     s.send_line("exit")?;
+     let _ = s.reap(Duration::from_secs(3));
+     Ok(0)
+Diff in <WORKSPACE>/experiments/00-d-pty/src/main.rs:418:
+     for spec in scene::shells(&args.zsh, &args.workdir.to_string_lossy(), &args.term) {
+         let home = args.workdir.join(format!("home-noresp-{}", spec.id));
+         let _ = std::fs::create_dir_all(&home);
+-        let winsize = Winsize { ws_row: 40, ws_col: 120, ws_xpixel: 0, ws_ypixel: 0 };
++        let winsize = Winsize {
++            ws_row: 40,
++            ws_col: 120,
++            ws_xpixel: 0,
++            ws_ypixel: 0,
++        };
+         let argv = {
+             let mut v = vec![spec.path.clone()];
+             v.extend(spec.args.iter().cloned());
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:66:
+     }
+ 
+     fn spawn_inner(spec: SpawnSpec<'_>, responder_enabled: bool) -> Result<Session> {
+-        let openpty = nix::pty::openpty(Some(&spec.winsize), None)
+-            .map_err(|e| Error::Sys { call: "openpty", source: e })?;
++        let openpty = nix::pty::openpty(Some(&spec.winsize), None).map_err(|e| Error::Sys {
++            call: "openpty",
++            source: e,
++        })?;
+         let master = openpty.master;
+         let slave = openpty.slave;
+         let slave_path = std::fs::read_link(format!("/proc/self/fd/{}", slave.as_raw_fd()))
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:91:
+         // SAFETY: the child branch below performs only async-signal-safe calls
+         // before exec and never returns to Rust code with owned state.
+         let fork_res = unsafe { nix::unistd::fork() };
+-        let pid = match fork_res.map_err(|e| Error::Sys { call: "fork", source: e })? {
++        let pid = match fork_res.map_err(|e| Error::Sys {
++            call: "fork",
++            source: e,
++        })? {
+             nix::unistd::ForkResult::Parent { child } => child.as_raw(),
+             nix::unistd::ForkResult::Child => {
+                 // Child: from here on only async-signal-safe calls.
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:174:
+                     }
+                     std::thread::sleep(Duration::from_millis(2));
+                 }
+-                Err(e) => return Err(Error::Sys { call: "write(master)", source: e }),
++                Err(e) => {
++                    return Err(Error::Sys {
++                        call: "write(master)",
++                        source: e,
++                    })
++                }
+             }
+         }
+         Ok(())
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:198:
+         loop {
+             let remaining = deadline.saturating_duration_since(Instant::now());
+             let timeout = if first {
+-                PollTimeout::try_from(remaining.max(Duration::from_millis(1))).unwrap_or(PollTimeout::ZERO)
++                PollTimeout::try_from(remaining.max(Duration::from_millis(1)))
++                    .unwrap_or(PollTimeout::ZERO)
+             } else if remaining.is_zero() {
+                 break;
+             } else {
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:210:
+                 Ok(0) => break, // timeout, nothing more to read
+                 Ok(_) => {}
+                 Err(nix::errno::Errno::EINTR) => continue,
+-                Err(e) => return Err(Error::Sys { call: "poll", source: e }),
++                Err(e) => {
++                    return Err(Error::Sys {
++                        call: "poll",
++                        source: e,
++                    })
++                }
+             }
+             let revents = fds[0].revents().unwrap_or(PollFlags::empty());
+             if revents.is_empty() {
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:239:
+                         if !seen.is_empty() {
+                             self.queries_seen = self.queries_seen.saturating_add(seen.len() as u64);
+                         }
+-                        let reply = if self.responder_enabled { reply } else { Vec::new() };
++                        let reply = if self.responder_enabled {
++                            reply
++                        } else {
++                            Vec::new()
++                        };
+                         if !seen.is_empty() && self.responder_enabled {
+                             self.answered.extend(seen);
+                         }
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:256:
+                         break;
+                     }
+                     Err(nix::errno::Errno::EINTR) => continue,
+-                    Err(e) => return Err(Error::Sys { call: "read(master)", source: e }),
++                    Err(e) => {
++                        return Err(Error::Sys {
++                            call: "read(master)",
++                            source: e,
++                        })
++                    }
+                 }
+             }
+             if eof {
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:391:
+             ws_ypixel: 0,
+         };
+         // SAFETY: master fd is valid for the process lifetime of `self`.
+-        unsafe { tiocswinsz_ioctl(self.master.as_raw_fd(), &ws) }
+-            .map_err(|e| Error::Sys { call: "TIOCSWINSZ", source: e })?;
++        unsafe { tiocswinsz_ioctl(self.master.as_raw_fd(), &ws) }.map_err(|e| Error::Sys {
++            call: "TIOCSWINSZ",
++            source: e,
++        })?;
+         self.winsize = ws;
+         Ok(())
+     }
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:405:
+             ws_ypixel: 0,
+         };
+         // SAFETY: master fd valid; `ws` is a properly sized output buffer.
+-        unsafe { tiocgwinsz_ioctl(self.master.as_raw_fd(), &mut ws) }
+-            .map_err(|e| Error::Sys { call: "TIOCGWINSZ", source: e })?;
++        unsafe { tiocgwinsz_ioctl(self.master.as_raw_fd(), &mut ws) }.map_err(|e| Error::Sys {
++            call: "TIOCGWINSZ",
++            source: e,
++        })?;
+         Ok(ws)
+     }
+ 
+Diff in <WORKSPACE>/experiments/00-d-pty/src/pty.rs:510:
+                     self.reaped = true;
+                     return Ok(self.exit);
+                 }
+-                Err(e) => return Err(Error::Sys { call: "waitpid", source: e }),
++                Err(e) => {
++                    return Err(Error::Sys {
++                        call: "waitpid",
++                        source: e,
++                    })
++                }
+             }
+         }
+     }
+Diff in <WORKSPACE>/experiments/00-d-pty/src/responder.rs:26:
+     let mut out: Vec<u8> = Vec::new();
+     let mut seen: Vec<Answered> = Vec::new();
+     let mut i = 0usize;
+-    let name = |q: &str, r: String| Answered { query: q.to_string(), reply: r };
++    let name = |q: &str, r: String| Answered {
++        query: q.to_string(),
++        reply: r,
++    };
+ 
+     while i < bytes.len() {
+         if bytes[i] != 0x1b {
+Diff in <WORKSPACE>/experiments/00-d-pty/src/responder.rs:85:
+         // ESC [ ... (CSI)
+         if i + 1 < bytes.len() && bytes[i + 1] == b'[' {
+             if let Some((end, params, final_byte)) = scan_csi(bytes, i + 2) {
+-                let q = format!("CSI {}{}", String::from_utf8_lossy(&params), final_byte as char);
++                let q = format!(
++                    "CSI {}{}",
++                    String::from_utf8_lossy(&params),
++                    final_byte as char
++                );
+                 match (params.as_slice(), final_byte) {
+                     // DSR: report cursor position (1,1 — we do not track it).
+                     (b"", b'n') | (b"5", b'n') | (b"6", b'n') => {
+Diff in <WORKSPACE>/experiments/00-d-pty/src/responder.rs:220:
+     #[test]
+     fn answers_osc_background_query() {
+         let (out, _) = respond(b"\x1b]11;?\x1b\\", 24, 80);
+-        assert_eq!(String::from_utf8_lossy(&out), "\x1b]11;rgb:0000/0000/0000\x1b\\");
++        assert_eq!(
++            String::from_utf8_lossy(&out),
++            "\x1b]11;rgb:0000/0000/0000\x1b\\"
++        );
+     }
+ 
+     #[test]
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:57:
+             id: "bash",
+             path: "/bin/bash".into(),
+             args: vec!["--norc".into(), "--noprofile".into(), "-i".into()],
+-            env: base(&[("PS1", "LI-BASH> "), ("PS2", "LI-BASH+ "), ("PROMPT_COMMAND", "")]),
++            env: base(&[
++                ("PS1", "LI-BASH> "),
++                ("PS2", "LI-BASH+ "),
++                ("PROMPT_COMMAND", ""),
++            ]),
+             sentinel: "LI_SENTINEL_BASH".into(),
+             arith_cmd: "echo $((2 + 3))",
+         },
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:78:
+                 // "zsh: failed to load module `zsh/zle': /usr/lib/zsh/5.9.2/zsh/zle.so:
+                 //  cannot open shared object file". Without zle, ZLE is dead and
+                 // the shell's line editing is unusable.
+-                ("ZDOTDIR", ""), // filled in by run_shell
++                ("ZDOTDIR", ""),            // filled in by run_shell
+                 ("LI_ZSH_MODULE_ROOT", ""), // filled in by run_shell
+             ]),
+             sentinel: "LI_SENTINEL_ZSH".into(),
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:106:
+ pub fn zsh_module_root(zsh_path: &str) -> String {
+     let p = std::path::Path::new(zsh_path);
+     // <prefix>/usr/bin/zsh -> <prefix>/usr/lib/zsh
+-    let prefix = p
+-        .parent()
+-        .and_then(|d| d.parent())
+-        .and_then(|d| d.parent());
++    let prefix = p.parent().and_then(|d| d.parent()).and_then(|d| d.parent());
+     let lib = match prefix {
+         Some(prefix) => prefix.join("usr/lib/zsh"),
+         None => std::path::PathBuf::from("/usr/lib/zsh"),
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:124:
+         })
+         .unwrap_or_default();
+     versions.sort();
+-    versions.pop().map(|v| v.to_string_lossy().into_owned()).unwrap_or_else(|| lib.to_string_lossy().into_owned())
++    versions
++        .pop()
++        .map(|v| v.to_string_lossy().into_owned())
++        .unwrap_or_else(|| lib.to_string_lossy().into_owned())
+ }
+ 
+ /// Write the isolated zsh startup shim. Returns the ZDOTDIR to use.
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:184:
+ 
+ impl<'a> Recorder<'a> {
+     fn new(s: &'a mut Session) -> Self {
+-        Recorder { mark: s.mark(), s, steps: Vec::new() }
++        Recorder {
++            mark: s.mark(),
++            s,
++            steps: Vec::new(),
++        }
+     }
+ 
+     fn step(&mut self, name: &'static str, matched: bool, elapsed_ms: u64, detail: Value) {
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:241:
+ /// expectation is recorded as `passed: false`; the matrix continues, so one
+ /// broken shell cannot hide the others' results.
+ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun> {
+-    let winsize = Winsize { ws_row: 40, ws_col: 120, ws_xpixel: 0, ws_ypixel: 0 };
++    let winsize = Winsize {
++        ws_row: 40,
++        ws_col: 120,
++        ws_xpixel: 0,
++        ws_ypixel: 0,
++    };
+     let argv = {
+         let mut v = vec![spec.path.clone()];
+         v.extend(spec.args.iter().cloned());
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:346:
+     let _ = r.s.send_line("stty size");
+     let (size1, ms) = timed(|| r.s.read_until_any("40 120", Duration::from_secs(8)));
+     let (_, warm) = timed(|| r.s.wait_quiet(250, 3_000));
+-    let got1 = printed_lines(&r.s.since(r.mark)).iter().any(|l| l == "40 120");
++    let got1 = printed_lines(&r.s.since(r.mark))
++        .iter()
++        .any(|l| l == "40 120");
+     r.step(
+         "04_initial_winsize",
+         got1,
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:365:
+     let _ = r.s.send_line("stty size");
+     let (size2, ms) = timed(|| r.s.read_until_any("50 200", Duration::from_secs(8)));
+     let (_, warm) = timed(|| r.s.wait_quiet(250, 3_000));
+-    let got2 = printed_lines(&r.s.since(r.mark)).iter().any(|l| l == "50 200");
++    let got2 = printed_lines(&r.s.since(r.mark))
++        .iter()
++        .any(|l| l == "50 200");
+     let q = r.s.query_winsize();
+     r.step(
+         "05_resize_visible",
+Diff in <WORKSPACE>/experiments/00-d-pty/src/scene.rs:475:
+     let _ = r.s.send_line("top -b -n1 -o %MEM");
+     // Wait for the child to finish writing; the sentinel below proves the
+     // prompt came back.
+-    let (_, _ms) = timed(|| r.s.read_until_any(&format!("{sentinel}-AFTER-TOP"), Duration::from_millis(50)));
++    let (_, _ms) = timed(|| {
++        r.s.read_until_any(&format!("{sentinel}-AFTER-TOP"), Duration::from_millis(50))
++    });
+     let token_top = format!("{sentinel}-AFTER-TOP");
+     std::thread::sleep(Duration::from_millis(1_500));
+     let _ = r.s.send_line(&format!("echo {token_top}"));
+Diff in <WORKSPACE>/experiments/00-d-pty/src/util.rs:137:
+ /// Used to prove a command's own output arrived: the terminal echo of a typed
+ /// command line never forms such a line, but `echo TOKEN` always does.
+ pub fn count_bare_lines(s: &str, token: &str) -> usize {
+-    printed_lines(s).iter().filter(|l| l.as_str() == token).count()
++    printed_lines(s)
++        .iter()
++        .filter(|l| l.as_str() == token)
++        .count()
+ }
+ 
+ #[cfg(test)]
+WARN: cargo fmt --check reported differences
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling libc v0.2.191
+   Compiling zmij v1.0.23
+   Compiling cfg_aliases v0.2.2
+   Compiling nix v0.29.0
+   Compiling thiserror v2.0.21
+   Compiling serde_json v1.0.154
+   Compiling syn v3.0.10
+    Checking cfg-if v1.0.5
+    Checking bitflags v2.13.2
+   Compiling thiserror-impl v2.0.21
+    Checking memchr v2.8.3
+    Checking itoa v1.0.19
+    Checking li-pty-proto v0.1.0 (<WORKSPACE>/experiments/00-d-pty)
+error: variant `Scene` is never constructed
+  --> src/error.rs:22:5
+   |
+ 4 | pub enum Error {
+   |          ----- variant in this enum
+...
+22 |     Scene(String),
+   |     ^^^^^
+   |
+   = note: `Error` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `-D dead-code` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+error: field `name` is never read
+  --> src/pty.rs:19:9
+   |
+18 | pub struct Session {
+   |            ------- field in this struct
+19 |     pub name: String,
+   |         ^^^^
+
+error: method `master_fd` is never used
+   --> src/pty.rs:156:12
+    |
+ 47 | impl Session {
+    | ------------ method in this implementation
+...
+156 |     pub fn master_fd(&self) -> RawFd {
+    |            ^^^^^^^^^
+
+error: fields `elapsed`, `bytes`, `occurrences_raw`, and `occurrences_debackspaced` are never read
+   --> src/pty.rs:560:9
+    |
+558 | pub struct ReadOutcome {
+    |            ----------- fields in this struct
+559 |     pub matched: bool,
+560 |     pub elapsed: Duration,
+    |         ^^^^^^^
+561 |     pub bytes: u64,
+    |         ^^^^^
+562 |     /// Occurrences in the raw byte stream.
+563 |     pub occurrences_raw: usize,
+    |         ^^^^^^^^^^^^^^^
+564 |     /// Occurrences after applying terminal backspaces.
+565 |     pub occurrences_debackspaced: usize,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: fields `query` and `reply` are never read
+  --> src/responder.rs:18:9
+   |
+17 | pub struct Answered {
+   |            -------- fields in this struct
+18 |     pub query: String,
+   |         ^^^^^
+19 |     pub reply: String,
+   |         ^^^^^
+   |
+   = note: `Answered` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+error: function `summarise` is never used
+   --> src/responder.rs:199:8
+    |
+199 | pub fn summarise(seen: &[Answered]) -> Value {
+    |        ^^^^^^^^^
+
+error: redundant closure
+  --> src/pty.rs:75:22
+   |
+75 |             .map_err(|e| Error::PlainIo(e))?;
+   |                      ^^^^^^^^^^^^^^^^^^^^^ help: replace the closure with the tuple variant itself: `Error::PlainIo`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#redundant_closure
+   = note: `-D clippy::redundant-closure` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::redundant_closure)]`
+
+error: manual implementation of `.is_multiple_of()`
+   --> src/responder.rs:186:8
+    |
+186 |     if clean.len() % 2 != 0 {
+    |        ^^^^^^^^^^^^^^^^^^^^ help: replace with: `!clean.len().is_multiple_of(2)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#manual_is_multiple_of
+    = note: `-D clippy::manual-is-multiple-of` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_is_multiple_of)]`
+
+error: field `reply` is never read
+  --> src/responder.rs:19:9
+   |
+17 | pub struct Answered {
+   |            -------- field in this struct
+18 |     pub query: String,
+19 |     pub reply: String,
+   |         ^^^^^
+   |
+   = note: `Answered` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+error: `(deadline - Instant::now()).as_millis()` is never smaller than `0` and has therefore no effect
+   --> src/scene.rs:531:9
+    |
+531 |         (deadline - Instant::now()).as_millis().min(0) as u64,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `0`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#unnecessary_min_or_max
+    = note: `-D clippy::unnecessary-min-or-max` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::unnecessary_min_or_max)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/main.rs:428:19
+    |
+428 |             name: &spec.id,
+    |                   ^^^^^^^^ help: change this to: `spec.id`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::needless_borrow)]`
+
+error: could not compile `li-pty-proto` (bin "li-pty-proto") due to 10 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `li-pty-proto` (bin "li-pty-proto" test) due to 10 previous errors
+mbx[cache]: 31 hits, 0 misses, 3 not looked up; 0 B downloaded, 0 B uploaded, 2.3 MiB stored locally
+mbx[savings]: 3.3 TiB logical of old files removed while you were busy compiling other things.
+WARN: clippy reported findings
+   Compiling li-pty-proto v0.1.0 (<WORKSPACE>/experiments/00-d-pty)
+warning: variant `Scene` is never constructed
+  --> src/error.rs:22:5
+   |
+ 4 | pub enum Error {
+   |          ----- variant in this enum
+...
+22 |     Scene(String),
+   |     ^^^^^
+   |
+   = note: `Error` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `name` is never read
+  --> src/pty.rs:19:9
+   |
+18 | pub struct Session {
+   |            ------- field in this struct
+19 |     pub name: String,
+   |         ^^^^
+
+warning: method `master_fd` is never used
+   --> src/pty.rs:156:12
+    |
+ 47 | impl Session {
+    | ------------ method in this implementation
+...
+156 |     pub fn master_fd(&self) -> RawFd {
+    |            ^^^^^^^^^
+
+warning: fields `elapsed`, `bytes`, `occurrences_raw`, and `occurrences_debackspaced` are never read
+   --> src/pty.rs:560:9
+    |
+558 | pub struct ReadOutcome {
+    |            ----------- fields in this struct
+559 |     pub matched: bool,
+560 |     pub elapsed: Duration,
+    |         ^^^^^^^
+561 |     pub bytes: u64,
+    |         ^^^^^
+562 |     /// Occurrences in the raw byte stream.
+563 |     pub occurrences_raw: usize,
+    |         ^^^^^^^^^^^^^^^
+564 |     /// Occurrences after applying terminal backspaces.
+565 |     pub occurrences_debackspaced: usize,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `reply` is never read
+  --> src/responder.rs:19:9
+   |
+17 | pub struct Answered {
+   |            -------- field in this struct
+18 |     pub query: String,
+19 |     pub reply: String,
+   |         ^^^^^
+   |
+   = note: `Answered` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: function `summarise` is never used
+   --> src/responder.rs:199:8
+    |
+199 | pub fn summarise(seen: &[Answered]) -> Value {
+    |        ^^^^^^^^^
+
+warning: `li-pty-proto` (bin "li-pty-proto" test) generated 6 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s
+     Running unittests src/main.rs (target/debug/deps/li_pty_proto-5fca1d85d80979a3)
+
+running 12 tests
+test responder::tests::answers_kitty_keyboard_query ... ok
+test responder::tests::answers_xtgettcap_with_not_supported ... FAILED
+test responder::tests::answers_dsr ... ok
+test responder::tests::answers_osc_background_query ... ok
+test util::extra_tests::bare_lines_survive_bracketed_paste_noise ... ok
+test responder::tests::hex_decode_roundtrip ... ok
+test responder::tests::incomplete_sequence_is_not_answered ... ok
+test responder::tests::ignores_plain_output ... ok
+test util::extra_tests::strips_csi_and_osc ... ok
+test util::extra_tests::printed_lines_splits_on_cr_and_lf ... ok
+test util::tests::escapes_are_reversible_in_text ... ok
+test util::tests::hex_limits ... ok
+
+failures:
+
+---- responder::tests::answers_xtgettcap_with_not_supported stdout ----
+
+thread 'responder::tests::answers_xtgettcap_with_not_supported' (131683) panicked at src/responder.rs:235:9:
+assertion `left == right` failed
+  left: "\u{1b}P0+r696e646e\u{1b}\\"
+ right: "\u{1b}P0+q696e646e\u{1b}\\"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    responder::tests::answers_xtgettcap_with_not_supported
+
+test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--bin li-pty-proto`
+mbx[cache]: 0 hits, 1 misses, 1 incremental; 0 B downloaded, 0 B uploaded, 0 B stored locally
+mbx[savings]: 2.9 TiB logical of target/ belonged to checkouts that no longer exist. neither does it.

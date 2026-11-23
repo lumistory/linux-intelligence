@@ -232,8 +232,12 @@ mod tests {
     #[test]
     fn answers_xtgettcap_with_not_supported() {
         let (out, seen) = respond(b"\x1bP+q696e646e\x1b\\", 24, 80);
-        assert_eq!(String::from_utf8_lossy(&out), "\x1bP0+q696e646e\x1b\\");
+        // XTGETTCAP "not supported" reply. The leading '+q' of the request is
+        // consumed as a prefix, so the reply carries "0+r" followed by the
+        // *same hex name* the program queried (not re-prefixed).
+        assert_eq!(String::from_utf8_lossy(&out), "\x1bP0+r696e646e\x1b\\");
         assert!(seen[0].query.contains("indn"));
+        assert!(seen[0].reply.contains("not-supported"));
     }
 
     #[test]

@@ -1,0 +1,3 @@
+{"bytes":98,"bytes_before_command":17,"exit_status":null,"note":"queries_answered=0 by construction: replies were discarded","queries_answered":0,"queries_seen_without_answering":0,"record":"responder_off","sentinel_matched":true,"shell":"bash"}
+{"bytes":485,"bytes_before_command":280,"exit_status":null,"note":"queries_answered=0 by construction: replies were discarded","queries_answered":0,"queries_seen_without_answering":0,"record":"responder_off","sentinel_matched":true,"shell":"zsh"}
+{"bytes":1181,"bytes_before_command":83,"exit_status":null,"note":"queries_answered=0 by construction: replies were discarded","queries_answered":0,"queries_seen_without_answering":12,"record":"responder_off","sentinel_matched":true,"shell":"fish"}

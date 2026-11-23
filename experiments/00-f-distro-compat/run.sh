@@ -51,6 +51,17 @@ label_for() {
   esac
 }
 
+# jget <jsonfile> <jq-path> -- print the value, "-" only when absent/null.
+# NOTE: `jq -r "$p // \"-\""` is WRONG here: jq's // also rewrites `false`.
+jget() {
+  local out
+  out="$(jq -r "if (($2) == null) then \"-\" else (($2)|tostring) end" "$1" 2>/dev/null)" || {
+    printf 'ERR'
+    return 0
+  }
+  printf '%s' "$out"
+}
+
 echo "=== 0-F driver $STAMP"
 echo "=== results -> $RAW"
 
@@ -238,109 +249,139 @@ for image in "${IMAGES[@]}"; do
   run_probe_in "$image"
 done
 
+
 # ---------------------------------------------------------------------------
 # Stage 4 — cross-distribution consistency matrix from the probe JSONs
 # ---------------------------------------------------------------------------
 echo
 echo "=== stage 4: consistency matrix"
 
+PROBE_JSONS=()
+for image in "${IMAGES[@]}"; do
+  PROBE_JSONS+=("$RAW/20_probe_$(label_for "$image").json")
+done
+
 {
-  echo "### Field-by-field comparison of probe.sh output across 4 containers + host"
+  echo "### probe.sh output, field by field: 4 containers (+ host for contrast)"
+  echo "### source: results/20_probe_<distro>.json and results/01_probe_host_bash.json"
   echo
-  printf '%-34s %-14s %-14s %-14s %-14s\n' \
-    FIELD arch ubuntu2404 debian13 fedora42
-  for jf in \
-    '.os_release.ID' '.os_release.ID_LIKE' '.os_release.VERSION_ID' \
-    '.os_release.pkg_manager' \
-    '.init.pid1_comm' '.init.pid1_is_systemd' '.init.systemctl_present' \
-    '.shells.bin_sh_impl' '.shells.bash_version' '.probe_under_bash' \
-    '.libc.glibc_version' \
-    '.procfs.self_stat_fields' '.procfs.pid_max' \
-    '.inotify_limits.max_user_watches' \
-    '.inotify_limits.max_user_instances' \
-    '.inotify_limits.max_queued_events' \
-    '.recovery_tools.btrfs' '.recovery_tools.snapper' \
-    '.recovery_tools.git'; do
-    a=$(jq -r "$jf // \"-\"" "$RAW/20_probe_arch.json" 2>/dev/null || echo ERR)
-    u=$(jq -r "$jf // \"-\"" "$RAW/20_probe_ubuntu2404.json" 2>/dev/null || echo ERR)
-    d=$(jq -r "$jf // \"-\"" "$RAW/20_probe_debian13.json" 2>/dev/null || echo ERR)
-    f=$(jq -r "$jf // \"-\"" "$RAW/20_probe_fedora42.json" 2>/dev/null || echo ERR)
-    printf '%-34s %-14s %-14s %-14s %-14s\n' \
-      "${jf#.}" "${a:--}" "${u:--}" "${d:--}" "${f:--}"
+  printf '%-32s %-13s %-13s %-13s %-13s %-13s\n' \
+    FIELD arch ubuntu2404 debian13 fedora42 HOST
+
+  FIELDS='
+.os_release.ID
+.os_release.ID_LIKE
+.os_release.VERSION_ID
+.os_release.pkg_manager
+.init.pid1_comm
+.init.pid1_is_systemd
+.init.systemctl_present
+.init.run_systemd_dir
+.shells.bin_sh_impl
+.shells.bash_version
+.probe_under_bash
+.libc.glibc_version
+.procfs.self_stat_fields
+.procfs.pid_max
+.inotify_limits.max_user_watches
+.inotify_limits.max_user_instances
+.inotify_limits.max_queued_events
+.recovery_tools.btrfs
+.recovery_tools.snapper
+.recovery_tools.lvm
+.recovery_tools.git'
+
+  for jf in $FIELDS; do
+    a="$(jget "$RAW/20_probe_arch.json" "$jf")"
+    u="$(jget "$RAW/20_probe_ubuntu2404.json" "$jf")"
+    d="$(jget "$RAW/20_probe_debian13.json" "$jf")"
+    f="$(jget "$RAW/20_probe_fedora42.json" "$jf")"
+    h="$(jget "$RAW/01_probe_host_bash.json" "$jf")"
+    printf '%-32s %-13s %-13s %-13s %-13s %-13s\n' \
+      "${jf#.}" "$a" "$u" "$d" "$f" "$h"
   done
+
   echo
-  echo "### which fields differ between the four containers?"
-  for jf in '.os_release.ID' '.os_release.VERSION_ID' '.os_release.pkg_manager' \
-            '.init.pid1_comm' '.init.systemctl_present' '.shells.bin_sh_impl' \
-            '.shells.bash_version' '.libc.glibc_version' \
-            '.procfs.self_stat_fields' '.procfs.pid_max' \
-            '.inotify_limits.max_user_watches'; do
-    a=$(jq -r "$jf // \"-\"" "$RAW/20_probe_arch.json" 2>/dev/null)
-    u=$(jq -r "$jf // \"-\"" "$RAW/20_probe_ubuntu2404.json" 2>/dev/null)
-    d=$(jq -r "$jf // \"-\"" "$RAW/20_probe_debian13.json" 2>/dev/null)
-    f=$(jq -r "$jf // \"-\"" "$RAW/20_probe_fedora42.json" 2>/dev/null)
+  echo "### verdict per field across the four containers"
+  for jf in $FIELDS; do
+    a="$(jget "$RAW/20_probe_arch.json" "$jf")"
+    u="$(jget "$RAW/20_probe_ubuntu2404.json" "$jf")"
+    d="$(jget "$RAW/20_probe_debian13.json" "$jf")"
+    f="$(jget "$RAW/20_probe_fedora42.json" "$jf")"
     if [ "$a" = "$u" ] && [ "$a" = "$d" ] && [ "$a" = "$f" ]; then
-      printf 'SAME      %-32s = %s\n' "${jf#.}" "$a"
+      printf 'SAME     %-30s = %s\n' "${jf#.}" "$a"
     else
-      printf 'DIFFERS   %-32s arch=%s ubuntu=%s debian=%s fedora=%s\n' \
+      printf 'DIFFERS  %-30s arch=%s ubuntu=%s debian=%s fedora=%s\n' \
         "${jf#.}" "$a" "$u" "$d" "$f"
     fi
   done
 
   echo
-  echo "### host vs arch container: kernel-derived fields must be identical"
-  if [ -f "$RAW/01_probe_host_bash.json" ]; then
-    for jf in '.host.uname_r' '.procfs.self_stat_fields' '.procfs.pid_max' \
-              '.inotify_limits.max_user_watches' \
-              '.inotify_limits.max_user_instances' \
-              '.inotify_limits.max_queued_events'; do
-      h=$(jq -r "$jf // \"-\"" "$RAW/01_probe_host_bash.json" 2>/dev/null)
-      a=$(jq -r "$jf // \"-\"" "$RAW/20_probe_arch.json" 2>/dev/null)
-      if [ "$h" = "$a" ]; then
-        printf 'SAME      %-32s host=%s container-arch=%s\n' "${jf#.}" "$h" "$a"
-      else
-        printf 'DIFFERS   %-32s host=%s container-arch=%s\n' "${jf#.}" "$h" "$a"
-      fi
-    done
-    for jf in '.init.pid1_comm' '.init.pid1_is_systemd'; do
-      h=$(jq -r "$jf // \"-\"" "$RAW/01_probe_host_bash.json" 2>/dev/null)
-      a=$(jq -r "$jf // \"-\"" "$RAW/20_probe_arch.json" 2>/dev/null)
-      printf 'CONTRAST  %-32s host=%s container=%s\n' "${jf#.}" "$h" "$a"
-    done
-  fi
+  echo "### kernel-derived fields: container must equal host (same kernel)"
+  for jf in '.host.uname_r' '.procfs.self_stat_fields' '.procfs.pid_max' \
+            '.inotify_limits.max_user_watches' \
+            '.inotify_limits.max_user_instances' \
+            '.inotify_limits.max_queued_events'; do
+    h="$(jget "$RAW/01_probe_host_bash.json" "$jf")"
+    a="$(jget "$RAW/20_probe_arch.json" "$jf")"
+    if [ "$h" = "$a" ]; then
+      printf 'SAME     %-30s host=%s container=%s\n' "${jf#.}" "$h" "$a"
+    else
+      printf 'DIFFERS  %-30s host=%s container=%s\n' "${jf#.}" "$h" "$a"
+    fi
+  done
+
+  echo
+  echo "### userland-derived fields: container MUST differ from host"
+  for jf in '.init.pid1_comm' '.init.pid1_is_systemd' '.os_release.ID' \
+            '.shells.bin_sh_impl'; do
+    h="$(jget "$RAW/01_probe_host_bash.json" "$jf")"
+    a="$(jget "$RAW/20_probe_arch.json" "$jf")"
+    printf 'CONTRAST %-30s host=%s container=%s\n' "${jf#.}" "$h" "$a"
+  done
 } >"$RAW/30_matrix.log" 2>&1
-echo "--- 30_matrix.log"
+echo "-> 30_matrix.log"
 tail -n "$TAIL_LINES" "$RAW/30_matrix.log"
 
 # ---------------------------------------------------------------------------
-# Stage 5 — distribution test summary
+# Stage 5 — binary distribution summary
 # ---------------------------------------------------------------------------
 echo
 echo "=== stage 5: binary distribution summary"
 
+HOST_GLIBC="$(ldd --version 2>/dev/null | head -1 | awk '{print $NF}')"
+
 {
-  echo "### Can one binary built on Arch (glibc $(ldd --version | head -1 | awk '{print $NF}')) run everywhere?"
+  echo "### Can one binary built on Arch (glibc $HOST_GLIBC) run everywhere?"
+  echo "### exit codes below are measured, from results/17_distbins_<distro>.log"
   echo
-  printf '%-12s %-10s %-24s %-10s %-24s\n' \
-    DISTRO hello_dyn hello_static hello_newer "libc_seen"
+  printf '%-12s %-9s %-12s %-13s %-9s\n' \
+    DISTRO container_glibc hello_dyn hello_static hello_newer
   for image in "${IMAGES[@]}"; do
     label="$(label_for "$image")"
     f="$RAW/17_distbins_${label}.log"
     [ -f "$f" ] || continue
-    dyn=$(awk '/hello_dyn exit =/{print $3}' "$f" | head -1)
-    sta=$(awk '/hello_static exit =/{print $3}' "$f" | head -1)
-    new=$(awk '/hello_newer exit =/{print $3}' "$f" | head -1)
-    libc=$(sed -n 's/^### ---$//;1,200p' "$f" | grep -m1 -o 'GLIBC [0-9.]*' || true)
-    lic=$(grep -m1 -E '^ldd ' "$RAW/14_glibc_${label}.log" | awk '{print $NF}')
-    printf '%-12s %-10s %-24s %-10s %-24s\n' \
-      "$label" "${dyn:-?}" "${sta:-?}(static)" "${new:-?}" "${lic:-?}"
+    dyn="$(sed -n 's/^hello_dyn exit = //p' "$f" | head -1)"
+    sta="$(sed -n 's/^hello_static exit = //p' "$f" | head -1)"
+    new="$(sed -n 's/^hello_newer exit = //p' "$f" | head -1)"
+    lic="$(sed -n 's/^ldd .* \([0-9][0-9.]*\)$/\1/p' "$f" | head -1)"
+    [ -n "$lic" ] || lic="$(jget "$RAW/20_probe_${label}.json" '.libc.glibc_version')"
+    printf '%-12s %-9s %-12s %-13s %-9s\n' \
+      "$label" "${lic:--}" "${dyn:--}" "${sta:--}" "${new:--}"
   done
   echo
-  echo "### loader error messages (verbatim, from results/17_distbins_*.log):"
-  grep -h -E 'not found|error while loading|cannot execute' \
-    "$RAW"/17_distbins_*.log 2>/dev/null | sort -u || echo "  (none)"
+  echo "### 0 = ran fine, non-zero = failed"
+  echo
+  echo "### loader error messages, verbatim:"
+  grep -h -E 'not found \(required|error while loading|cannot execute' \
+    "$RAW"/17_distbins_*.log 2>/dev/null | sed 's|/probe-bin/||g' |
+    sort -u | sed 's/^/  /'
+  echo
+  echo "### GLIBC version nodes each artefact requires (host-side, from build log):"
+  sed -n '/GLIBC version nodes required/,$p' "$RAW/00_build_artefacts.log" |
+    grep -E '^--- (hello|capcheck)' -A3 | head -30
 } >"$RAW/31_dist_matrix.log" 2>&1
-echo "--- 31_dist_matrix.log"
+echo "-> 31_dist_matrix.log"
 tail -n "$TAIL_LINES" "$RAW/31_dist_matrix.log"
 
 # ---------------------------------------------------------------------------
@@ -350,40 +391,105 @@ echo
 echo "=== stage 6: init detection evidence"
 
 {
-  echo "### Does the systemctl binary correctly indicate a running systemd?"
-  printf '%-12s %-14s %-16s %-12s %-14s\n' \
-    DISTRO systemctl_bin is-system-running pid1_comm VERDICT
+  echo "### Does the presence of the systemctl binary indicate a running systemd?"
+  echo "### Method A = test -x systemctl ; Method B = systemctl is-system-running"
+  echo "### Method C = /run/systemd/system exists ; Method D = /proc/1/comm"
+  echo
+  printf '%-12s %-11s %-16s %-9s %-11s %-7s\n' \
+    DISTRO methodA methodB methodC methodD correct
   for image in "${IMAGES[@]}"; do
     label="$(label_for "$image")"
     f="$RAW/16_initdetect_${label}.log"
     [ -f "$f" ] || continue
-    present=$(grep -m1 -o 'systemctl: PRESENT' "$f" >/dev/null 2>&1 &&
-      echo PRESENT || echo ABSENT)
-    running=$(grep -A1 'is-system-running ->' "$f" | tail -1 | cut -c1-24)
-    comm=$(sed -n 's/^pid1 comm: *//p' "$f" | head -1)
-    verdict=$(sed -n 's/^systemd_running = //p' "$f" | head -1)
-    printf '%-12s %-14s %-16s %-12s %-14s\n' \
-      "$label" "$present" "${running:--}" "${comm:--}" "${verdict:--}"
+
+    if grep -q 'systemctl: PRESENT' "$f"; then a=PRESENT; else a=ABSENT; fi
+
+    b="$(sed -n 's/^is-system-running -> //p' "$f" | head -1)"
+    if [ -z "$b" ]; then
+      if grep -q 'skipped (no systemctl binary)' "$f"; then b="n/a"; else b="error"; fi
+    fi
+
+    if grep -q "^ls: cannot access '/run/systemd/system'" "$f"; then
+      c=ABSENT
+    elif grep -q '/run/systemd/system' "$f"; then
+      c=PRESENT
+    else
+      c="?"
+    fi
+
+    d="$(sed -n 's/^pid1 comm:  *//p' "$f" | head -1)"
+    v="$(sed -n 's/^systemd_running = \(true\|false\).*/\1/p' "$f" | head -1)"
+    printf '%-12s %-11s %-16s %-9s %-11s %-7s\n' \
+      "$label" "$a" "$b" "$c" "${d:--}" "${v:--}"
   done
+  echo
+  echo "### truth: no container runs systemd as PID 1; PID 1 is the probe shell"
+  echo "### therefore methodA (binary) is a false positive wherever the package is installed,"
+  echo "### methodB is 'offline' (a real systemd answer) even though systemd is NOT init,"
+  echo "### methodC is a side effect of the image, and methodD is the only sound test."
+  echo
+  echo "### host contrast (systemd really is init there), from 01_probe_host_bash.json:"
+  printf 'pid1_comm=%s pid1_is_systemd=%s systemctl=%s is_system_running=%s\n' \
+    "$(jget "$RAW/01_probe_host_bash.json" '.init.pid1_comm')" \
+    "$(jget "$RAW/01_probe_host_bash.json" '.init.pid1_is_systemd')" \
+    "$(jget "$RAW/01_probe_host_bash.json" '.init.systemctl_present')" \
+    "$(jget "$RAW/01_probe_host_bash.json" '.init.systemctl_is_system_running')"
 } >"$RAW/32_initdetect_matrix.log" 2>&1
-echo "--- 32_initdetect_matrix.log"
+echo "-> 32_initdetect_matrix.log"
 tail -n "$TAIL_LINES" "$RAW/32_initdetect_matrix.log"
 
 # ---------------------------------------------------------------------------
-# Stage 7 — index of every result file
+# Stage 7 — shell-difference evidence table
 # ---------------------------------------------------------------------------
 echo
-echo "=== stage 7: results index"
+echo "=== stage 7: /bin/sh difference evidence"
+
+{
+  echo "### Same commands, different /bin/sh. Raw output in results/11_shell_*.log"
+  echo
+  printf '%-12s %-9s %-15s %-16s %-13s %-11s\n' \
+    DISTRO bin_sh BASH_VERSION local echo_-e pipefail
+  for image in "${IMAGES[@]}"; do
+    label="$(label_for "$image")"
+    f="$RAW/11_shell_${label}.log"
+    [ -f "$f" ] || continue
+    sh="$(jget "$RAW/20_probe_${label}.json" '.shells.bin_sh_impl')"
+    bv="$(grep -m1 -oE 'BASH_VERSION_SET=[^ ]*|BASH_VERSION_EMPTY' "$f")"
+    lc="$(grep -m1 -oE 'LOCAL_OK|local: not found|local: [a-z]+' "$f")"
+    ee="$(sed -n '/TEST C/,/TEST D/p' "$f" |
+      grep -m1 -oE 'a \\t b|a\tb|a \\\\ t b' || echo '?')"
+    pf="$(grep -m1 -oE 'PIPEFAIL_SUPPORTED|PIPEFAIL_UNSUPPORTED' "$f")"
+    printf '%-12s %-9s %-15s %-16s %-13s %-11s\n' \
+      "$label" "$sh" "${bv:--}" "${lc:--}" "${ee:--}" \
+      "${pf#PIPEFAIL_}"
+  done
+  echo
+  echo "### raw echo -e output, byte-exact (od -c), per distro:"
+  for image in "${IMAGES[@]}"; do
+    label="$(label_for "$image")"
+    echo "--- $label"
+    sed -n '/TEST C/,/TEST D/p' "$RAW/11_shell_${label}.log" |
+      grep -vE '^--- TEST|^$'
+  done
+} >"$RAW/33_shell_matrix.log" 2>&1
+echo "-> 33_shell_matrix.log"
+tail -n "$TAIL_LINES" "$RAW/33_shell_matrix.log"
+
+# ---------------------------------------------------------------------------
+# Stage 8 — results index
+# ---------------------------------------------------------------------------
+echo
+echo "=== stage 8: results index"
 {
   echo "# results index ($STAMP)"
   echo
-  printf '%-40s %10s\n' FILE BYTES
+  printf '%-34s %10s\n' FILE BYTES
   for f in "$RAW"/*.log "$RAW"/*.json; do
     [ -f "$f" ] || continue
-    printf '%-40s %10s\n' "$(basename "$f")" "$(stat -c %s "$f")"
+    printf '%-34s %10s\n' "$(basename "$f")" "$(stat -c %s "$f")"
   done
   echo
-  echo "total files: $(ls -1 "$RAW" | wc -l)"
+  echo "total files: $(find "$RAW" -maxdepth 1 -type f | wc -l)"
 } >"$RAW/99_index.log" 2>&1
 tail -n "$TAIL_LINES" "$RAW/99_index.log"
 

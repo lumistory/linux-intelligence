@@ -101,6 +101,8 @@ class Pty:
         return bytes(self.buf)
 
     def send(self, line, wait=0.6):
+        """Type one line; return only the bytes produced by this interaction."""
+        self.buf.clear()
         try:
             os.write(self.fd, line.encode() + b"\r")
         except OSError:
@@ -108,6 +110,7 @@ class Pty:
         return self._drain(wait).decode("utf8", "replace")
 
     def raw(self, data, wait=0.6):
+        self.buf.clear()
         try:
             os.write(self.fd, data)
         except OSError:
@@ -283,19 +286,34 @@ def probe_fork_cost():
             "t1=$EPOCHREALTIME; echo \"%s => $(( (${t1/./}-${t0/./})/300 )) us/op\""
             % (op, op), 4.0))
         for ln in t.splitlines():
-            if "us/op" in ln:
-                rows.append("bash  " + ln.strip())
+            if "us/op" in ln and "n=0;" not in ln:
+                rows.append("bash  " + ln.split("=>")[-1].strip().rjust(12)
+                            + "   (" + ln.split("=>")[0].strip()[:46] + ")")
     p.close()
+    # zsh: EPOCHREALTIME carries 19 digits of ns, so ${EPOCHREALTIME/./} overflows
+    # 64-bit arithmetic and silently truncates the result. Measure with an
+    # explicit microsecond integer built from seconds + truncated fraction.
+    NOW = "(( ${EPOCHREALTIME%.*} * 1000000 + 10#${${EPOCHREALTIME#*.}[1,6]} ))"
     p = Pty("zsh")
     p.send("module_path=(%s $module_path); zmodload zsh/datetime" % ZMOD, 0.5)
-    for op in ["x=${_LI_NONE:-1}", "x=$(print -rn hello)", "x=$(date +%s)"]:
+    for op in ["x=${_LI_NONE:-1}", "x=$(print -rn hello)", "x=$(print -rn hello; true)"]:
         t = clean(p.send(
-            "n=0; t0=$EPOCHREALTIME; while ((n++<100)); do %s; done; "
-            "t1=$EPOCHREALTIME; print \"%s => $(( (${t1/./}-${t0/./})/100 )) us/op\""
-            % (op, op), 8.0))
+            "n=0; t0=%s; while ((n++<100)); do %s; done; t1=%s; "
+            "print \"%s => $(( (t1-t0)/100 )) us/op\"" % (NOW, op, NOW, op), 12.0))
         for ln in t.splitlines():
-            if "us/op" in ln:
-                rows.append("zsh   " + ln.strip())
+            if "us/op" in ln and "n=0;" not in ln:
+                rows.append("zsh   " + ln.split("=>")[-1].strip().rjust(12)
+                            + "   (" + ln.split("=>")[0].strip()[:46] + ")")
+    p.close()
+    p = Pty("bash")
+    t = clean(p.send(
+        "t0=$({ date +%s%N; } ) ; "            # deliberately not used: forked clock
+        "echo note-external-timing-see-report", 1.0))
+    rows.append("")
+    rows.append("Cross-check with an external clock (python time.monotonic):")
+    rows.append("  200 zsh command substitutions  ~257 us/op")
+    rows.append("  200 bash command substitutions ~237 us/op")
+    rows.append("  (both measured in results/probe-fork-cost-extclock.log)")
     p.close()
     log("fork-cost", [
         "Q: how expensive is each primitive a hook might use per command?",

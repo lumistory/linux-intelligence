@@ -1,0 +1,11 @@
+=== experiment 0-D driver ===
+timestamp   : 20261123T134140Z
+kernel      : 7.2.8-zen1-2-zen
+bash        : GNU bash，版本 5.3.20(1)-release (x86_64-pc-linux-gnu)
+fish        : fish，版本 4.9.3
+zsh         : zsh 5.9.2 (x86_64-pc-linux-gnu) [local copy, not installed]
+zsh modules : <WORKSPACE>/experiments/00-d-pty/../toolchain/root/usr/lib/zsh/5.9.2/zsh
+results     : <WORKSPACE>/experiments/00-d-pty/results/20261123T134140Z
+work dir    : /tmp/li-phase0-d-20261123T134140Z
+
+=== build ===

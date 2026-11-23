@@ -101,6 +101,7 @@ fn run() -> Result<i32> {
         "concurrent" => concurrent(&args),
         "takeover" => takeover(&args),
         "probe" => probe(&args),
+        "responder-off" => responder_off(&args),
         other => Err(Error::Usage(format!("unknown mode `{other}`"))),
     }
 }
@@ -405,4 +406,80 @@ fn probe(args: &Args) -> Result<i32> {
     s.send_line("exit")?;
     let _ = s.reap(Duration::from_secs(3));
     Ok(0)
+}
+
+/// Negative control for the terminal-query responder.
+///
+/// Runs the same sentinel handshake as the matrix, but with reply generation
+/// disabled, so the difference between "the program got an answer" and "the
+/// program waited forever" is measured rather than asserted.
+fn responder_off(args: &Args) -> Result<i32> {
+    let mut failures = 0;
+    for spec in scene::shells(&args.zsh, &args.workdir.to_string_lossy(), &args.term) {
+        let home = args.workdir.join(format!("home-noresp-{}", spec.id));
+        let _ = std::fs::create_dir_all(&home);
+        let winsize = Winsize { ws_row: 40, ws_col: 120, ws_xpixel: 0, ws_ypixel: 0 };
+        let argv = {
+            let mut v = vec![spec.path.clone()];
+            v.extend(spec.args.iter().cloned());
+            v
+        };
+        let mut session = match Session::spawn_disabled_responder(SpawnSpec {
+            name: &spec.id,
+            argv: &argv,
+            env: &spec.env,
+            winsize,
+            cwd: &args.workdir,
+        }) {
+            Ok(s) => s,
+            Err(e) => {
+                emit(&json!({ "record": "responder_off", "shell": spec.id,
+                              "error": e.to_string() }));
+                failures += 1;
+                continue;
+            }
+        };
+        let token = format!("{}-NORESP", spec.sentinel);
+        // Give the shell its usual settling time, then try the handshake.
+        let t_ready = std::time::Instant::now();
+        let mut waited = 0u64;
+        while session.bytes_read() == 0 && waited < 6_000 {
+            let _ = session.pump(100);
+            waited += 100;
+        }
+        let first_output_ms = t_ready.elapsed().as_millis() as u64;
+        let quiet_ms = session.wait_quiet(400, 3_000).unwrap_or(0);
+        let start_bytes = session.bytes_read();
+        let t_cmd = std::time::Instant::now();
+        let _ = session.send_line(&format!("echo {token}"));
+        let out = session
+            .read_until_any(&token, Duration::from_secs(12))
+            .unwrap_or(pty::ReadOutcome {
+                matched: false,
+                elapsed: Duration::from_secs(0),
+                bytes: 0,
+                occurrences_raw: 0,
+                occurrences_debackspaced: 0,
+            });
+        let matched = out.matched;
+        if !matched {
+            failures += 1;
+        }
+        let _ = session.shutdown(true);
+        emit(&json!({
+            "record": "responder_off",
+            "shell": spec.id,
+            "sentinel_matched": matched,
+            "queries_answered": session.answered.len(),
+            "queries_seen_without_answering": session.queries_seen(),
+            "bytes": session.bytes_read(),
+            "bytes_before_command": start_bytes,
+            "first_output_ms": first_output_ms,
+            "quiet_settle_ms": quiet_ms,
+            "handshake_ms": t_cmd.elapsed().as_millis() as u64,
+            "exit_status": session.exit_status(),
+            "note": "queries_answered=0 by construction: replies were discarded",
+        }));
+    }
+    Ok(if failures == 0 { 0 } else { 1 })
 }
