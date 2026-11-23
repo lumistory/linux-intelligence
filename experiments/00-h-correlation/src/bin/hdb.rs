@@ -23,10 +23,11 @@ fn main() {
         "writer" => writer(&args),
         "reader" => reader(&args),
         "retention" => retention(&args),
+        "context" => context(&args),
         "integrity" => integrity(&args),
         "verify" => verify(&args),
         _ => {
-            eprintln!("usage: hdb <migrate|bench|wal|writer|reader|retention|integrity|verify> ...");
+            eprintln!("usage: hdb <migrate|bench|wal|writer|reader|retention|context|integrity|verify> ...");
             std::process::exit(2);
         }
     };
@@ -499,7 +500,143 @@ fn reader(args: &[String]) -> R<()> {
 }
 
 fn integrity(args: &[String]) -> R<()> {
-    let path = arg(args, 2, "/tmp/li-phase0-h/wal.db");
+    integrity_impl(arg(args, 2, "/tmp/li-phase0-h/wal.db"))
+}
+
+/// Prove, in SQL against the real schema, that membership is 0..n.
+fn context(args: &[String]) -> R<()> {
+    let path = arg(args, 2, "/tmp/li-phase0-h/ctx.db");
+    if let Some(dir) = std::path::Path::new(path).parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let mut store = Store::open(path, DbConfig::default())?;
+    store.migrate(MIGRATIONS, None)?;
+
+    store.upsert_session("sess-1", "bash", None, "2025-11-24T00:00:00.000Z", 0, None)?;
+    store.conn.execute_batch(
+        "INSERT INTO operations (operation_id, session_id, label, state, started_mono_ns) VALUES
+           ('op-edit','sess-1','edit parser','open',0),
+           ('op-recover','sess-1','recover lost work','open',600000000000),
+           ('op-untouched','sess-1','never sees an event','open',0);",
+    )?;
+    for (id, seq, ty) in [
+        ("ev-1", 1, "CommandStarted"),
+        ("ev-2", 2, "FileModified"),
+        ("ev-3", 3, "ProcessExit"),
+    ] {
+        store.insert_event(&EventRow {
+            event_id: id,
+            schema_version: 1,
+            source: "fs",
+            session_id: Some("sess-1"),
+            process_row_id: None,
+            sequence: seq,
+            ts_mono_ns: seq * 1_000_000,
+            ts_wall: "2025-11-24T00:00:00.000Z",
+            type_: ty,
+            type_class: "fs.modify",
+            payload: "{\"path\":\"/tmp/li/x\"}",
+            evidence_status: "observed",
+            dedup_group: None,
+            duplicate_of: None,
+            redaction_digest: None,
+            ingested_mono_ns: 0,
+        })?;
+    }
+
+    // ev-2 belongs to two operations at two different levels; ev-3 belongs to
+    // none. No sentinel row, no placeholder operation.
+    store.conn.execute_batch(
+        "INSERT INTO event_operations (event_id, operation_id, attached_by, level, attached_mono_ns) VALUES
+           ('ev-1','op-edit','R6','Weak',0),
+           ('ev-2','op-edit','R5','Probable',0),
+           ('ev-2','op-recover','R4','Strong',0);",
+    )?;
+
+    println!("### 6.3 SQLite: 0..n membership queries against the real schema");
+    println!();
+    println!("| query | rows |");
+    println!("|---|---|");
+    let ops_of_ev2: i64 = store.conn.query_row(
+        "SELECT count(*) FROM event_operations WHERE event_id='ev-2' AND detached_mono_ns IS NULL",
+        [],
+        |r| r.get(0),
+    )?;
+    println!("| operations of ev-2 | {ops_of_ev2} |");
+    let ev_of_op_recover: i64 = store.conn.query_row(
+        "SELECT count(*) FROM event_operations WHERE operation_id='op-recover' AND detached_mono_ns IS NULL",
+        [],
+        |r| r.get(0),
+    )?;
+    println!("| events of op-recover | {ev_of_op_recover} |");
+    let orphans: i64 = store.conn.query_row(
+        "SELECT count(*) FROM events e
+         WHERE NOT EXISTS (SELECT 1 FROM event_operations eo
+                           WHERE eo.event_id = e.event_id AND eo.detached_mono_ns IS NULL)",
+        [],
+        |r| r.get(0),
+    )?;
+    println!("| events with no operation | {orphans} |");
+    let empty_ops: i64 = store.conn.query_row(
+        "SELECT count(*) FROM operations o
+         WHERE NOT EXISTS (SELECT 1 FROM event_operations eo WHERE eo.operation_id = o.operation_id)",
+        [],
+        |r| r.get(0),
+    )?;
+    println!("| operations with no event | {empty_ops} |");
+
+    println!();
+    println!("ev-2 per-operation credibility (the reason level lives on the edge, not the event):");
+    println!("| operation | level | attached_by |");
+    println!("|---|---|---|");
+    {
+        let mut st = store.conn.prepare(
+            "SELECT operation_id, level, attached_by FROM event_operations
+             WHERE event_id='ev-2' ORDER BY operation_id",
+        )?;
+        let rows = st.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+            ))
+        })?;
+        for row in rows {
+            let (op, level, by) = row?;
+            println!("| {op} | {level} | {by} |");
+        }
+    }
+
+    println!();
+    println!("--- retraction: ev-2 leaves op-recover, history kept ---");
+    store.conn.execute(
+        "UPDATE event_operations SET detached_mono_ns=700000000000
+         WHERE event_id='ev-2' AND operation_id='op-recover'",
+        [],
+    )?;
+    let live: i64 = store.conn.query_row(
+        "SELECT count(*) FROM event_operations WHERE event_id='ev-2' AND detached_mono_ns IS NULL",
+        [],
+        |r| r.get(0),
+    )?;
+    let total: i64 = store.conn.query_row(
+        "SELECT count(*) FROM event_operations WHERE event_id='ev-2'",
+        [],
+        |r| r.get(0),
+    )?;
+    println!("live memberships of ev-2 = {live}, membership rows retained = {total}");
+    println!();
+    println!("--- the single-column alternative, shown failing ---");
+    println!("With `events.operation_id`, ev-2 would need one value. The two rows above");
+    println!("differ in level (Probable vs Strong) and in attached_by, so no single value");
+    println!("can represent ev-2's state without discarding a measured fact.");
+    println!();
+    println!("integrity_check={}", store.integrity_check()?);
+    println!("foreign_key_violations={}", store.foreign_key_violations()?);
+    Ok(())
+}
+
+fn integrity_impl(path: &str) -> R<()> {
     let store = Store::open(path, DbConfig::default())?;
     let t = Instant::now();
     let ic = store.integrity_check()?;

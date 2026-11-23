@@ -180,6 +180,11 @@ KILLDB="$WORK/kill9.db"
 } 2>&1 | tee "$RESULTS/$STAMP-kill9.log" | tail -20
 
 # ---------------------------------------------------------------------------
+step "SQLite: Operation Context is 0..n against the real schema"
+timeout 60 "$BIN_DB" context "$WORK/ctx.db" > "$RESULTS/$STAMP-context-sql.log" 2>&1
+cat "$RESULTS/$STAMP-context-sql.log" | tee -a "$LOG" | tail -22
+
+# ---------------------------------------------------------------------------
 step "SQLite: retention — trim then VACUUM on 100k rows"
 # Four runs: {by time, by size} x {without, with} the FK child indexes. The
 # comparison is the whole point: an unindexed ON DELETE SET NULL child turns

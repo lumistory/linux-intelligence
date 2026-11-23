@@ -87,6 +87,8 @@ const SECRET_CORPUS: &[(&str, &str, &str)] = &[
     ("export MY_SERVICE_TOKEN=tok_abcdef123", "tok_abcdef123", "env suffix _TOKEN"),
     ("export SOME_APP_PASSWORD=pw12345678", "pw12345678", "env suffix _PASSWORD"),
     ("vault write --token=hvs.abcdefghij", "hvs.abcdefghij", "flag=value"),
+    ("export DATABASE_URL=postgres://app:hunter2pw@db.local/app", "hunter2pw", "url userinfo"),
+    ("export PG_DSN=postgresql://u:pw123456@10.0.0.5/app", "pw123456", "url userinfo"),
 ];
 
 pub fn run() -> R<()> {

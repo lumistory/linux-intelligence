@@ -1,0 +1,19 @@
+{
+ "bash": {
+  "error": "no samples"
+ },
+ "fish": {
+  "max_us": 1184,
+  "median_us": 1184,
+  "min_us": 1184,
+  "n": 1,
+  "p99_us": 1184
+ },
+ "zsh": {
+  "max_us": 3246,
+  "median_us": 2706.0,
+  "min_us": 2015,
+  "n": 40,
+  "p99_us": 3205
+ }
+}

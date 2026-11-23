@@ -1,0 +1,88 @@
+# T2 — what uid 0 inside `unshare -Ur` actually holds.
+# Host uid is 1000; inside the namespace uid 0 maps to it.
+
+## (a) identity and mapping inside the namespace
+\$ unshare -Ur sh -c 'cat /proc/self/uid_map; id'
+         0       1000          1
+uid=0(root) gid=0(root) 组=0(root),65534(nobody)
+
+## (b) can namespace-root read a host root-only file?
+\$ cat /etc/shadow                  # as the host user
+  READ_DENIED (EACCES)
+\$ unshare -Ur cat /etc/shadow      # as namespace root
+  READ_DENIED (EACCES)
+
+## (c) can namespace-root read a file owned by a DIFFERENT uid?
+# A second uid from /etc/subuid (host 100000) is mapped into a fresh
+# namespace; it creates a 0600 file, then namespace-root tries to read it.
+# Both processes belong to the same host user, so this isolates kernel
+# ownership checks from the host user's own rights.
+# Reading the result: namespace root holds CAP_DAC_OVERRIDE, but that
+# capability only covers inodes whose owner uid is MAPPED into this
+# namespace. A file owned by mapped uid 5 is therefore readable; a file
+# owned by host root (unmapped) is not, which is what (b) shows.
+  uid0 (ns root) read -> READ_OK
+  uid5 (owner)   read -> READ_OK
+  file host owner    -> uid=5 gid=5 mode=600
+
+## (d) can namespace-root mount a tmpfs? (expected yes, but namespace-local)
+\$ unshare -Urm sh -c 'mount -t tmpfs tmpfs <dir>'
+  MOUNT_OK
+  write_inside_ns=OK
+  visible_in_ns=x 
+  filesystem=tmpfs
+  host_view_after_ns_exit=GONE (the mount died with its namespace)
+
+## (e) what does setuid() inside the namespace mean? Only mapped uids work.
+# Measured with a direct setuid() in a forked child. NOT with
+# `setpriv --clear-groups`: inside a user namespace that first calls
+# setgroups(), which is refused, so the tool fails before setuid is ever
+# attempted and every uid looks unmapped. That false reading is recorded
+# as deviation 3 in REPORT §6.
+\$ unshare -Ur credprobe userns
+  {"capabilities":["CapPrm:\t000001ffffffffff","CapEff:\t000001ffffffffff"],"case":"userns_root_capability","euid_inside_ns":0,"euid_is_zero":true,"gid_map":"0       1000          1","kill_pid1":"DENIED Operation not permitted (os error 1)","read_etc_shadow":"DENIED Permission denied (os error 13)","read_root_dir":"DENIED Permission denied (os error 13)","setuid":{"0":{"ok":true,"uid_after":0},"1":{"errno":1,"ok":false},"5":{"errno":1,"ok":false},"65534":{"errno":1,"ok":false}},"uid_map":"0       1000          1","write_etc":"WRITE_DENIED"}
+
+# The same probe with a mount namespace added, so the tmpfs mount is
+# actually reachable. Without -m the mount syscall returns EPERM.
+\$ unshare -Urm credprobe userns --mount-point <dir>
+  {"capabilities":["CapPrm:\t000001ffffffffff","CapEff:\t000001ffffffffff"],"case":"userns_root_capability","euid_inside_ns":0,"euid_is_zero":true,"gid_map":"0       1000          1","kill_pid1":"DENIED Operation not permitted (os error 1)","mount_tmpfs":{"entries_visible":1,"result":"MOUNT_OK","write_inside":true},"read_etc_shadow":"DENIED Permission denied (os error 13)","read_root_dir":"DENIED Permission denied (os error 13)","setuid":{"0":{"ok":true,"uid_after":0},"1":{"errno":1,"ok":false},"5":{"errno":1,"ok":false},"65534":{"errno":1,"ok":false}},"uid_map":"0       1000          1","write_etc":"WRITE_DENIED"}
+
+# Without the mount namespace the same mount is refused, which is the
+# difference between 'has CAP_SYS_ADMIN' and 'has somewhere to put it':
+\$ unshare -Ur credprobe userns --mount-point <dir>   # no -m
+  {"capabilities":["CapPrm:\t000001ffffffffff","CapEff:\t000001ffffffffff"],"case":"userns_root_capability","euid_inside_ns":0,"euid_is_zero":true,"gid_map":"0       1000          1","kill_pid1":"DENIED Operation not permitted (os error 1)","mount_tmpfs":"MOUNT_DENIED Operation not permitted (os error 1)","read_etc_shadow":"DENIED Permission denied (os error 13)","read_root_dir":"DENIED Permission denied (os error 13)","setuid":{"0":{"ok":true,"uid_after":0},"1":{"errno":1,"ok":false},"5":{"errno":1,"ok":false},"65534":{"errno":1,"ok":false}},"uid_map":"0       1000          1","write_etc":"WRITE_DENIED"}
+
+# With a second subuid range mapped in, uid 5 becomes assumable and an
+# unmapped uid (1, 65534) still is not:
+\$ unshare --map-users=0:1000:1 --map-users=5:100000:1 ... credprobe userns
+  {"capabilities":["CapPrm:\t000001ffffffffff","CapEff:\t000001ffffffffff"],"case":"userns_root_capability","euid_inside_ns":0,"euid_is_zero":true,"gid_map":"0       1000          1 |          5     100000          1","kill_pid1":"DENIED Operation not permitted (os error 1)","read_etc_shadow":"DENIED Permission denied (os error 13)","read_root_dir":"DENIED Permission denied (os error 13)","setuid":{"0":{"ok":true,"uid_after":0},"1":{"errno":1,"ok":false},"5":{"ok":true,"uid_after":5},"65534":{"errno":1,"ok":false}},"uid_map":"0       1000          1 |          5     100000          1","write_etc":"WRITE_DENIED"}
+
+## (f) can namespace-root signal a host root process?
+# Covered by credprobe userns above (kill_pid1). Independent shell check:
+\$ unshare -Ur sh -c 'kill -0 1'
+  SIGNAL_DENIED errno=1
+
+## (f2) capabilities inside the namespace (from /proc/self/status)
+# CapEff is full inside the namespace. That is the trap: these are
+# capabilities over the NAMESPACE's own resources, not over the host.
+  CapInh:	0000000000000000
+  CapPrm:	000001ffffffffff
+  CapEff:	000001ffffffffff
+  CapBnd:	000001ffffffffff
+
+## (g) host-side ownership of a file created by namespace-root
+\$ unshare -Ur sh -c 'echo x > f'; stat f   # from the host
+  host_stat: uid=1000 gid=1000 mode=644 name=/tmp/li-phase0-0g-Yz8RCI/t2/created-by-nsroot.txt
+
+## (h) capability set inside the namespace
+\$ unshare -Ur capsh --print | head -6
+  Current: =ep
+  Bounding set =cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read,cap_perfmon,cap_bpf,cap_checkpoint_restore
+  Ambient set =
+  Current IAB: 
+  Securebits: 00/0x0/1'b0 (no-new-privs=0)
+   secure-noroot: no (unlocked)
+
+## (i) can namespace-root write to /etc? (must not touch the host)
+\$ unshare -Ur sh -c 'touch /etc/li-0g-should-not-exist'
+  WRITE_DENIED (EACCES/EROFS as expected)

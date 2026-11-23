@@ -17,3 +17,11 @@ r3 ok=109209 busy=0 other_errors=0 p50_us=14.2 p99_us=918.6 max_us=2596.8
 summary: readers_with_errors=0 total_busy_retries_across_readers=0
 
 ### two concurrent writers (the case busy_timeout actually covers)
+busy_timeout_ms=5000
+  writer A: writer wa attempted=134852 errors=0
+  writer B: writer wb attempted=88777 errors=0
+busy_timeout_ms=0
+  writer A: writer wa attempted=320170 errors=170136
+  writer B: writer wb attempted=253914 errors=121668
+  writer A stderr: writer error #1: sqlite: database is locked
+  writer B stderr: writer error #1: sqlite: database is locked

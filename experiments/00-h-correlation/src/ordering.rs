@@ -21,6 +21,13 @@ pub enum Emit {
     ForcedGap { expected: u64, got: u64 },
     /// Buffer cap hit before the hole filled: memory bound, not correctness.
     ForcedCapacity { expected: u64, got: u64 },
+    /// Arrived with a `sequence` below the watermark, i.e. it is older than
+    /// something already emitted. It cannot be reordered into place without
+    /// un-emitting, so it is emitted now and marked. **This is the case a naive
+    /// reorderer gets wrong**: it either stalls forever or silently drops the
+    /// event. It happens whenever a consumer attaches to a session mid-stream,
+    /// which is the normal case after a daemon restart.
+    LateArrival { watermark: u64, got: u64 },
 }
 
 impl Emit {
@@ -45,6 +52,11 @@ pub struct ReorderPolicy {
     /// Clock distance (ns) beyond which a missing `sequence` is declared lost
     /// rather than late. **This is the out-of-order tolerance window.**
     pub grace_ns: u64,
+    /// Known first `sequence` of the session. `None` means "trust the first
+    /// arrival", which is what a consumer does after a restart with no
+    /// checkpoint; that choice makes everything older than the first arrival a
+    /// `LateArrival`.
+    pub initial_sequence: Option<u64>,
 }
 
 impl Default for ReorderPolicy {
@@ -52,6 +64,7 @@ impl Default for ReorderPolicy {
         Self {
             max_hold: 256,
             grace_ns: 500_000_000,
+            initial_sequence: None,
         }
     }
 }
@@ -64,6 +77,7 @@ struct SessionState {
     emitted_in_order: usize,
     forced_gaps: usize,
     forced_capacity: usize,
+    late_arrivals: usize,
 }
 
 impl Default for SessionState {
@@ -75,6 +89,7 @@ impl Default for SessionState {
             emitted_in_order: 0,
             forced_gaps: 0,
             forced_capacity: 0,
+            late_arrivals: 0,
         }
     }
 }
@@ -97,10 +112,23 @@ impl SeqReorderer {
 
     pub fn push(&mut self, event: Event, arrival_ns: u64) -> Vec<Emitted> {
         let session = event.session_id.clone().unwrap_or_else(|| "-".to_string());
+        let seq = event.sequence;
         let st = self.sessions.entry(session).or_default();
         if !st.started {
-            st.next_expected = event.sequence;
+            st.next_expected = self.policy.initial_sequence.unwrap_or(seq);
             st.started = true;
+        }
+        // Older than the watermark: nothing can put it back in order.
+        if seq < st.next_expected {
+            st.late_arrivals += 1;
+            return vec![Emitted {
+                event,
+                kind: Emit::LateArrival {
+                    watermark: st.next_expected,
+                    got: seq,
+                },
+                held_ns: 0,
+            }];
         }
         st.held.push((event, arrival_ns));
         st.held.sort_by_key(|(e, _)| e.sequence);
@@ -192,6 +220,7 @@ impl SeqReorderer {
             emitted_in_order: self.sessions.values().map(|s| s.emitted_in_order).sum(),
             forced_gaps: self.sessions.values().map(|s| s.forced_gaps).sum(),
             forced_capacity: self.sessions.values().map(|s| s.forced_capacity).sum(),
+            late_arrivals: self.sessions.values().map(|s| s.late_arrivals).sum(),
             max_hold_observed: self.max_hold_observed,
             still_held: self.still_held(),
         }
@@ -203,6 +232,7 @@ pub struct ReorderStats {
     pub emitted_in_order: usize,
     pub forced_gaps: usize,
     pub forced_capacity: usize,
+    pub late_arrivals: usize,
     pub max_hold_observed: usize,
     pub still_held: usize,
 }
@@ -261,6 +291,7 @@ mod tests {
         ReorderPolicy {
             max_hold: 8,
             grace_ns: 1_000,
+            initial_sequence: Some(0),
         }
     }
 
@@ -292,6 +323,7 @@ mod tests {
         let mut r = SeqReorderer::new(ReorderPolicy {
             max_hold: 2,
             grace_ns: u64::MAX,
+            initial_sequence: Some(0),
         });
         r.push(ev("a", 0, 0), 0);
         assert!(r.push(ev("c", 2, 0), 1).is_empty());
@@ -307,5 +339,21 @@ mod tests {
         assert!((order_agreement(&t, &t) - 1.0).abs() < 1e-9);
         let rev = vec!["c".to_string(), "b".into(), "a".into()];
         assert!(order_agreement(&t, &rev) < 0.01);
+    }
+
+    #[test]
+    fn late_arrival_before_watermark_is_flagged_not_stalled() {
+        let mut r = SeqReorderer::new(ReorderPolicy {
+            max_hold: 64,
+            grace_ns: u64::MAX,
+            initial_sequence: None,
+        });
+        // Consumer attaches at sequence 5: everything older must be emitted.
+        assert_eq!(r.push(ev("e5", 5, 50), 0).len(), 1);
+        let out = r.push(ev("e3", 3, 30), 1);
+        assert_eq!(out.len(), 1);
+        assert!(matches!(out[0].kind, Emit::LateArrival { watermark: 6, got: 3 }));
+        assert_eq!(r.still_held(), 0);
+        assert_eq!(r.stats().late_arrivals, 1);
     }
 }

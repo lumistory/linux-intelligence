@@ -152,10 +152,7 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
         Err(e) => {
             let code = e.code();
             let resp = proto::Response::err("<none>", code, e.to_string());
-            return (
-                resp,
-                serde_json::json!({ "outcome": "rejected", "code": code }),
-            );
+            return (resp, serde_json::json!({ "outcome": "rejected" }));
         }
     };
     let name = opcode.name();
@@ -166,10 +163,7 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
             proto::CODE_NOT_IMPLEMENTED,
             "opcode exists in the table but is intentionally not implemented",
         );
-        return (
-            resp,
-            serde_json::json!({ "outcome": "refused_by_design", "code": proto::CODE_NOT_IMPLEMENTED }),
-        );
+        return (resp, serde_json::json!({ "outcome": "refused_by_design" }));
     }
 
     match opcode {
@@ -177,7 +171,7 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
             if let Err(code) = check_arg_keys(&req.args, &[]) {
                 return (
                     proto::Response::err(name, code, "Describe takes no arguments"),
-                    serde_json::json!({ "outcome": "rejected", "code": code }),
+                    serde_json::json!({ "outcome": "rejected" }),
                 );
             }
             let data = serde_json::json!({
@@ -188,14 +182,14 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
             });
             (
                 proto::Response::ok(name, data.clone()),
-                serde_json::json!({ "outcome": "ok", "detail": data }),
+                serde_json::json!({ "outcome": "ok", "result": data }),
             )
         }
         Opcode::StatPath | Opcode::ReadSmall | Opcode::ListDir => {
             if let Err(code) = check_arg_keys(&req.args, &["path"]) {
                 return (
                     proto::Response::err(name, code, "only `path` is accepted for this opcode"),
-                    serde_json::json!({ "outcome": "rejected", "code": code }),
+                    serde_json::json!({ "outcome": "rejected" }),
                 );
             }
             let rel = match arg_str(&req.args, "path") {
@@ -203,7 +197,7 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
                 Err(code) => {
                     return (
                         proto::Response::err(name, code, "missing or oversized `path`"),
-                        serde_json::json!({ "outcome": "rejected", "code": code }),
+                        serde_json::json!({ "outcome": "rejected" }),
                     )
                 }
             };
@@ -211,7 +205,7 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
                 let code = e.code();
                 return (
                     proto::Response::err(name, code, e.to_string()),
-                    serde_json::json!({ "outcome": "rejected", "code": code, "path": rel }),
+                    serde_json::json!({ "outcome": "rejected", "path": rel }),
                 );
             }
             let result = match opcode {
@@ -223,13 +217,13 @@ pub fn handle(root: &Root, req: &proto::Request) -> (proto::Response, Value) {
             match result {
                 Ok(data) => (
                     proto::Response::ok(name, data.clone()),
-                    serde_json::json!({ "outcome": "ok", "path": rel, "detail": data }),
+                    serde_json::json!({ "outcome": "ok", "path": rel, "result": data }),
                 ),
                 Err(e) => {
                     let code = e.code();
                     (
                         proto::Response::err(name, code, e.to_string()),
-                        serde_json::json!({ "outcome": "rejected", "code": code, "path": rel }),
+                        serde_json::json!({ "outcome": "rejected", "path": rel }),
                     )
                 }
             }

@@ -68,9 +68,13 @@ const SECRET_ENV: &[&str] = &[
     "AWS_ACCESS_KEY_ID",
     "GITHUB_TOKEN",
     "GH_TOKEN",
-    "DATABASE_URL",
     "PRIVATE_KEY",
 ];
+
+// `*_URL` / `*_DSN` names are deliberately NOT in this list. A connection URL
+// carries a password only in its userinfo section, so masking the whole value
+// is a false positive on the common `postgres://localhost/app` form. Measured:
+// see the V2 `url-userinfo` rule, which catches the credentialed form instead.
 
 fn unquote(v: &str) -> &str {
     v.trim_matches(|c| c == '"' || c == '\'')
@@ -400,6 +404,24 @@ mod tests {
             v2.text,
             "git clone https://bob:[REDACTED]@example.com/r.git"
         );
+    }
+
+    #[test]
+    fn database_url_without_userinfo_is_untouched() {
+        let cmd = "export DATABASE_URL=postgres://localhost/app";
+        for g in [Generation::V1, Generation::V2] {
+            assert_eq!(redact(cmd, g).text, cmd);
+        }
+    }
+
+    #[test]
+    fn database_url_with_userinfo_is_caught_by_v2_only() {
+        let cmd = "export DATABASE_URL=postgres://app:hunter2pw@db.local/app";
+        let v1 = redact(cmd, Generation::V1);
+        let v2 = redact(cmd, Generation::V2);
+        assert!(v1.text.contains("hunter2pw"), "V1 is expected to miss this: {}", v1.text);
+        assert!(!v2.text.contains("hunter2pw"), "{}", v2.text);
+        assert!(v2.rules.contains(&"url-userinfo"));
     }
 
     #[test]

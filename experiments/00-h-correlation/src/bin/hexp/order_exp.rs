@@ -56,7 +56,11 @@ fn ids(v: &[Event]) -> Vec<String> {
 }
 
 fn run_reorder(arrived: &[(Event, u64)], grace_ns: u64, max_hold: usize) -> (Vec<Event>, corr0h::ordering::ReorderStats) {
-    let mut r = SeqReorderer::new(ReorderPolicy { max_hold, grace_ns });
+    let mut r = SeqReorderer::new(ReorderPolicy {
+        max_hold,
+        grace_ns,
+        initial_sequence: Some(0),
+    });
     let mut flushed: Vec<Event> = Vec::new();
     let mut now = 0u64;
     for (e, at) in arrived {
@@ -80,8 +84,8 @@ pub fn run() -> R<()> {
         println!();
         println!("### 2.{idx} {label}");
         println!();
-        println!("| disorder depth | received | ts-sort | sequence | forced gaps | max buffered |");
-        println!("|---|---|---|---|---|---|");
+        println!("| disorder depth | received | ts-sort | sequence | forced gaps | late | max buffered |");
+        println!("|---|---|---|---|---|---|---|");
         for depth in [1usize, 2, 4, 8, 16, 32] {
             let arrived = disorder(&truth, depth);
             let received: Vec<Event> = arrived.iter().map(|(e, _)| e.clone()).collect();
@@ -91,8 +95,8 @@ pub fn run() -> R<()> {
             let ts = order_agreement(&true_order, &ids(&by_ts));
             let (out, st) = run_reorder(&arrived, 8_000_000, 64);
             let seq = order_agreement(&true_order, &ids(&out));
-            println!("| {depth} | {rec:.4} | {ts:.4} | {seq:.4} | {} | {} |",
-                st.forced_gaps, st.max_hold_observed);
+            println!("| {depth} | {rec:.4} | {ts:.4} | {seq:.4} | {} | {} | {} |",
+                st.forced_gaps, st.late_arrivals, st.max_hold_observed);
         }
     }
 
@@ -124,16 +128,50 @@ pub fn run() -> R<()> {
     println!("session. A grace keyed on *more events arriving* would never fire exactly when");
     println!("a lost event sits alone in the buffer.");
     println!();
-    println!("| grace | forced gaps | max buffered | agreement |");
-    println!("|---|---|---|---|");
+    println!("| grace | forced gaps | late | max buffered | agreement |");
+    println!("|---|---|---|---|---|");
     for grace_us in [1u64, 2, 5, 10, 20, 50, 100, 250, 1000] {
         let (out, st) = run_reorder(&arrived, grace_us * 1_000, 64);
         let agree = order_agreement(&true_order, &ids(&out));
-        println!("| {grace_us} us | {} | {} | {agree:.4} |", st.forced_gaps, st.max_hold_observed);
+        println!("| {grace_us} us | {} | {} | {} | {agree:.4} |",
+            st.forced_gaps, st.late_arrivals, st.max_hold_observed);
     }
 
     println!();
-    println!("### 2.4 Why timestamps alone cannot be the answer");
+    println!("### 2.4 Mid-stream attach: the case that breaks a naive reorderer");
+    println!();
+    println!("A consumer that starts at sequence 100 of a 200-event stream (daemon restart,");
+    println!("no checkpoint) sees every earlier event as 'below the watermark'.");
+    println!();
+    let truth = session_stream(200, 1_000_000, true, 13);
+    let late_half: Vec<Event> = truth[100..].to_vec();
+    let mut r = SeqReorderer::new(ReorderPolicy {
+        max_hold: 64,
+        grace_ns: 1_000_000_000,
+        initial_sequence: None,
+    });
+    let mut emitted = 0usize;
+    let mut now = 0u64;
+    for e in &late_half {
+        now += 100_000;
+        emitted += r.advance(now).len();
+        emitted += r.push(e.clone(), now).len();
+    }
+    now += 2_000_000_000;
+    emitted += r.advance(now).len();
+    emitted += r.finish().len();
+    let st = r.stats();
+    println!("attached at sequence 100 of 200, fed the remaining 100 events:");
+    println!("  emitted={emitted} still_held={} forced_gaps={} late_arrivals={}",
+        st.still_held, st.forced_gaps, st.late_arrivals);
+    println!("With `initial_sequence: None` the first arrival defines the watermark, so the");
+    println!("100 later events flow in order and nothing stalls. With a stored checkpoint the");
+    println!("policy must pass `initial_sequence: Some(n)`; anything older then becomes a");
+    println!("`LateArrival` (emitted immediately and flagged), never a silent drop and never a");
+    println!("stall. Both are 0-loss; they differ in whether the flag fires.");
+
+    println!();
+    println!("### 2.5 Why timestamps alone cannot be the answer");
     println!();
     let quantised_stream = session_stream(500, 1_000_000, true, 11);
     let mut ties = 0;

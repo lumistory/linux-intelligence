@@ -60,3 +60,34 @@ db_file_bytes_after_index=36233216
 w1_single_row_upsert n=200 p50_us=11.354 p95_us=12.258 p99_us=17.001 max_us=109.654 rows_returned_total=0
 
 === SQLite: 1 writer + 4 readers under WAL ===
+journal_mode=wal wal_autocheckpoint=1000
+
+### busy_timeout_ms=5000
+writer w attempted=139629 errors=0
+r0 ok=39526 busy=0 other_errors=0 p50_us=137.6 p99_us=542.5 max_us=1503.7
+r1 ok=41716 busy=0 other_errors=0 p50_us=112.2 p99_us=780.6 max_us=1948.9
+r2 ok=43346 busy=0 other_errors=0 p50_us=121.7 p99_us=544.0 max_us=1239.9
+r3 ok=44111 busy=0 other_errors=0 p50_us=91.9 p99_us=940.1 max_us=1948.6
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### busy_timeout_ms=0
+writer w attempted=243392 errors=0
+r0 ok=91881 busy=0 other_errors=0 p50_us=15.5 p99_us=866.2 max_us=2619.2
+r1 ok=105819 busy=0 other_errors=0 p50_us=14.7 p99_us=899.2 max_us=2295.9
+r2 ok=99804 busy=0 other_errors=0 p50_us=14.8 p99_us=868.5 max_us=2318.9
+r3 ok=109209 busy=0 other_errors=0 p50_us=14.2 p99_us=918.6 max_us=2596.8
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### two concurrent writers (the case busy_timeout actually covers)
+busy_timeout_ms=5000
+  writer A: writer wa attempted=134852 errors=0
+  writer B: writer wb attempted=88777 errors=0
+busy_timeout_ms=0
+  writer A: writer wa attempted=320170 errors=170136
+  writer B: writer wb attempted=253914 errors=121668
+  writer A stderr: writer error #1: sqlite: database is locked
+  writer B stderr: writer error #1: sqlite: database is locked
+
+=== SQLite: kill -9 a writer mid-transaction ===
+
+=== SQLite: retention — trim then VACUUM on 100k rows ===

@@ -1,6 +1,6 @@
 # Experiment 0-G — Privilege model and simulated privileged helper
 
-Run stamp: `20261123T141351Z` (all paths below are relative to
+Run stamp: `20261123T141630Z` (all paths below are relative to
 `experiments/00-g-privilege/results/`). Driver: `run.sh`, exit status 0,
 29/29 checks passed.
 
@@ -70,21 +70,21 @@ execs in T6.
 
 ## 4. Raw results
 
-All files from the single run `20261123T141351Z`. Superseded intermediate runs
+All files from the single run `20261123T141630Z`. Superseded intermediate runs
 are in `results/superseded-drafts/` and are **not** cited below.
 
 | claim | file |
 |---|---|
-| TOCTOU, reuse, same-tick | `T1-peercred-20261123T141351Z.log` |
-| namespace root reach | `T2-userns-root-20261123T141351Z.log` |
-| rejection matrix | `T3-helper-rejections-20261123T141351Z.log` |
-| uid authorisation, two gates | `T3b-unauthorized-uid-20261123T141351Z.log` |
-| audit concurrency | `T4-audit-concurrency-20261123T141351Z.log` |
-| capability inventory | `T5-capability-inventory-20261123T141351Z.log` |
-| no-exec proof | `T6-no-exec-20261123T141351Z.log` |
-| half-frame liveness | `T7-half-frame-20261123T141351Z.log` |
+| TOCTOU, reuse, same-tick | `T1-peercred-20261123T141630Z.log` |
+| namespace root reach | `T2-userns-root-20261123T141630Z.log` |
+| rejection matrix | `T3-helper-rejections-20261123T141630Z.log` |
+| uid authorisation, two gates | `T3b-unauthorized-uid-20261123T141630Z.log` |
+| audit concurrency | `T4-audit-concurrency-20261123T141630Z.log` |
+| capability inventory | `T5-capability-inventory-20261123T141630Z.log` |
+| no-exec proof | `T6-no-exec-20261123T141630Z.log` |
+| half-frame liveness | `T7-half-frame-20261123T141630Z.log` |
 | environment, build hygiene | `00-environment-*`, `01-build-*` |
-| machine-readable roll-up | `SUMMARY-20261123T141351Z.md` |
+| machine-readable roll-up | `SUMMARY-20261123T141630Z.md` |
 
 ### 4.1 T1 — SO_PEERCRED is frozen; the pid is not an identity
 
@@ -162,15 +162,20 @@ owner is mapped. It does not reach host root's files.
 |---|---|---|
 | traversal / absolute / symlink escape | 8 | `path_escape` ×8 |
 | shell metacharacters in path | 12 | `path_invalid` ×12 |
-| opcode confusion | 8 | `unknown_opcode`, `bad_opcode` ×3, `arg_unexpected`, `not_implemented_by_design`, `bad_frame`, `arg_too_large` |
-| oversized frame | 4 | `frame_too_large`, connection survives |
-| oversized argument | 1 | `arg_too_large` |
-| controls | 3 | `ok:true` for `StatPath`, `ReadSmall`, `ListDir` |
+| opcode confusion | 8 | `unknown_opcode` 1, `bad_opcode` 3, `arg_unexpected` 2, `not_implemented_by_design` 1, `bad_frame` 1 |
+| oversized frame, terminated | 2 | `frame_too_large` ×2, connection survives |
+| oversized frame, unterminated | 1 | no response; client times out at 1500 ms (the §6.2 defect) |
+| oversized argument | 1 | `arg_too_large` ×1 |
+| controls | 4 | `ok:true`: a fresh connection, `StatPath`, `ReadSmall`, `ListDir` |
 
-Escape attempts served: **0**. Audit counts per code across the matrix: 8
-`path_escape`, 8 `path_invalid`, 2 `arg_unexpected`, 3 `bad_opcode`, 1
-`unknown_opcode`, 1 `bad_frame`, 1 `arg_too_large`, 1
-`not_implemented_by_design`.
+Total 35 request rows: 31 refused, 4 served, and all 4 successes intended
+(a fresh connection after a stall, then `StatPath`, `ReadSmall`, `ListDir`).
+Escape attempts served: **0**.
+
+The audit log's own `by_code` tally matches the response column exactly:
+`path_escape` 8, `path_invalid` 12, `bad_opcode` 3, `arg_unexpected` 2,
+`frame_too_large` 2, `unknown_opcode` 1, `bad_frame` 1, `arg_too_large` 1,
+`not_implemented_by_design` 1 — 31 refusals, one audit line each.
 
 ### 4.4 T3b — two independent authorisation gates
 
@@ -246,7 +251,7 @@ rule.
 
 ### 4.8 T7 — half-frame liveness (a real defect, kept)
 
-Verbatim from `T7-half-frame-20261123T141351Z.log`:
+Verbatim from `T7-half-frame-20261123T141630Z.log`:
 
 ```
 # 100 bytes, no newline, 1500 ms client timeout:
