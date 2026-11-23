@@ -1,13 +1,13 @@
 
-[?2004h⟦LI-P⟧ 
-[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
-[?2004l[?2004h⟦LI-P⟧ true && echo t04-and
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ 
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ true && echo t04-and
 [?2004lt04-and
-[?2004h⟦LI-P⟧ false || echo t04-or
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ false || echo t04-or
 [?2004lt04-or
-[?2004h⟦LI-P⟧ echo t04-a; echo t04-b
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t04-a; echo t04-b
 [?2004lt04-a
 t04-b
-[?2004h⟦LI-P⟧ false
-[?2004l[?2004h⟦LI-P⟧ exit
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ false
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ exit
 [?2004lexit

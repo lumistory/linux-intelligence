@@ -133,21 +133,27 @@ class Session:
                 # is exactly what happens when the daemon dies mid-session.
                 os.close(ev_r)
                 ev_r = -1
+        parent_ev_r = ev_r
         pid, fd = pty.fork()
         if pid == 0:
             try:
                 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
                 signal.signal(signal.SIGXFSZ, signal.SIG_DFL)
                 if ev_w >= 0:
-                    tmp = ev_w
-                    if tmp == 3:
-                        tmp = os.dup(3)
+                    # os.pipe() returns the two lowest free fds, so ev_r is
+                    # often already 3. dup2(ev_w, 3) would then clobber the read
+                    # end and the close(tmp_r) below would fail with EBADF --
+                    # which aborted the child with exit 111 and made every
+                    # adapter measurement look like "no prompt". Move the read
+                    # end out of the way first, then claim fd 3.
+                    if ev_r == 3:
+                        moved = os.dup(ev_r)
+                        os.close(ev_r)
+                        ev_r = moved
                     os.dup2(ev_w, 3)
                     os.set_inheritable(3, True)
                     if ev_w != 3:
                         os.close(ev_w)
-                    if tmp != 3:
-                        os.close(tmp)
                 env = dict(os.environ)
                 env.update({"TERM": "dumb" if self.shell == "fish"
                             else "xterm-256color", "HISTFILE": os.devnull,
@@ -161,6 +167,7 @@ class Session:
                 os.execvpe(a[0], a, env)
             except BaseException:
                 os._exit(111)
+        ev_r = parent_ev_r
         if ev_w >= 0:
             os.close(ev_w)
         if ev_r >= 0:

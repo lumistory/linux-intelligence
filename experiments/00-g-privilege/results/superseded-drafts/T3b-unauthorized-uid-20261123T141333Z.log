@@ -1,0 +1,20 @@
+# T3b — a uid missing from the allowlist must be refused.
+# The two gates are measured separately, because reporting the filesystem
+# gate as if it were the allowlist is how this experiment first misled
+# itself (see REPORT §6, deviation 2).
+#   gate 1 (kernel): socket mode 0600 + parent directory mode
+#   gate 2 (helper): SO_PEERCRED uid vs --allow-uid
+
+## case 1: defaults (parent 0700, socket 0600)
+  socket mode=600 uid=0
+  uid5 connect -> REFUSED_BY_KERNEL errno=13 Permission denied
+
+## case 2: parent 0777 and socket 0666, so gate 1 is wide open.
+#          Any refusal now must come from SO_PEERCRED.
+  socket mode=666 uid=0
+  uid5 connect -> CONNECT_OK
+  response: {"ok":false,"opcode":"<connection>","code":"not_authorized","message":"peer uid not allowed"}
+  allowed uid0 -> {"ok":true,"opcode":"Describe","data":{"no_new_privs":true,"ops":["Describe","StatPath","ReadSmall","ListDir"],"root":"/tmp/li-phase0-0g-ZwR13A/t3b/root","uid":0}}
+
+## audit records for the refused connection (case 2)
+  {"event_id":"81ae3bab-1311-4327-b11c-354dddd16c23","evidence_status":"observed","payload":{"allow_uids":[0],"peer_gid":5,"peer_pid":281243,"peer_starttime":1264199,"peer_uid":5,"reason":"peer uid not in allowlist"},"schema_version":1,"sequence":2,"source":"policy","ts_mono_ns":12642007442453,"ts_wall":"2026-11-23T14:13:37.936735151Z","type":"ConnectionRejected"}

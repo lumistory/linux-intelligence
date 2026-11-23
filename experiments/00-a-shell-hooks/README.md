@@ -148,3 +148,27 @@ the shell; the child now resets SIGPIPE/SIGXFSZ to `SIG_DFL`. Also, `os.pipe()`
 returns close-on-exec fds, so `dup2(w, 3)` was a no-op when the write end
 already *was* fd 3 and FD 3 then vanished at `exec` (symptom: `bash: 3: Bad file
 descriptor`). Both fixes are in `harness/drive.py` and `harness/probes.py`.
+
+**F11 — a false lead, recorded because it was believed for a while.**
+Adapter-latency runs kept reporting "no prompt after hook install", which looked
+like the adapters' `tty` call blocking on a non-terminal FD 3. Measured
+directly, `tty` does **not** block with a pipe on FD 3, for bash or for fish
+(`results/probe-tty-blocks-with-pipe-fd3.log`). The real cause was F13 (an fd
+ordering bug in the harness). The adapters still use `tty -s` because a status
+query is strictly safer than resolving a path we only use for a log field, but
+the original claim was wrong and the evidence above is what it is.
+
+**F12 — the payload must never be spliced into the hook's command text.** The
+JSON payload contains `|` (it quotes a pipeline as an example command). When the
+first version of the latency harness embedded it directly, a lost quote turned
+`PROMPT_COMMAND` into a real pipeline and measured 1.5 ms of shell parsing
+instead of ~250 us of printf. All harnesses now assign the payload to a shell
+variable first and the hook only refers to `"$__li_p"`. This is also why the
+adapters pass JSON through `printf` with the payload as an *argument*.
+
+**F13 — `os.pipe()` hands out fd 3, and dup2 over it silently breaks the child.**
+In a fresh process the lowest free fds are 3 and 4, so `ev_r` was often already
+3; `dup2(ev_w, 3)` then clobbered the read end and the following `close`
+failed with EBADF, aborting the child (exit 111). Symptom: every FD-3 based
+measurement reported "no prompt". Both `harness/drive.py` and
+`harness/latency.py` now move the read end aside before claiming fd 3.

@@ -1,0 +1,19 @@
+--- data preserved? ---
+5000
+2
+2
+--- new columns exist and are null for old rows ---
+e1|1|1
+e2|1|1
+e3|1|1
+--- old rows still readable through the new column list ---
+event_id|sequence|type|dedup_group
+e1|1|CommandFinished|
+e2|2|CommandFinished|
+e3|3|CommandFinished|
+--- integrity after migration ---
+ok
+--- migration ledger ---
+version|description|checksum
+1|0001_init|546433d699109e0d
+2|0002_add_event_redaction|c03348a47a47c7a6

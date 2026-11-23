@@ -1,0 +1,459 @@
+## 1. Deduplication (SYNTHETIC streams, ground truth by construction)
+
+population: 1050 events = 500 origins + 300 duplicates + 250 near-miss negatives
+
+### 1.1 Scheme A — exact `event_id` only (baseline)
+
+| metric | value |
+|---|---|
+| duplicates found (TP) | 150 |
+| false merges (FP) | 0 |
+| missed duplicates (FN) | 150 |
+| precision | 1.0000 |
+| recall | 0.5000 |
+| false-merge rate FP/(TP+FP) | 0.0000 |
+| undetected-duplicate rate FN/(TP+FN) | 0.5000 |
+
+Ground truth is built in, and the population contains one class that is
+**undecidable by content** (D1: same command text, same session, inside the
+window — a human double-tap or a genuine double-report). D1 merges are
+reported in their own column and are NOT counted as false positives, because
+no content-based scheme can separate them. Every other negative is decidable.
+
+### 1.2 Scheme B — semantic fingerprint, parameter sweep
+
+key = `type_class | session? | subject | ts_bucket`; `session?` is `-`
+unless `require_same_session`. Every row is a full re-run of the stream.
+precision is TP/(TP+decidable FP); `D1 merged` is the irreducible residue.
+
+| window | mode | key | TP | FP (decidable) | FN | precision | recall | false-merge | D1 merged |
+|---|---|---|---|---|---|---|---|---|---|
+| 10 ms | single | no session | 171 | 74 | 129 | 0.6980 | 0.5700 | 0.3020 | 25/50 |
+| 10 ms | single | +session | 171 | 37 | 129 | 0.8221 | 0.5700 | 0.1779 | 25/50 |
+| 10 ms | single | +session+process | 171 | 0 | 129 | 1.0000 | 0.5700 | 0.0000 | 25/50 |
+| 10 ms | triple | no session | 266 | 100 | 34 | 0.7268 | 0.8867 | 0.2732 | 50/50 |
+| 10 ms | triple | +session | 266 | 50 | 34 | 0.8418 | 0.8867 | 0.1582 | 50/50 |
+| 10 ms | triple | +session+process | 266 | 0 | 34 | 1.0000 | 0.8867 | 0.0000 | 50/50 |
+| 50 ms | single | no session | 246 | 96 | 54 | 0.7193 | 0.8200 | 0.2807 | 45/50 |
+| 50 ms | single | +session | 246 | 49 | 54 | 0.8339 | 0.8200 | 0.1661 | 45/50 |
+| 50 ms | single | +session+process | 246 | 0 | 54 | 1.0000 | 0.8200 | 0.0000 | 45/50 |
+| 50 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 50 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 50 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 100 ms | single | no session | 271 | 97 | 29 | 0.7364 | 0.9033 | 0.2636 | 47/50 |
+| 100 ms | single | +session | 271 | 50 | 29 | 0.8442 | 0.9033 | 0.1558 | 47/50 |
+| 100 ms | single | +session+process | 271 | 0 | 29 | 1.0000 | 0.9033 | 0.0000 | 47/50 |
+| 100 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 100 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 100 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 250 ms | single | no session | 289 | 99 | 11 | 0.7448 | 0.9633 | 0.2552 | 49/50 |
+| 250 ms | single | +session | 289 | 49 | 11 | 0.8550 | 0.9633 | 0.1450 | 49/50 |
+| 250 ms | single | +session+process | 289 | 0 | 11 | 1.0000 | 0.9633 | 0.0000 | 49/50 |
+| 250 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 250 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 250 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 500 ms | single | no session | 295 | 100 | 5 | 0.7468 | 0.9833 | 0.2532 | 49/50 |
+| 500 ms | single | +session | 295 | 50 | 5 | 0.8551 | 0.9833 | 0.1449 | 49/50 |
+| 500 ms | single | +session+process | 295 | 0 | 5 | 1.0000 | 0.9833 | 0.0000 | 49/50 |
+| 500 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 500 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 500 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 1000 ms | single | no session | 297 | 100 | 3 | 0.7481 | 0.9900 | 0.2519 | 49/50 |
+| 1000 ms | single | +session | 297 | 50 | 3 | 0.8559 | 0.9900 | 0.1441 | 49/50 |
+| 1000 ms | single | +session+process | 297 | 0 | 3 | 1.0000 | 0.9900 | 0.0000 | 49/50 |
+| 1000 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 1000 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 1000 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+| 2000 ms | single | no session | 298 | 100 | 2 | 0.7487 | 0.9933 | 0.2513 | 50/50 |
+| 2000 ms | single | +session | 298 | 50 | 2 | 0.8563 | 0.9933 | 0.1437 | 50/50 |
+| 2000 ms | single | +session+process | 298 | 0 | 2 | 1.0000 | 0.9933 | 0.0000 | 50/50 |
+| 2000 ms | triple | no session | 300 | 100 | 0 | 0.7500 | 1.0000 | 0.2500 | 50/50 |
+| 2000 ms | triple | +session | 300 | 50 | 0 | 0.8571 | 1.0000 | 0.1429 | 50/50 |
+| 2000 ms | triple | +session+process | 300 | 0 | 0 | 1.0000 | 1.0000 | 0.0000 | 50/50 |
+
+### 1.3 False merges by trap class (chosen: 200 ms triple, three key variants)
+
+| trap class | n | key: no session | key: +session | key: +session+process |
+|---|---|---|---|---|
+| D1 same cmd+session+window (UNDECIDABLE) | 50 | 50 | 50 | 50 |
+| D2 same cmd, other session, same window | 50 | 50 | 0 | 0 |
+| D3 same cmd, far in time | 50 | 0 | 0 | 0 |
+| D4 other cmd, same window | 50 | 0 | 0 | 0 |
+| D5 same cmd+session+window, different pid:starttime | 50 | 50 | 50 | 0 |
+| origin (decidable) | 500 | 0 | 0 | 0 |
+
+no session    : TP 300 FP 150 FN 0 precision 0.6667 recall 1.0000
++session      : TP 300 FP 100 FN 0 precision 0.7500 recall 1.0000
++session+proc : TP 300 FP 50 FN 0 precision 0.8571 recall 1.0000
+
+Dropping the session from the key is what turns a safe fingerprint into a
+dangerous one: every D2 row becomes a merge, and D2 is decidable. Adding the
+process key fixes D5 at no cost to recall **in this population**, because
+cross-source duplicates carry the same (pid,starttime); it breaks the moment a
+hook reports no starttime, which is why the flag is a policy choice and not a
+constant.
+
+### 1.4 Stability across three seeds (chosen config)
+
+| seed | events | exact recall | fingerprint precision | fingerprint recall |
+|---|---|---|---|---|
+| 0xc011ea | 1050 | 0.5000 | 0.7500 | 1.0000 |
+| 0x5ec011 | 1050 | 0.5000 | 0.7500 | 1.0000 |
+| 0x11ea | 1050 | 0.5000 | 0.7500 | 1.0000 |
+
+### 1.5 Fingerprint blind spot: same fact, different subject text
+
+hook `make -j8`           -> Fresh
+proc `/usr/bin/make -j8`  -> Fresh
+The subject is normalized command text; a `/proc/<pid>/cmdline` absolute
+path does not hash equal to the typed command. Measured miss, not a bug to
+hide: basename-stripping is a Phase 1 decision, not a Phase 0 result.
+
+### 1.6 Verdict
+
+Exact `event_id` is necessary and free, but recall 0.5000 on a population where
+50.0% of all duplicates carry a fresh id. The fingerprint is what recovers them,
+and it costs 0.2500 false merges on the chosen config.
+
+## 2. Out-of-order streams (SYNTHETIC, single session, 500 events, 1 ms apart)
+
+### 2.1 distinct timestamps
+
+| disorder depth | received | ts-sort | sequence | forced gaps | max buffered |
+|---|---|---|---|---|---|
+| 1 | 1.0000 | 1.0000 | 1.0000 | 0 | 1 |
+| 2 | 0.9990 | 1.0000 | 1.0000 | 0 | 2 |
+| 4 | 0.9970 | 1.0000 | 1.0000 | 0 | 4 |
+| 8 | 0.9931 | 1.0000 | 1.0000 | 0 | 65 |
+| 16 | 0.9846 | 1.0000 | 1.0000 | 0 | 65 |
+| 32 | 0.9710 | 1.0000 | 1.0000 | 0 | 30 |
+
+### 2.2 timestamps quantised to the 10 ms CLK_TCK grid
+
+| disorder depth | received | ts-sort | sequence | forced gaps | max buffered |
+|---|---|---|---|---|---|
+| 1 | 1.0000 | 1.0000 | 1.0000 | 0 | 1 |
+| 2 | 0.9990 | 0.9990 | 1.0000 | 0 | 2 |
+| 4 | 0.9970 | 0.9974 | 1.0000 | 0 | 4 |
+| 8 | 0.9931 | 0.9952 | 1.0000 | 0 | 65 |
+| 16 | 0.9846 | 0.9927 | 1.0000 | 0 | 65 |
+| 32 | 0.9710 | 0.9920 | 1.0000 | 0 | 30 |
+
+### 2.3 Tolerance-window sizing (depth 8, quantised timestamps)
+
+reorder delay distribution: n=220 p50=300000 ns p90=600000 ns p99=700000 ns max=700000 ns
+
+`grace_ns` is measured on the stream clock, so it also fires on a quiet
+session. A grace keyed on *more events arriving* would never fire exactly when
+a lost event sits alone in the buffer.
+
+| grace | forced gaps | max buffered | agreement |
+|---|---|---|---|
+| 1 us | 456 | 1 | 0.9931 |
+| 2 us | 456 | 1 | 0.9931 |
+| 5 us | 456 | 1 | 0.9931 |
+| 10 us | 456 | 1 | 0.9931 |
+| 20 us | 456 | 1 | 0.9931 |
+| 50 us | 456 | 1 | 0.9931 |
+| 100 us | 456 | 1 | 0.9931 |
+| 250 us | 383 | 2 | 0.9943 |
+| 1000 us | 2 | 9 | 1.0000 |
+
+### 2.4 Why timestamps alone cannot be the answer
+
+With 10 ms quantisation and 1 ms spacing, 450 of 499 adjacent pairs share a
+tick, so `ORDER BY ts_mono_ns` leaves their order to the sort's tie-break,
+not to the data. `sequence` has no ties by construction (0-C: gaps are exact).
+Cross-source ordering has no `sequence` space, so it must fall back to
+`ts_mono_ns` with an explicit +/-1 tick uncertainty that is stored, not hidden.
+
+## 3. Process identity: pid vs (pid,starttime) vs collision-aware
+(SYNTHETIC events; the kernel tick measurement is in results/*-pidns*)
+
+Setup: two *different* processes share pid 4242 and starttime 900, i.e. they
+started inside one 10 ms tick, the exact risk 0-E measured. A (`editor`)
+writes a.txt and exits; B (`make`) starts in the same tick and writes b.txt.
+starttime 900 -> tick window [9000000000, 9010000000) ns, width 10000000 ns
+registry.observe(A) -> New(incarnation 1)
+registry.observe(B) -> Collision(incarnations [1, 2])
+collisions recorded: 1
+  key 4242:900 tick 900 reason ExitedThenReappeared { exited_at_ns: 1763942400000500000, seen_at_ns: 1763942400003000000 } incarnations [1, 2]
+key poisoned (attribution must degrade): true
+
+### 3.1 Attribution policy comparison
+
+| policy | writer of a.txt | writer of b.txt | outcome |
+|---|---|---|---|
+| pid only | pid 4242 | pid 4242 | WRONG: both writes attributed to one actor |
+| (pid,starttime), blind | 4242:900 | 4242:900 | WRONG: same alias, still merged |
+| (pid,starttime) + collision detection | ambiguous | ambiguous | Unknown, no claim |
+
+### 3.2 What the user is told, per policy
+
+| question | pid only | collision-aware | ground truth |
+|---|---|---|---|
+| files changed by pid 4242 | a.txt, b.txt | Unknown | a.txt by A, b.txt by B |
+| did `make b` modify anything? | a.txt (invented) | Unknown | b.txt |
+| did `editor a.txt` modify anything? | a.txt, b.txt (invented) | Unknown | a.txt |
+
+Two of three answers are wrong under pid-only, and they are wrong in the
+dangerous direction: they assert an actor that cannot have done it.
+
+### 3.3 The classifier refuses rather than guesses
+
+classify(perfect evidence, collided key) = Unknown / R0 (pid,starttime) collision
+=> R0 is evaluated first: neither more evidence nor a better clock can outvote
+   a broken identity.
+classify(pid equality only)             = Weak / R6 time-window overlap only
+=> a hook that reports no starttime can never reach Probable: pid is not identity.
+
+### 3.4 Recovery path: how a collision stops being permanent
+
+A collision is only unavoidable when the two incarnations are indistinguishable.
+They are distinguishable when *either* differs:
+  - `comm` (16 bytes in /proc/<pid>/stat)  -> detected, sample above
+  - `cmdline` hash                          -> detected
+  - a `ProcessExit` observed between them   -> detected
+When none differ, the registry cannot separate them and `ambiguous=1` is
+persisted. The schema in migrations/0001_init.sql has that column, so the
+degradation survives a restart instead of being recomputed differently.
+keyed, pre-collision: keyed:4242:900
+keyed, post-collision: ambiguous:4242:900
+usable for merging: pre=true post=false
+
+## 4. Five-level credibility — 24 scenarios
+
+Rule table, evaluated in this order, first match wins:
+
+| rule | level | predicate (all conjuncts required) |
+|---|---|---|
+| R0 | Unknown | actor identity `Ambiguous` — (pid,starttime) collided |
+| R1 | Unknown | no process identity, and the only link is a shared session_id |
+| R2 | Unknown | a file event exists and lies outside the actor's interval |
+| R3 | Confirmed | keyed actor AND (self-observed OR fork edge) AND inside interval AND path tied to the command |
+| R4 | Strong | >= 2 independent source classes AND >= 1 kernel-observed |
+| R5 | Probable | keyed actor AND (self-observed OR fork edge) AND inside interval AND NO file evidence tied to the command |
+| R6 | Weak | inside the interval and nothing more |
+| R7 | Unknown | residual |
+
+Independence is defined, not felt: classes differ AND neither source is marked
+derived AND the pair is in INDEPENDENT_PAIRS (declared/proc, declared/fs,
+proc/fs). Two hooks firing twice are ONE source.
+
+| # | scenario | expected | rule | actual | rule | verdict |
+|---|---|---|---|---|---|---|
+| S01 | actor itself is the reported writer, path tied, inside interval | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S02 | one-hop fork chain, path tied, inside interval | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S03 | four-hop fork chain (pipeline), path tied | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S04 | (pid,starttime) collision, everything else perfect | Unknown | R0 (pid,starttime) collision | Unknown | R0 (pid,starttime) collision | PASS |
+| S05 | collision plus two independent corroborations | Unknown | R0 (pid,starttime) collision | Unknown | R0 (pid,starttime) collision | PASS |
+| S06 | only a shared session_id | Unknown | R1 session identity only | Unknown | R1 session identity only | PASS |
+| S07 | no actor at all, file event present | Unknown | R1 session identity only | Unknown | R1 session identity only | PASS |
+| S08 | file event strictly outside the actor's interval | Unknown | R2 no overlapping time window | Unknown | R2 no overlapping time window | PASS |
+| S09 | declared hook + kernel fs agree, path tied, no fork chain | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S10 | declared hook + kernel proc agree, no file evidence | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S11 | kernel proc + kernel fs agree | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S12 | two declared shells report the same command (hook fired twice) | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S13 | kernel fs claim marked derived from kernel proc | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S14 | fork chain inside interval, no filesystem evidence at all | Probable | R5 pid chain inside window, no file-side evidence | Probable | R5 pid chain inside window, no file-side evidence | PASS |
+| S15 | fork chain inside interval, untied path observed | Probable | R5 pid chain inside window, no file-side evidence | Probable | R5 pid chain inside window, no file-side evidence | PASS |
+| S16 | actor is the reported writer, but path untied | Probable | R5 pid chain inside window, no file-side evidence | Probable | R5 pid chain inside window, no file-side evidence | PASS |
+| S17 | pid-only actor with a tied path inside the interval | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S18 | pid-only actor, pid equality, no window overlap | Unknown | R7 residual (nothing to stand on) | Unknown | R7 residual (nothing to stand on) | PASS |
+| S19 | keyed actor, no lineage, untied path, inside interval | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S20 | keyed actor, no file event, no lineage, inside interval | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+| S21 | three independent classes (declared + proc + fs) | Strong | R4 two independent sources, same fact | Strong | R4 two independent sources, same fact | PASS |
+| S22 | inferred-only corroboration, fork chain otherwise perfect | Confirmed | R3 direct fork evidence, inside interval | Confirmed | R3 direct fork evidence, inside interval | PASS |
+| S23 | keyed actor, tied path, no time containment recorded | Unknown | R2 no overlapping time window | Unknown | R2 no overlapping time window | PASS |
+| S24 | one kernel source corroborating only itself | Weak | R6 time-window overlap only | Weak | R6 time-window overlap only | PASS |
+
+24/24 scenarios match the specified level AND rule.
+
+### 4.0 Why each scenario sits where it does
+
+| # | scenario | note |
+|---|---|---|
+| S01 | actor itself is the reported writer, path tied, inside interval | same-source direct evidence |
+| S02 | one-hop fork chain, path tied, inside interval | kernel-reported parent edge |
+| S03 | four-hop fork chain (pipeline), path tied | depth does not weaken a real edge |
+| S04 | (pid,starttime) collision, everything else perfect | collision detected -> refuse |
+| S05 | collision plus two independent corroborations | more evidence cannot outvote a broken identity |
+| S06 | only a shared session_id | session is not attribution |
+| S07 | no actor at all, file event present | 0-E: inotify carries no pid |
+| S08 | file event strictly outside the actor's interval | temporal impossibility |
+| S09 | declared hook + kernel fs agree, path tied, no fork chain | two independent classes, one kernel |
+| S10 | declared hook + kernel proc agree, no file evidence | kernel proc corroborates the command itself |
+| S11 | kernel proc + kernel fs agree | two kernel sources, still not Confirmed |
+| S12 | two declared shells report the same command (hook fired twice) | same class twice is one source, not two |
+| S13 | kernel fs claim marked derived from kernel proc | independence is per-source, not assumed from class alone |
+| S14 | fork chain inside interval, no filesystem evidence at all | the canonical 'probably, but unproven' case |
+| S15 | fork chain inside interval, untied path observed | a path nobody tied to the command does not confirm it |
+| S16 | actor is the reported writer, but path untied | writer identity strong, artefact link weak |
+| S17 | pid-only actor with a tied path inside the interval | missing starttime removes the identity, keeps the interval |
+| S18 | pid-only actor, pid equality, no window overlap | nothing holds |
+| S19 | keyed actor, no lineage, untied path, inside interval | time overlap only |
+| S20 | keyed actor, no file event, no lineage, inside interval | still only time |
+| S21 | three independent classes (declared + proc + fs) | three sources still cap at Strong without a fork edge |
+| S22 | inferred-only corroboration, fork chain otherwise perfect | inferred inputs are filtered from R4, not from R3 |
+| S23 | keyed actor, tied path, no time containment recorded | unknown containment is treated as no containment |
+| S24 | one kernel source corroborating only itself | a single source is never 'two independent sources' |
+
+### 4.1 Level distribution over the 24 scenarios
+
+| level | count |
+|---|---|
+| Confirmed | 4 |
+| Strong | 4 |
+| Probable | 3 |
+| Weak | 6 |
+| Unknown | 7 |
+
+### 4.2 Monotonicity: adding a corroboration never lowers the level
+
+violations: 0 (must be 0)
+
+## 5. "Time adjacency" is not "cause"
+
+### 5.1 Four counterexamples, each observed as a shape rather than argued
+
+| counterexample | naive claim | why it is false | defensible relation | level |
+|---|---|---|---|---|
+| background task outlives its command | "background task outlives its command caused the file change" | the hook fires at command exit; children keep writing for seconds afterwards (`make -j` is the canonical case) | `spawned_by` | Confirmed |
+| delayed writeback | "delayed writeback caused the file change" | `echo x > f` returns after write(2); writeback lands later, so the file event can postdate the process exit | `modified_during` | Weak |
+| editor rename-save | "editor rename-save caused the file change" | vim writes a temp file and rename(2)s it over the target; the modified path is the temp path, and the target only appears as a rename destination | `observed_within` | Weak |
+| two writers, one file | "two writers, one file caused the file change" | inotify carries no pid (0-E), so a file two processes appended to cannot be attributed to either one | `observed_within` | Unknown |
+
+### 5.2 API constraint: three kinds, no way to spell a cause
+
+| kind string | parses | directional |
+|---|---|---|
+| `observed_within` | yes | false |
+| `spawned_by` | yes | true |
+| `modified_during` | yes | false |
+| `caused_by` | REJECTED | - |
+| `causes` | REJECTED | - |
+| `led_to` | REJECTED | - |
+| `result_of` | REJECTED | - |
+
+Enforced twice: `RelationKind::parse` returns None, and the schema CHECK in
+migrations/0001_init.sql rejects the row. The unit test
+`caused_by_is_rejected_by_the_schema` asserts the INSERT fails.
+
+### 5.3 Validation rejects the two illegal shapes
+
+| claim | fork edge | observed input | result |
+|---|---|---|---|
+| spawned_by with no fork edge | false | true | REJECTED NoForkEvidence |
+| Confirmed from inferred inputs only | false | false | REJECTED InferredCannotConfirm |
+| modified_during with a real file event | false | true | accepted |
+| spawned_by with a kernel fork edge | true | true | accepted |
+
+### 5.4 Rendering is capped by kind, not by level
+
+- `observed_within` at Confirmed -> "cmd:npm test was observed within ./dist/bundle.js's window (Confirmed)" (no causal verb)
+- `modified_during` at Confirmed -> "./dist/bundle.js was modified during cmd:npm test's lifetime (Confirmed)" (no causal verb)
+- `spawned_by` at Confirmed -> "cmd:npm test was spawned by ./dist/bundle.js (Confirmed)" (no causal verb)
+
+`modified_during` renders "was modified during", never "was modified by", even at
+Confirmed. The kind caps the verb; the level only caps confidence in the claim
+that is actually being made.
+
+### 5.5 The one relation with a real direction
+
+`spawned_by` is directional because the kernel reported a parent edge at fork
+time (`ppid` at the moment the child was created, walked over
+/proc/<pid>/stat`). It is still not causation: a parent that spawns `sh -c
+"rm -rf build"` did not itself compute anything. It is the *strongest* relation
+Phase 0 supports, and it is a containment relation, not a causal one.
+
+## 6. Operation Context — one event, many operations; one event, none
+
+| query | result |
+|---|---|
+| operations of ev-1 | op-edit |
+| operations of ev-2 | op-edit, op-recover |
+| events of op-edit | ev-1, ev-2 |
+| events of op-recover | ev-2 |
+| events belonging to no operation | ev-3 |
+
+### 6.1 Retraction keeps history
+
+after retracting ev-2 from op-recover:
+| query | result |
+|---|---|
+| operations of ev-2 | op-edit |
+| events of op-recover | `` (empty, the operation still exists) |
+| membership rows retained | 3 |
+
+### 6.2 Why a single `events.operation_id` column cannot work
+
+| requirement | single FK column | join table |
+|---|---|---|
+| ev-2 in two operations | impossible without duplicating the event | one row per (event, operation) |
+| ev-3 in no operation | forces a synthetic "misc" operation, destroying the distinction between "belongs to nothing" and "not ingested" | simply absent from the join table |
+| per-membership credibility | one level for the event, so a Strong recovery link forces the edit link to Strong too | level is per membership |
+| audit trail for a wrong link | no place to record which rule attached it | `attached_by` + `detached_mono_ns` |
+| retraction | UPDATE the column, losing the fact that a link ever existed | set `detached_mono_ns` |
+
+This is the schema in migrations/0001_init.sql (`event_operations`), and the
+uniqueness constraint is on (event_id, operation_id), not on event_id.
+
+## 7. Secret redaction before persistence
+
+Two rule generations on the same corpus. V1 = flag/env/auth-header shapes.
+V2 = V1 + URL userinfo + `key: value` heuristics.
+
+| generation | clean n | false positives | FP rate | secret n | missed | miss rate |
+|---|---|---|---|---|---|---|
+| V1 | 53 | 1 | 0.0189 | 22 | 4 | 0.1818 |
+| V2 | 53 | 1 | 0.0189 | 22 | 0 | 0.0000 |
+
+### 7.1 V2 false positives, with the rule that fired
+
+| command | rule |
+|---|---|
+| `export DATABASE_URL=postgres://localhost/app` | env-assign |
+
+### 7.2 V2 misses
+
+none on this corpus.
+
+### 7.3 The three required cases, verbatim
+
+- in : `mysql -u root -pS3cr3tPw -h db`
+  out: `mysql -u root -p[REDACTED] -h db`
+  rules ["flag-short-p-glued"], digest 48528006fc040d4c
+- in : `export API_KEY=abcdef123456`
+  out: `export API_KEY=[REDACTED]`
+  rules ["env-assign"], digest ae1c1b78f20f1195
+- in : `curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc" https://x`
+  out: `curl -H "Authorization: Bearer [REDACTED]" https://x`
+  rules ["auth-header"], digest 204571f0beab2094
+
+### 7.4 Per-rule coverage
+
+| rule | secrets caught by it |
+|---|---|
+| auth-header | 3 |
+| env-assign | 7 |
+| flag-short-p-glued | 2 |
+| flag-value-assign | 3 |
+| flag-value-separate | 3 |
+| key-colon-value | 2 |
+| url-userinfo | 2 |
+
+### 7.5 Residual risk: a secret as a bare positional argument
+
+`./deploy s3cr3tvalue` -> `./deploy s3cr3tvalue` (rules [])
+A positional value is indistinguishable from a filename or a hostname. Neither
+generation masks it. This is a shaping limit, not a tuning miss: see §6 of the
+report. The mitigation is to not capture such a command line, or to let the
+user mark an argument position as secret.
+
+### 7.6 Digest linkability
+
+same secret twice -> digest 48528006fc040d4c / 48528006fc040d4c equal=true
+The digest is 64-bit FNV-1a: linkable, not reversible, and NOT a key-derivation
+function. It answers "the same credential was used again", nothing more.
+
+Summary: V1 FP 1 / miss 4; V2 FP 1 / miss 0 (of 53 clean and 22 secret commands).

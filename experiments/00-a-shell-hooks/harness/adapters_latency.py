@@ -56,6 +56,10 @@ def mode_setup(shell, mode):
         return "dead", LOAD[shell]
     if mode == "fd3ok":
         return "ok", LOAD[shell]
+    if mode == "nofd":
+        # adapter loaded with no FD 3 at all: it detects the missing sink once
+        # and then stays silent (the `_LI_FD3_OK = 0` path).
+        return "none", LOAD[shell]
     raise SystemExit("bad mode")
 
 
@@ -94,25 +98,37 @@ def main():
     ap.add_argument("--shells", default="bash,zsh,fish")
     ap.add_argument("--modes", default="baseline,fd3dead")
     ap.add_argument("--iters", type=int, default=100)
+    ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--out", default=os.path.join(RES, "adapters.json"))
     a = ap.parse_args()
     os.makedirs(RES, exist_ok=True)
     out = {}
     for shell in a.shells.split(","):
         for mode in a.modes.split(","):
-            lat, ok = measure(shell, mode, a.iters)
+            meds, allraw, errs = [], [], []
+            for _ in range(a.repeats):
+                lat, ok = measure(shell, mode, a.iters)
+                if lat:
+                    meds.append(statistics.median(lat))
+                    allraw.extend(lat)
+                else:
+                    errs.append("no samples")
             key = "%s/%s" % (shell, mode)
-            if not lat:
-                out[key] = {"error": "no samples (prompt_ok=%s)" % ok}
-                print("ERROR %-14s prompt_ok=%s" % (key, ok), flush=True)
+            if not meds:
+                out[key] = {"error": "no samples"}
+                print("ERROR %-14s" % key, flush=True)
                 continue
-            r = {"n": len(lat), "median_us": statistics.median(lat),
+            lat = allraw
+            r = {"n": len(lat), "median_us": statistics.median(meds),
+                 "median_per_session_us": [round(x) for x in meds],
+                 "repeats": len(meds),
                  "mean_us": round(statistics.fmean(lat), 1),
                  "p99_us": pct(lat, 99), "p95_us": pct(lat, 95),
                  "min_us": min(lat), "max_us": max(lat), "raw_us": lat}
             out[key] = r
-            print("%-14s n=%-4d median=%8.0f p99=%8s us"
-                  % (key, len(lat), r["median_us"], r["p99_us"]), flush=True)
+            print("%-14s n=%-4d median=%8.0f p99=%8s us sessions=%s"
+                  % (key, len(lat), r["median_us"], r["p99_us"],
+                     r["median_per_session_us"]), flush=True)
     with open(a.out, "w") as f:
         json.dump(out, f, indent=1, sort_keys=True)
     print("wrote", a.out)

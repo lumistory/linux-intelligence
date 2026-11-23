@@ -1,0 +1,6 @@
+schema_version=1
+events columns: event_id, schema_version, source, session_id, process_row_id, sequence, ts_mono_ns, ts_wall, type, type_class, payload, evidence_status, dedup_group, duplicate_of, redaction_digest, ingested_mono_ns
+sessions columns: session_id, parent_session, adapter, adapter_version, shell_pid, started_wall, started_mono_ns, ended_wall, ended_mono_ns, cwd, host
+events=5000 sessions=2
+  v1 0001_init checksum=546433d699109e0d
+integrity_check=ok

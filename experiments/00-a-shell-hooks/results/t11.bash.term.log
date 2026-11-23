@@ -1,7 +1,7 @@
 
-[?2004h⟦LI-P⟧ 
-[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
-[?2004l[?2004h⟦LI-P⟧ echo t11-before
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ 
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t11-before
 [?2004lt11-before
-[?2004h⟦LI-P⟧ sleep 30
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ sleep 30
 [?2004l

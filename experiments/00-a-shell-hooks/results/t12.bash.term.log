@@ -1,11 +1,11 @@
 
-[?2004h⟦LI-P⟧ 
-[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
-[?2004l[?2004h⟦LI-P⟧ seq 1 20000 | wc -l
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ 
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ seq 1 20000 | wc -l
 [?2004l20000
-[?2004h⟦LI-P⟧ seq 1 3000 > /dev/null; echo t12-redirect-ok
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ seq 1 3000 > /dev/null; echo t12-redirect-ok
 [?2004lt12-redirect-ok
-[?2004h⟦LI-P⟧ echo t12-after-big
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t12-after-big
 [?2004lt12-after-big
-[?2004h⟦LI-P⟧ exit
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ exit
 [?2004lexit

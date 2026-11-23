@@ -173,8 +173,12 @@ pub fn classify(ev: &Evidence) -> Verdict {
         return verdict(Rule::R0PidKeyCollision, Level::Unknown);
     }
 
-    // R1: shared session and nothing else.
-    if session_only && lineage == Lineage::None && file_side == FileSide::None {
+    // R1: there is no process identity at all, so the only thing left is the
+    // session. A *keyed* actor is never demoted by this rule: asserting
+    // `session_only` alongside a real key is a contradiction in the caller, and
+    // the key wins because it is the stronger fact.
+    let no_key = !matches!(actor, ActorIdentity::Keyed(_));
+    if no_key && session_only && lineage == Lineage::None && file_side == FileSide::None {
         return verdict(Rule::R1SessionOnly, Level::Unknown);
     }
     if matches!(actor, ActorIdentity::Absent) && lineage == Lineage::None {
@@ -203,11 +207,13 @@ pub fn classify(ev: &Evidence) -> Verdict {
     }
 
     // R5: Probable. Process-side chain plus a contained interval, but the
-    // filesystem never confirmed the artefact.
+    // filesystem never *tied* an artefact to this command. An untied path is
+    // explicitly not good enough: it is the 0-E case of "a file changed, nobody
+    // knows who did it".
     if matches!(actor, ActorIdentity::Keyed(_))
         && matches!(lineage, Lineage::SelfObserved | Lineage::ForkChain { .. })
         && time_within
-        && file_side == FileSide::None
+        && file_side != FileSide::PathTiedToCommand
     {
         return verdict(Rule::R5PidChainNoFileEvidence, Level::Probable);
     }

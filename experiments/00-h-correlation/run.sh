@@ -66,16 +66,17 @@ step "kernel anchor: (pid, starttime) tick granularity (REAL, not synthetic)"
   : > "$STARTTIMES"
   for p in $PIDS; do
     # split on the last ')' so a comm containing ')' cannot shift the fields
-    awk '{n=split($0,a,")"); split(a[2],f," "); print f[20]}' "/proc/$p/stat" 2>/dev/null >> "$STARTTIMES" || true
+    st=$(awk '{n=split($0,a,")"); split(a[2],f," "); print f[20]}' "/proc/$p/stat" 2>/dev/null || true)
+    if [ -n "$st" ]; then printf '%s %s\n' "$p" "$st" >> "$STARTTIMES"; fi
   done
   wait 2>/dev/null || true
-  echo "samples=$(wc -l < "$STARTTIMES") distinct_starttimes=$(sort -u "$STARTTIMES" | wc -l)"
+  echo "samples=$(wc -l < "$STARTTIMES") distinct_pids=$(awk '{print $1}' "$STARTTIMES" | sort -u | wc -l) distinct_starttimes=$(awk '{print $2}' "$STARTTIMES" | sort -u | wc -l)"
   echo
   echo "starttime histogram (count, tick index):"
-  sort -n "$STARTTIMES" | uniq -c | sort -rn | head -12
+  awk '{print $2}' "$STARTTIMES" | sort -n | uniq -c | sort -rn | head -12
   echo
-  echo "--- the same 40 processes: how many distinct pids? ---"
-  echo "distinct_pids=$(sort -u "$STARTTIMES" | wc -l) (pids themselves are distinct by definition here)"
+  echo "distinct (pid,starttime) pairs = $(wc -l < "$STARTTIMES") by construction, so no"
+  echo "alias occurred in this sample: the alias needs a *recycled* pid inside one tick."
   echo
   echo "Interpretation: distinct_starttimes << samples means 1/CLK_TCK s is far coarser"
   echo "than fork latency, so 'same starttime' is common. A (pid, starttime) ALIAS also"
@@ -153,7 +154,8 @@ step "SQLite: kill -9 a writer mid-transaction"
 KILLDB="$WORK/kill9.db"
 "$BIN_DB" migrate "$KILLDB" > "$RESULTS/$STAMP-kill9-migrate.log" 2>&1
 {
-  echo "starting writer, will SIGKILL after 1.5 s of steady commits"
+  echo "starting writer (one transaction per event, synchronous=NORMAL, WAL),"
+  echo "will SIGKILL after 1.5 s of steady commits"
   "$BIN_DB" writer "$KILLDB" 60 > "$WORK/writer.out" 2>&1 &
   WPID=$!
   sleep 1.5
@@ -162,25 +164,34 @@ KILLDB="$WORK/kill9.db"
   echo "writer killed with SIGKILL; its stdout was:"
   cat "$WORK/writer.out" || true
   echo
+  echo "--- WAL sidecar files present at the moment of the crash ---"
+  ls -l "$WORK" 2>/dev/null | grep -E 'kill9' || true
+  echo "(a -wal file here is the uncommitted tail that recovery must discard)"
+  echo
   echo "--- recovery: open, integrity_check, foreign_key_check ---"
   "$BIN_DB" integrity "$KILLDB"
   echo
-  echo "--- WAL files left behind ---"
-  ls -l "$WORK" | grep -c kill9 || true
+  echo "--- sidecar files after a clean open (WAL checkpointed and removed) ---"
+  ls -l "$WORK" 2>/dev/null | grep -E 'kill9' || true
   echo
   echo "--- second open after the crash must also succeed and commit ---"
-  "$BIN_DB" writer "$KILLDB" 1
+  "$BIN_DB" writer "$KILLDB" 1 5000 post
   "$BIN_DB" integrity "$KILLDB"
 } 2>&1 | tee "$RESULTS/$STAMP-kill9.log" | tail -20
 
 # ---------------------------------------------------------------------------
 step "SQLite: retention — trim then VACUUM on 100k rows"
+# Four runs: {by time, by size} x {without, with} the FK child indexes. The
+# comparison is the whole point: an unindexed ON DELETE SET NULL child turns
+# every deleted row into a table scan.
 for mode in time size; do
-  timeout 300 "$BIN_DB" retention "$WORK/ret-$mode.db" 100000 "$mode" \
-    > "$RESULTS/$STAMP-retention-$mode.log" 2>&1
-  say "retention($mode):"
-  grep -E "before rows|trim |vacuum|incremental_vacuum|integrity" \
-    "$RESULTS/$STAMP-retention-$mode.log" | tee -a "$LOG"
+  for idx in no yes; do
+    timeout 400 "$BIN_DB" retention "$WORK/ret-$mode-$idx.db" 100000 "$mode" "$idx" \
+      > "$RESULTS/$STAMP-retention-$mode-idx-$idx.log" 2>&1
+    say "retention(mode=$mode fk_indexes=$idx):"
+    grep -E "fk_child_indexes|before rows|trim |vacuum|incremental_vacuum|integrity" \
+      "$RESULTS/$STAMP-retention-$mode-idx-$idx.log" | tee -a "$LOG"
+  done
 done
 
 # ---------------------------------------------------------------------------

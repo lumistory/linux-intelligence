@@ -182,11 +182,11 @@ pub fn run() -> R<()> {
     println!("| rule | level | predicate (all conjuncts required) |");
     println!("|---|---|---|");
     println!("| R0 | Unknown | actor identity `Ambiguous` — (pid,starttime) collided |");
-    println!("| R1 | Unknown | no actor, or the only link is a shared session_id |");
+    println!("| R1 | Unknown | no process identity, and the only link is a shared session_id |");
     println!("| R2 | Unknown | a file event exists and lies outside the actor's interval |");
     println!("| R3 | Confirmed | keyed actor AND (self-observed OR fork edge) AND inside interval AND path tied to the command |");
     println!("| R4 | Strong | >= 2 independent source classes AND >= 1 kernel-observed |");
-    println!("| R5 | Probable | keyed actor AND (self-observed OR fork edge) AND inside interval AND no tied file evidence |");
+    println!("| R5 | Probable | keyed actor AND (self-observed OR fork edge) AND inside interval AND NO file evidence tied to the command |");
     println!("| R6 | Weak | inside the interval and nothing more |");
     println!("| R7 | Unknown | residual |");
     println!();

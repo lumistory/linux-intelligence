@@ -1,0 +1,23 @@
+
+=== environment ===
+stamp=20261123T141230Z
+host=Linux 7.2.8-zen1-2-zen x86_64
+rustc=rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+sqlite3=3.53.4 2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e0945alt1 (64-bit)
+nproc=20
+kernel_clk_tck=100
+ulimit_nofile=1024
+
+=== build (offline, release) ===
+
+warning: `corr0h` (bin "hdb") generated 3 warnings (run `cargo fix --bin "hdb" -p corr0h` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 0.01s
+test result: ok. 44 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== unit + logic experiments ===
+wrote results/20261123T141230Z-dedup.log (116 lines)
+wrote results/20261123T141230Z-reorder.log (52 lines)
+wrote results/20261123T141230Z-pidreuse.log (54 lines)

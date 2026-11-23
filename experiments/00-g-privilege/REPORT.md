@@ -1,8 +1,8 @@
 # Experiment 0-G — Privilege model and simulated privileged helper
 
-Run stamp: `20261123T141059Z` (all paths below are relative to
+Run stamp: `20261123T141351Z` (all paths below are relative to
 `experiments/00-g-privilege/results/`). Driver: `run.sh`, exit status 0,
-28/28 checks passed.
+29/29 checks passed.
 
 ## 1. Objective
 
@@ -70,44 +70,45 @@ execs in T6.
 
 ## 4. Raw results
 
-All files from the single run `20261123T141059Z`. Superseded intermediate runs
+All files from the single run `20261123T141351Z`. Superseded intermediate runs
 are in `results/superseded-drafts/` and are **not** cited below.
 
 | claim | file |
 |---|---|
-| TOCTOU, reuse, same-tick | `T1-peercred-20261123T141059Z.log` |
-| namespace root reach | `T2-userns-root-20261123T141059Z.log` |
-| rejection matrix | `T3-helper-rejections-20261123T141059Z.log` |
-| uid authorisation, two gates | `T3b-unauthorized-uid-20261123T141059Z.log` |
-| audit concurrency | `T4-audit-concurrency-20261123T141059Z.log` |
-| capability inventory | `T5-capability-inventory-20261123T141059Z.log` |
-| no-exec proof | `T6-no-exec-20261123T141059Z.log` |
-| half-frame liveness | `T7-half-frame-20261123T141059Z.log` |
+| TOCTOU, reuse, same-tick | `T1-peercred-20261123T141351Z.log` |
+| namespace root reach | `T2-userns-root-20261123T141351Z.log` |
+| rejection matrix | `T3-helper-rejections-20261123T141351Z.log` |
+| uid authorisation, two gates | `T3b-unauthorized-uid-20261123T141351Z.log` |
+| audit concurrency | `T4-audit-concurrency-20261123T141351Z.log` |
+| capability inventory | `T5-capability-inventory-20261123T141351Z.log` |
+| no-exec proof | `T6-no-exec-20261123T141351Z.log` |
+| half-frame liveness | `T7-half-frame-20261123T141351Z.log` |
 | environment, build hygiene | `00-environment-*`, `01-build-*` |
-| machine-readable roll-up | `SUMMARY-20261123T141059Z.md` |
+| machine-readable roll-up | `SUMMARY-20261123T141351Z.md` |
 
 ### 4.1 T1 — SO_PEERCRED is frozen; the pid is not an identity
 
 ```
-{"case":"toctou_snapshot","client_fork_pid":272312,"client_zombie_state":"Z","clk_tck":100,
- "cred_after_delay":{"gid":1000,"pid":272312,"uid":1000},
- "cred_at_accept":{"gid":1000,"pid":272312,"uid":1000},
- "cred_is_frozen":true,"delay_ms":1000,"elapsed_between_probes_ns":1000115430,
+{"case":"toctou_snapshot","client_fork_pid":282726,"client_zombie_state":"Z","clk_tck":100,
+ "cred_after_delay":{"gid":1000,"pid":282726,"uid":1000},
+ "cred_at_accept":{"gid":1000,"pid":282726,"uid":1000},
+ "cred_is_frozen":true,"delay_ms":1000,"elapsed_between_probes_ns":1000245131,
  "pid_dir_exists_after_delay":true,"pid_liveness_after_delay":"alive_same_process",
- "starttime_at_accept":1248441,"starttime_now":1248441}
-{"case":"toctou_after_reap","client_pid":272312,"reaped_by_server":true,
- "liveness_after_reap":"gone","pid_dir_exists_after_reap":false,
- "note":"the socket is still open; SO_PEERCRED still reports this pid"}
+ "starttime_at_accept":1265594,"starttime_now":1265594}
+{"case":"toctou_after_reap","client_pid":282726,"liveness_after_reap":"gone",
+ "note":"the socket is still open; SO_PEERCRED still reports this pid",
+ "pid_dir_exists_after_reap":false,"reaped_by_server":true}
 ```
 
 Impostor case, inside a private pid namespace:
 
 ```
-{"case":"toctou_impostor","detail":{"attempted":true,"ok":true,
- "impostor_pid":2,"impostor_starttime":1248646,"pid_equals_dead_client":true,
- "starttime_differs_from_client":true,
+{"case":"toctou_impostor","detail":{"attempted":true,
  "cred_on_same_socket_still_says_pid":2,"cred_pid_now_names_the_impostor":true,
- "naive_pid_only_identity_confusion":true}}
+ "impostor_pid":2,"impostor_starttime":1265799,
+ "naive_pid_only_identity_confusion":true,"ok":true,
+ "pid_equals_dead_client":true,"starttime_differs_from_client":true,
+ "starttime_source":"field 22 of /proc/<pid>/stat"}}
 ```
 
 Same-tick collision:
@@ -128,8 +129,13 @@ read_etc_shadow:   DENIED Permission denied (os error 13)
 read_root_dir:     DENIED Permission denied (os error 13)
 write_etc:         WRITE_DENIED
 kill_pid1:         DENIED Operation not permitted (os error 1)
-mount_tmpfs:       MOUNT_OK (entries_visible 1, write_inside true)   # only with -m
-setuid: {0: ok, 5: EPERM (unmapped), 1: EPERM, 65534: EPERM}
+setuid: {0: ok, 1: EPERM, 5: EPERM, 65534: EPERM}   # uid 5 not yet mapped
+
+# same probe with a mount namespace (-Urm):
+mount_tmpfs: {"result":"MOUNT_OK","write_inside":true,"entries_visible":1}
+
+# same probe, -Ur only (no mount namespace), so nowhere to mount:
+mount_tmpfs: MOUNT_DENIED Operation not permitted (os error 1)
 ```
 
 With a second subuid range mapped in, `setuid(5)` becomes `ok` and the unmapped
@@ -240,22 +246,33 @@ rule.
 
 ### 4.8 T7 — half-frame liveness (a real defect, kept)
 
+Verbatim from `T7-half-frame-20261123T141351Z.log`:
+
 ```
-# 100 bytes, no newline, 1500 ms timeout:
-{"case":"raw_frame","requested_bytes":100,"trailing_newline":false,
- "response_received":false,"timed_out_waiting_for_response":true}
-# a second client on a new connection is served normally
-{"ok":true,"opcode":"Describe", ...}
-# with the terminating newline the same payload is answered at once
-{"ok":true,"opcode":"Describe", ...}   (frame_too_large/bad_frame path exercised)
+# 100 bytes, no newline, 1500 ms client timeout:
+{"case":"raw_frame","elapsed_ms":1508,"repeat":1,"requested_bytes":100,"response":"",
+ "response_received":false,"response_timeout_ms":1500,
+ "timed_out_waiting_for_response":true,"trailing_newline":false,"wrote_bytes":100}
+
+# the same payload WITH a terminating newline is answered immediately, and the
+# answer is a refusal because 100 bytes of 'A' is not JSON:
+{"case":"raw_frame","elapsed_ms":0,"repeat":1,"requested_bytes":100,
+ "response":"{\"ok\":false,\"opcode\":\"<frame>\",\"code\":\"bad_frame\",
+             \"message\":\"not a JSON request object\"}",
+ "response_received":true,"response_timeout_ms":1500,
+ "timed_out_waiting_for_response":false,"trailing_newline":true,"wrote_bytes":100}
 ```
+
+Between the two, a second client on a new connection was served normally
+(`{"ok":true,"opcode":"Describe",...}`), which is what proves the stall is
+per-connection and not a server-wide hang.
 
 ## 5. Analysis
 
 ### 5.1 H1 — CONFIRMED, and worse than "stale"
 
 `SO_PEERCRED` is a snapshot: `cred_at_accept == cred_after_delay` byte for byte,
-while the peer has already exited. Between the two probes 1 000 115 430 ns
+while the peer has already exited. Between the two probes 1 000 245 131 ns
 elapsed and the credential did not change.
 
 The "pid still exists after 1 s" reading is a trap: the process is a **zombie**
@@ -276,7 +293,7 @@ field fit for authorisation is `uid`, because the kernel enforced it at
 
 ### 5.2 H2 — FALSIFIED as stated, and the falsification is the useful part
 
-20/20 trials collided: two distinct processes, same pid, same `starttime`,
+20 of 20 trials collided: two distinct processes, same pid, same `starttime`,
 `CLK_TCK=100`. `(pid, starttime)` is therefore **not** a unique key.
 
 This does not make `starttime` useless. It means the honest claim is:
@@ -322,8 +339,8 @@ Note the mount: `mount_tmpfs` succeeded only under `unshare -Urm`. Under
 
 ### 5.4 H4 — CONFIRMED
 
-Every one of 33 hostile requests was refused with a specific code, and the
-`strace` proof shows **zero** post-startup `execve`. Two design decisions carry
+All 12 hostile requests in the T6 battery were refused (`ok:false` 12/12, zero
+`ok:true`), and the `strace` proof shows **zero** post-startup `execve`. Two design decisions carry
 most of the weight:
 
 1. **Two independent path layers.** A lexical whitelist (`[A-Za-z0-9._/-]`, no
@@ -479,7 +496,7 @@ to keep the defect visible until it is fixed.
 **PASS-WITH-LIMITS**
 
 Every hypothesis was settled by measurement: H1 confirmed, H2 falsified (and the
-falsification is the more valuable result), H3–H6 confirmed. All 28 driver checks
+falsification is the more valuable result), H3–H6 confirmed. All 29 driver checks
 pass. Five real defects were found in the prototype by its own tests; four are
 fixed, and the fifth (half-frame stall) is documented with a fix direction and a
 dedicated regression test.

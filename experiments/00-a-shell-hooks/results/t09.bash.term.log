@@ -1,9 +1,9 @@
 
-[?2004h⟦LI-P⟧ 
-[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
-[?2004l[?2004h⟦LI-P⟧ ( echo t09-subshell )
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ 
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ ( echo t09-subshell )
 [?2004lt09-subshell
-[?2004h⟦LI-P⟧ echo t09-cmdsub-$(echo substituted)
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t09-cmdsub-$(echo substituted)
 [?2004lt09-cmdsub-substituted
-[?2004h⟦LI-P⟧ exit
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ exit
 [?2004lexit

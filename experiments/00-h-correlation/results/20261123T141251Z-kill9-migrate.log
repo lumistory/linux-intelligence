@@ -1,0 +1,32 @@
+journal_mode=wal synchronous=1 busy_timeout_ms=5000 foreign_keys=on
+schema_version: 0 -> 2, applied=[1, 2]
+integrity_check=ok
+foreign_key_violations=0
+tables:
+  adapter_registry
+  approvals
+  checkpoints
+  event_operations
+  event_relations
+  events
+  evidence
+  operations
+  processes
+  recovery_plans
+  schema_version
+  sessions
+indexes:
+  idx_approvals_plan
+  idx_event_operations_op
+  idx_events_dedup
+  idx_events_fingerprint
+  idx_events_process
+  idx_events_session_seq
+  idx_events_time
+  idx_events_type_time
+  idx_evidence_relation
+  idx_operations_session
+  idx_processes_key
+  idx_processes_session
+  idx_relations_from
+  idx_relations_to

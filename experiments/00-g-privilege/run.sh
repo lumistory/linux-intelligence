@@ -28,10 +28,22 @@ bad() { printf 'FAIL  %s\n' "$*"; FAIL=$((FAIL + 1)); }
 note() { printf 'NOTE  %s\n' "$*"; }
 
 sweep() {
-  # Only our own scratch tree. No recursive delete of anything else, ever.
-  [ -d "$SCRATCH" ] || return 0
-  find "$SCRATCH" -mindepth 1 -type f -delete 2>/dev/null || true
-  find "$SCRATCH" -mindepth 1 -depth -type d -empty -delete 2>/dev/null || true
+  # Only our own scratch tree, matched by the exact mktemp path. `-delete`
+  # implies `-depth`, so files go before their parents and sockets/symlinks are
+  # removed too (the earlier version only deleted regular files, so a run with
+  # a leftover .sock never cleaned up).
+  [ -n "${SCRATCH:-}" ] || return 0
+  case "$SCRATCH" in
+    /tmp/li-phase0-0g-??????) ;;
+    *) return 0 ;;
+  esac
+  if [ -d "$SCRATCH" ]; then
+    find "$SCRATCH" -mindepth 1 -delete 2>/dev/null || true
+    rmdir "$SCRATCH" 2>/dev/null || true
+  fi
+  # T2(d) uses a fixed mountpoint because it must be visible to the namespace
+  # it creates; it is empty by then (the tmpfs died with the namespace).
+  rmdir /tmp/li-phase0-0g-nsmnt 2>/dev/null || true
 }
 
 detect_env() {
@@ -115,6 +127,14 @@ stop_helper() {
   fi
   if [ -n "${HELPER_PID:-}" ]; then
     kill "$HELPER_PID" 2>/dev/null || true
+    local n=0
+    while kill -0 "$HELPER_PID" 2>/dev/null && [ "$n" -lt 20 ]; do
+      sleep 0.05
+      n=$((n + 1))
+    done
+    if kill -0 "$HELPER_PID" 2>/dev/null; then
+      kill -9 "$HELPER_PID" 2>/dev/null || true
+    fi
     wait "$HELPER_PID" 2>/dev/null || true
     HELPER_PID=""
   fi
@@ -902,6 +922,10 @@ t6_no_exec() {
 t7_half_frame() {
   local out="$RAW/T7-half-frame-$STAMP.log"
   local root="$SCRATCH/t7root" sock="$SCRATCH/t7.sock"
+  # The whole point of T7 is to leave a connection stalled mid-frame, so this
+  # test intentionally ends with the helper blocked in read(). stop_helper()
+  # sends SIGTERM, which interrupts that read; the outer sweep then removes the
+  # socket. Verified: no helper survives the run.
   mkdir -p "$root"
   start_helper "$sock" "$root" "$SCRATCH/t7-audit.jsonl" --allow-uid "$(id -u)" || return
   {

@@ -1,0 +1,16 @@
+# T7 — a frame that is neither newline-terminated nor larger than the
+# 64 KiB cap leaves the helper waiting for the rest of the frame, while
+# the client waits for a reply. Neither is wrong in isolation; together
+# they hold a connection open indefinitely. This is a real liveness
+# limitation, recorded in REPORT §6, not a hypothetical.
+
+# 1) send 100 bytes with no newline, then give up after 1500 ms:
+{"case":"raw_frame","elapsed_ms":1523,"repeat":1,"requested_bytes":100,"response":"","response_received":false,"response_timeout_ms":1500,"timed_out_waiting_for_response":true,"trailing_newline":false,"wrote_bytes":100}
+
+# 2) a second client is served normally, so this is a per-connection
+#    stall and not a server-wide hang:
+{"ok":true,"opcode":"Describe","data":{"no_new_privs":true,"ops":["Describe","StatPath","ReadSmall","ListDir"],"root":"/tmp/li-phase0-0g-zoDEkO/t7root","uid":1000}}
+
+# 3) with a terminating newline the frame is complete and the helper
+#    answers at once, confirming the cause is the missing terminator:
+{"case":"raw_frame","elapsed_ms":0,"repeat":1,"requested_bytes":100,"response":"{\"ok\":false,\"opcode\":\"<frame>\",\"code\":\"bad_frame\",\"message\":\"not a JSON request object\"}","response_received":true,"response_timeout_ms":1500,"timed_out_waiting_for_response":false,"trailing_newline":true,"wrote_bytes":100}

@@ -1,0 +1,15 @@
+# tty-blocks-with-pipe-fd3
+Q: does `tty` block the shell when an inherited FD is a pipe?
+
+FD 3 is a live pipe, as it is for every adapter that talks to a daemon.
+fd 3 is set up in the order the fixed harness uses (read end moved aside
+first), so this probe measures `tty`, not the harness.
+
+tty (no -s)    blocked=False  terminal=b'dev/null); echo TTYRC=$?\r\nTTYRC=0\r\nbash-5.3$ '
+tty -s         blocked=False  terminal=b'tty -s; echo TTYRC=$?\r\nTTYRC=0\r\nbash-5.3$ '
+
+CONCLUSION: NO. `tty` does not block here, with a pipe on FD 3. An earlier
+version of this experiment blamed a hang on `tty`; that diagnosis was wrong --
+the hang was harness bug F13 (dup2 clobbering the pipe's read end).
+`tty -s` is still what the adapters use, because a status query cannot open a
+path, but the blocking claim is retracted.

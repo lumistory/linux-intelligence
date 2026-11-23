@@ -1,0 +1,105 @@
+
+=== environment ===
+stamp=20261123T141251Z
+host=Linux 7.2.8-zen1-2-zen x86_64
+rustc=rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+sqlite3=3.53.4 2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e0945alt1 (64-bit)
+nproc=20
+kernel_clk_tck=100
+ulimit_nofile=1024
+
+=== build (offline, release) ===
+
+warning: `corr0h` (bin "hdb") generated 3 warnings (run `cargo fix --bin "hdb" -p corr0h` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 0.01s
+test result: ok. 44 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== unit + logic experiments ===
+wrote results/20261123T141251Z-dedup.log (116 lines)
+wrote results/20261123T141251Z-reorder.log (52 lines)
+wrote results/20261123T141251Z-pidreuse.log (54 lines)
+wrote results/20261123T141251Z-confidence.log (91 lines)
+wrote results/20261123T141251Z-causality.log (54 lines)
+wrote results/20261123T141251Z-context.log (32 lines)
+wrote results/20261123T141251Z-redact.log (60 lines)
+wrote results/20261123T141251Z-all.log (459 lines)
+
+=== kernel anchor: (pid, starttime) tick granularity (REAL, not synthetic) ===
+
+=== SQLite: v1 -> v2 migration with data, then verify ===
+v1 created: 31 lines
+v1 column set: events columns: event_id, schema_version, source, session_id, process_row_id, sequence, ts_mono_ns, ts_wall, type, type_class, payload, evidence_status, dedup_group, duplicate_of, redaction_digest, ingested_mono_ns
+  idx_processes_session
+  idx_relations_from
+  idx_relations_to
+
+--- verify after upgrade ---
+schema_version=2
+events columns: event_id, schema_version, source, session_id, process_row_id, sequence, ts_mono_ns, ts_wall, type, type_class, payload, evidence_status, dedup_group, duplicate_of, redaction_digest, ingested_mono_ns, command_text, redaction_rules
+sessions columns: session_id, parent_session, adapter, adapter_version, shell_pid, started_wall, started_mono_ns, ended_wall, ended_mono_ns, cwd, host, capability_json
+events=5000 sessions=2
+  v1 0001_init checksum=546433d699109e0d
+  v2 0002_add_event_redaction checksum=c03348a47a47c7a6
+integrity_check=ok
+
+=== SQLite: 100k-row insert + three query shapes ===
+inserted=100000 wall_ms=518 per_row_us=5.18 rows_per_s=192962
+db_file_bytes=32161792 page_count=7852
+operations=200 event_operations=10000
+event_relations=5000
+q1_events_by_session n=200 p50_us=72.529 p95_us=84.685 p99_us=97.848 max_us=214.510 rows_returned_total=40000
+q2_events_by_time_range n=200 p50_us=143.381 p95_us=169.522 p99_us=240.880 max_us=263.121 rows_returned_total=200000
+q3_events_by_operation n=200 p50_us=32.526 p95_us=36.525 p99_us=40.230 max_us=110.215 rows_returned_total=10000
+q4_relations_by_path_NO_index n=200 p50_us=2753.870 p95_us=3504.117 p99_us=4032.340 max_us=4646.902 rows_returned_total=514
+create_expression_index elapsed_ms=33
+q4b_relations_by_path_expr_index n=200 p50_us=16.344 p95_us=21.315 p99_us=31.043 max_us=137.266 rows_returned_total=514
+db_file_bytes_after_index=36233216
+w1_single_row_upsert n=200 p50_us=8.426 p95_us=9.726 p99_us=15.664 max_us=87.317 rows_returned_total=0
+
+=== SQLite: 1 writer + 4 readers under WAL ===
+journal_mode=wal wal_autocheckpoint=1000
+
+### busy_timeout_ms=5000
+writer w attempted=154062 errors=0
+r0 ok=41891 busy=0 other_errors=0 p50_us=126.3 p99_us=605.1 max_us=1600.3
+r1 ok=41359 busy=0 other_errors=0 p50_us=124.5 p99_us=622.9 max_us=1870.6
+r2 ok=41664 busy=0 other_errors=0 p50_us=129.3 p99_us=607.5 max_us=1223.9
+r3 ok=39483 busy=0 other_errors=0 p50_us=132.6 p99_us=640.4 max_us=2148.2
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### busy_timeout_ms=0
+writer w attempted=253708 errors=0
+r0 ok=121827 busy=0 other_errors=0 p50_us=16.2 p99_us=811.4 max_us=1919.4
+r1 ok=121419 busy=0 other_errors=0 p50_us=15.9 p99_us=807.8 max_us=2913.4
+r2 ok=120230 busy=0 other_errors=0 p50_us=15.7 p99_us=818.2 max_us=2286.4
+r3 ok=121927 busy=0 other_errors=0 p50_us=15.3 p99_us=817.0 max_us=2841.7
+summary: readers_with_errors=0 total_busy_retries_across_readers=0
+
+### two concurrent writers (the case busy_timeout actually covers)
+busy_timeout_ms=5000
+  writer A: writer wa attempted=205557 errors=0
+  writer B: writer wb attempted=173232 errors=0
+busy_timeout_ms=0
+  writer A: writer wa attempted=455708 errors=0
+  writer B: 
+  writer B stderr: FAILED: sqlite: database is locked
+
+=== SQLite: kill -9 a writer mid-transaction ===
+
+=== SQLite: retention — trim then VACUUM on 100k rows ===
+retention(mode=time fk_indexes=no):
+before rows=100000 file_bytes=32161792
+trim removed=10000 elapsed_ms=94227 rows_now=90000 file_bytes=32161792
+vacuum elapsed_ms=98 file_bytes=27811840 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+retention(mode=time fk_indexes=yes):
+fk_child_indexes_created elapsed_ms=0
+before rows=100000 file_bytes=33169408
+trim removed=10000 elapsed_ms=208 rows_now=90000 file_bytes=33169408
+vacuum elapsed_ms=134 file_bytes=28618752 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok

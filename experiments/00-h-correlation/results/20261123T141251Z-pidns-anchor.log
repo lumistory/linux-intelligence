@@ -1,0 +1,21 @@
+CLK_TCK=100
+Field 22 of /proc/<pid>/stat is starttime in clock ticks, so its resolution
+is 1/CLK_TCK s. This measures how many concurrently-forked processes share a
+starttime, which is the precondition for a (pid, starttime) alias.
+
+--- 40 processes forked in one tight loop (each must outlive the read) ---
+samples=40 distinct_starttimes=2
+
+starttime histogram (count, tick index):
+     37 1259619
+      3 1259618
+
+--- the same 40 processes: how many distinct pids? ---
+distinct_pids=2 (pids themselves are distinct by definition here)
+
+Interpretation: distinct_starttimes << samples means 1/CLK_TCK s is far coarser
+than fork latency, so 'same starttime' is common. A (pid, starttime) ALIAS also
+needs the pid to be recycled inside that same tick; forcing that needs
+kernel.pid_max wrapping, i.e. privilege this experiment does not have. The alias
+itself is therefore tested SYNTHETICALLY in the pidreuse step; its precondition
+is measured here.

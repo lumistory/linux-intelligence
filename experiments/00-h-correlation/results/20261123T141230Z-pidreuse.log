@@ -1,0 +1,54 @@
+
+## 3. Process identity: pid vs (pid,starttime) vs collision-aware
+(SYNTHETIC events; the kernel tick measurement is in results/*-pidns*)
+
+Setup: two *different* processes share pid 4242 and starttime 900, i.e. they
+started inside one 10 ms tick, the exact risk 0-E measured. A (`editor`)
+writes a.txt and exits; B (`make`) starts in the same tick and writes b.txt.
+starttime 900 -> tick window [9000000000, 9010000000) ns, width 10000000 ns
+registry.observe(A) -> New(incarnation 1)
+registry.observe(B) -> Collision(incarnations [1, 2])
+collisions recorded: 1
+  key 4242:900 tick 900 reason ExitedThenReappeared { exited_at_ns: 1763942400000500000, seen_at_ns: 1763942400003000000 } incarnations [1, 2]
+key poisoned (attribution must degrade): true
+
+### 3.1 Attribution policy comparison
+
+| policy | writer of a.txt | writer of b.txt | outcome |
+|---|---|---|---|
+| pid only | pid 4242 | pid 4242 | WRONG: both writes attributed to one actor |
+| (pid,starttime), blind | 4242:900 | 4242:900 | WRONG: same alias, still merged |
+| (pid,starttime) + collision detection | ambiguous | ambiguous | Unknown, no claim |
+
+### 3.2 What the user is told, per policy
+
+| question | pid only | collision-aware | ground truth |
+|---|---|---|---|
+| files changed by pid 4242 | a.txt, b.txt | Unknown | a.txt by A, b.txt by B |
+| did `make b` modify anything? | a.txt (invented) | Unknown | b.txt |
+| did `editor a.txt` modify anything? | a.txt, b.txt (invented) | Unknown | a.txt |
+
+Two of three answers are wrong under pid-only, and they are wrong in the
+dangerous direction: they assert an actor that cannot have done it.
+
+### 3.3 The classifier refuses rather than guesses
+
+classify(perfect evidence, collided key) = Unknown / R0 (pid,starttime) collision
+=> R0 is evaluated first: neither more evidence nor a better clock can outvote
+   a broken identity.
+classify(pid equality only)             = Weak / R6 time-window overlap only
+=> a hook that reports no starttime can never reach Probable: pid is not identity.
+
+### 3.4 Recovery path: how a collision stops being permanent
+
+A collision is only unavoidable when the two incarnations are indistinguishable.
+They are distinguishable when *either* differs:
+  - `comm` (16 bytes in /proc/<pid>/stat)  -> detected, sample above
+  - `cmdline` hash                          -> detected
+  - a `ProcessExit` observed between them   -> detected
+When none differ, the registry cannot separate them and `ambiguous=1` is
+persisted. The schema in migrations/0001_init.sql has that column, so the
+degradation survives a restart instead of being recomputed differently.
+keyed, pre-collision: keyed:4242:900
+keyed, post-collision: ambiguous:4242:900
+usable for merging: pre=true post=false

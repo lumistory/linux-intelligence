@@ -528,12 +528,26 @@ fn retention(args: &[String]) -> R<()> {
     let path = arg(args, 2, "/tmp/li-phase0-h/ret.db");
     let n: usize = arg(args, 3, "100000").parse()?;
     let mode = arg(args, 4, "time");
+    let add_index = arg(args, 5, "no") == "yes";
     if let Some(dir) = std::path::Path::new(path).parent() {
         std::fs::create_dir_all(dir)?;
     }
     let _ = std::fs::remove_file(path);
     let mut store = Store::open(path, DbConfig::default())?;
     store.migrate(MIGRATIONS, None)?;
+    if add_index {
+        // The index that makes DELETE linear instead of quadratic: `duplicate_of`
+        // is a self-referencing FK with ON DELETE SET NULL, so every deleted row
+        // costs a scan of `events` unless the child column is indexed.
+        let t = Instant::now();
+        store.conn.execute_batch(
+            "CREATE INDEX idx_events_duplicate_of ON events(duplicate_of);
+             CREATE INDEX idx_event_relations_from_fk ON event_relations(from_event);
+             CREATE INDEX idx_event_relations_to_fk ON event_relations(to_event);
+             CREATE INDEX idx_event_operations_event_fk ON event_operations(event_id);",
+        )?;
+        println!("fk_child_indexes_created elapsed_ms={}", t.elapsed().as_millis());
+    }
     populate(&store, n, 0x5EED)?;
     let before = store.file_size();
     println!("before rows={} file_bytes={before}", store.count("events")?);

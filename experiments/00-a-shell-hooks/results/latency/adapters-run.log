@@ -1,0 +1,10 @@
+bash/baseline  n=120  median=     160 p99=     374 us sessions=[254, 136, 160]
+bash/fd3dead   n=120  median=    2760 p99=    3606 us sessions=[2760, 2720, 2887]
+bash/fd3ok     n=120  median=    2808 p99=    4311 us sessions=[2808, 2679, 2884]
+zsh/baseline   n=120  median=     311 p99=     572 us sessions=[266, 311, 320]
+zsh/fd3dead    n=120  median=    3327 p99=    5457 us sessions=[4410, 3327, 2804]
+zsh/fd3ok      n=120  median=    3028 p99=    4100 us sessions=[3332, 3028, 2922]
+fish/baseline  n=120  median=    1848 p99=    2539 us sessions=[1848, 2094, 1574]
+fish/fd3dead   n=120  median=    3340 p99=    4448 us sessions=[3742, 3125, 3340]
+fish/fd3ok     n=120  median=    3408 p99=    4506 us sessions=[3408, 3454, 2732]
+wrote results/latency/adapters.json

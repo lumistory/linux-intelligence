@@ -1,25 +1,25 @@
 
-[?2004h⟦LI-P⟧ 
-[?2004l[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
-[?2004l[?2004h⟦LI-P⟧ echo t13-01
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ 
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ . <WORKSPACE>/experiments/00-a-shell-hooks/adapters/bash.sh
+[?2004l]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-01
 [?2004lt13-01
-[?2004h⟦LI-P⟧ echo t13-02
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-02
 [?2004lt13-02
-[?2004h⟦LI-P⟧ echo t13-03
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-03
 [?2004lt13-03
-[?2004h⟦LI-P⟧ echo t13-04
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-04
 [?2004lt13-04
-[?2004h⟦LI-P⟧ echo t13-05
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-05
 [?2004lt13-05
-[?2004h⟦LI-P⟧ echo t13-06
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-06
 [?2004lt13-06
-[?2004h⟦LI-P⟧ echo t13-07
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-07
 [?2004lt13-07
-[?2004h⟦LI-P⟧ echo t13-08
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-08
 [?2004lt13-08
-[?2004h⟦LI-P⟧ echo t13-09
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-09
 [?2004lt13-09
-[?2004h⟦LI-P⟧ echo t13-10
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ echo t13-10
 [?2004lt13-10
-[?2004h⟦LI-P⟧ exit
+]0;USER@HOST:~/linux-intelligence/experiments/00-a-shell-hooks[?2004h⟦LI-P⟧ exit
 [?2004lexit

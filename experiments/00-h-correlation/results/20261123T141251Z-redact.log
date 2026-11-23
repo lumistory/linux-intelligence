@@ -1,0 +1,60 @@
+
+## 7. Secret redaction before persistence
+
+Two rule generations on the same corpus. V1 = flag/env/auth-header shapes.
+V2 = V1 + URL userinfo + `key: value` heuristics.
+
+| generation | clean n | false positives | FP rate | secret n | missed | miss rate |
+|---|---|---|---|---|---|---|
+| V1 | 53 | 1 | 0.0189 | 22 | 4 | 0.1818 |
+| V2 | 53 | 1 | 0.0189 | 22 | 0 | 0.0000 |
+
+### 7.1 V2 false positives, with the rule that fired
+
+| command | rule |
+|---|---|
+| `export DATABASE_URL=postgres://localhost/app` | env-assign |
+
+### 7.2 V2 misses
+
+none on this corpus.
+
+### 7.3 The three required cases, verbatim
+
+- in : `mysql -u root -pS3cr3tPw -h db`
+  out: `mysql -u root -p[REDACTED] -h db`
+  rules ["flag-short-p-glued"], digest 48528006fc040d4c
+- in : `export API_KEY=abcdef123456`
+  out: `export API_KEY=[REDACTED]`
+  rules ["env-assign"], digest ae1c1b78f20f1195
+- in : `curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc" https://x`
+  out: `curl -H "Authorization: Bearer [REDACTED]" https://x`
+  rules ["auth-header"], digest 204571f0beab2094
+
+### 7.4 Per-rule coverage
+
+| rule | secrets caught by it |
+|---|---|
+| auth-header | 3 |
+| env-assign | 7 |
+| flag-short-p-glued | 2 |
+| flag-value-assign | 3 |
+| flag-value-separate | 3 |
+| key-colon-value | 2 |
+| url-userinfo | 2 |
+
+### 7.5 Residual risk: a secret as a bare positional argument
+
+`./deploy s3cr3tvalue` -> `./deploy s3cr3tvalue` (rules [])
+A positional value is indistinguishable from a filename or a hostname. Neither
+generation masks it. This is a shaping limit, not a tuning miss: see §6 of the
+report. The mitigation is to not capture such a command line, or to let the
+user mark an argument position as secret.
+
+### 7.6 Digest linkability
+
+same secret twice -> digest 48528006fc040d4c / 48528006fc040d4c equal=true
+The digest is 64-bit FNV-1a: linkable, not reversible, and NOT a key-derivation
+function. It answers "the same credential was used again", nothing more.
+
+Summary: V1 FP 1 / miss 4; V2 FP 1 / miss 0 (of 53 clean and 22 secret commands).

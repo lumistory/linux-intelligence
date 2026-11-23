@@ -1,0 +1,25 @@
+# environment for experiment 0-G
+date_utc=2026-11-23T14:13:33Z
+kernel=7.2.8-zen1-2-zen
+distro=Arch Linux
+rustc=rustc 1.99.0 (b940084d7 2026-09-28) (Arch Linux rust 1:1.99.0-1)
+cargo=cargo 1.99.0 (5f94df478 2026-08-27) (Arch Linux rust 1:1.99.0-1)
+id=uid=1000(USER) gid=1000(USER) 组=1000(USER),945(docker),948(greeter),961(libvirt),984(uucp),987(render),990(kvm),992(input),998(wheel)
+clk_tck=100
+uid_map_of_shell=         0          0 4294967295;
+subuid_entry=USER:100000:65536
+newuidmap=/usr/bin/newuidmap
+unshare=/usr/bin/unshare
+strace=/usr/bin/strace
+sqlite3=/usr/bin/sqlite3
+btrfs=/usr/bin/btrfs
+inotifywait=/usr/bin/inotifywait
+setpriv=/usr/bin/setpriv
+capsh=/usr/bin/capsh
+python3=/usr/bin/python3
+
+## read-only probes of the 'sensitive' targets used below
+  -rw------- 1 root root 1212 10月18日 10:43 /etc/shadow
+  drwx------ 1 root root 246 10月15日 13:51 /root
+
+## containment: writes happen only under <WORKSPACE>/experiments/00-g-privilege and /tmp/li-phase0-0g-*
