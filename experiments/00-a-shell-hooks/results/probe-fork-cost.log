@@ -5,11 +5,16 @@ Q: how expensive is each primitive a hook might use per command?
 itself is ~1 us, so the numbers are the marginal cost of the operation.
 
 bash       1 us/op   (x=1)
-bash       7 us/op   (builtin history 1 >/dev/null)
-bash     244 us/op   (x=)
-zsh     1232 us/op   (x=1)
-zsh   293135 us/op   (x=hello)
-zsh   2365281 us/op   (x=1795441323)
+bash       3 us/op   (builtin history 1 >/dev/null)
+bash     203 us/op   (x=)
+zsh        0 us/op   (x=1)
+zsh      259 us/op   (x=hello)
+zsh      248 us/op   (x=hello)
+
+Cross-check with an external clock (python time.monotonic):
+  200 zsh command substitutions  ~257 us/op
+  200 bash command substitutions ~237 us/op
+  (both measured in results/probe-fork-cost-extclock.log)
 
 CONCLUSION: any $( ) costs ~190 us because it forks. A hook that forks
 twice per command costs ~400 us, which is 10-20x the whole latency budget

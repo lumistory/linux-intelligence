@@ -17,7 +17,11 @@ for c in /lib/x86_64-linux-gnu/libc.so.6 /usr/lib/x86_64-linux-gnu/libc.so.6 \
          /usr/lib/libc.so.6 /usr/lib64/libc.so.6 /lib/libc.so.6; do
     if [ -r "$c" ]; then
         printf 'libc=%s -> ' "$c"
-        strings "$c" 2>/dev/null | grep -o '^GLIBC_2\.[0-9]*$' | sort -uV | tail -n 1
+        # `strings` is absent from Debian/Ubuntu minimal images; `grep -a`
+        # works on a binary and is present everywhere. Not byte-identical to
+        # `strings` (no minimum-length filter) but sufficient for version nodes.
+        grep -a -o 'GLIBC_2\.[0-9][0-9]*' "$c" 2>/dev/null |
+            sort -u | sort -t. -k2,2n | tail -n 1
     fi
 done
 

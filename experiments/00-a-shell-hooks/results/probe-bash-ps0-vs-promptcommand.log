@@ -3,33 +3,16 @@ Q: PS0 expands before the command; which status/command does it see?
 
 --- terminal ---
 === typed: echo one ===
-⟦LI-P⟧ PS0='[PS0 rc=$? cmd={$BASH_COMMAND}]\n'
-⟦LI-P⟧ PROMPT_COMMAND='printf "PC rc=%s hist=[%s]\n" "$?" "$(HISTTIMEFORMAT= history 1)" >&3'
-[PS0 rc=0 cmd={PS0='[PS0 rc=$? cmd={$BASH_COMMAND}]\n'}]
-⟦LI-P⟧ echo one
+echo one
 [PS0 rc=0 cmd={PROMPT_COMMAND='printf "PC rc=%s hist=[%s]\n" "$?" "$(HISTTIMEFORMAT= history 1)" >&3'}]
 one
 ⟦LI-P⟧
 === typed: false ===
-⟦LI-P⟧ PS0='[PS0 rc=$? cmd={$BASH_COMMAND}]\n'
-⟦LI-P⟧ PROMPT_COMMAND='printf "PC rc=%s hist=[%s]\n" "$?" "$(HISTTIMEFORMAT= history 1)" >&3'
-[PS0 rc=0 cmd={PS0='[PS0 rc=$? cmd={$BASH_COMMAND}]\n'}]
-⟦LI-P⟧ echo one
-[PS0 rc=0 cmd={PROMPT_COMMAND='printf "PC rc=%s hist=[%s]\n" "$?" "$(HISTTIMEFORMAT= history 1)" >&3'}]
-one
-⟦LI-P⟧ false
+false
 [PS0 rc=0 cmd={echo one}]
 ⟦LI-P⟧
 === typed: echo two ===
-⟦LI-P⟧ PS0='[PS0 rc=$? cmd={$BASH_COMMAND}]\n'
-⟦LI-P⟧ PROMPT_COMMAND='printf "PC rc=%s hist=[%s]\n" "$?" "$(HISTTIMEFORMAT= history 1)" >&3'
-[PS0 rc=0 cmd={PS0='[PS0 rc=$? cmd={$BASH_COMMAND}]\n'}]
-⟦LI-P⟧ echo one
-[PS0 rc=0 cmd={PROMPT_COMMAND='printf "PC rc=%s hist=[%s]\n" "$?" "$(HISTTIMEFORMAT= history 1)" >&3'}]
-one
-⟦LI-P⟧ false
-[PS0 rc=0 cmd={echo one}]
-⟦LI-P⟧ echo two
+echo two
 [PS0 rc=1 cmd={false}]
 two
 ⟦LI-P⟧

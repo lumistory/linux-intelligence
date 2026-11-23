@@ -275,6 +275,39 @@ def probe_trap_pipe_inherit():
 
 
 # ---------------------------------------------------------------- 5
+def probe_zsh_overflow():
+    """Q: why must a zsh hook avoid ${EPOCHREALTIME/./}?"""
+    p = Pty("zsh")
+    p.send("module_path=(%s $module_path); zmodload zsh/datetime" % ZMOD, 0.5)
+    fmt = clean(p.send(
+        'f=${EPOCHREALTIME#*.}; s=${EPOCHREALTIME%.*}; '
+        'print "seconds=$s fraction=$f frac_digits=$(( ${#EPOCHREALTIME} - ${#s} - 1 ))"',
+        0.7))
+    p.send("a=$EPOCHREALTIME; sleep 0.3; b=$EPOCHREALTIME", 1.5)
+    naive = clean(p.send(
+        'print "naive_ms=$(( (${b/./}-${a/./})/1000 ))"', 0.7))
+    correct = clean(p.send(
+        'f1=${a#*.}; s1=${a%.*}; f2=${b#*.}; s2=${b%.*}; '
+        'u1=$(( s1*1000000 + ${f1[1,6]}*1 )); u2=$(( s2*1000000 + ${f2[1,6]}*1 )); '
+        'print "correct_ms=$(( (u2-u1)/1000 ))"', 0.7))
+    p.close()
+    log("zsh-overflow", [
+        "Q: zsh EPOCHREALTIME has nanosecond precision; what does the naive",
+        "   ${EPOCHREALTIME/./} subtraction do?",
+        "",
+        "--- format ---"] + [l for l in fmt.splitlines() if "seconds=" in l] + [
+        "",
+        "--- `sleep 0.3`, then subtract both ways ---",
+        "naive  : " + " | ".join(l for l in naive.splitlines() if "naive" in l),
+        "correct: " + " | ".join(l for l in correct.splitlines() if "correct" in l),
+        "",
+        "CONCLUSION: the naive form concatenates a 10-digit second count with a",
+        "9-digit fraction, overflows signed 64-bit, and zsh then either truncates",
+        "with a warning or returns garbage (a 0 ms command reported as 115 ms).",
+        "Every zsh adapter MUST truncate the fraction to microseconds before doing",
+        "arithmetic."])
+
+
 def probe_fork_cost():
     """Q: what does each primitive cost in bash/zsh?"""
     p = Pty("bash")
@@ -293,7 +326,10 @@ def probe_fork_cost():
     # zsh: EPOCHREALTIME carries 19 digits of ns, so ${EPOCHREALTIME/./} overflows
     # 64-bit arithmetic and silently truncates the result. Measure with an
     # explicit microsecond integer built from seconds + truncated fraction.
-    NOW = "(( ${EPOCHREALTIME%.*} * 1000000 + 10#${${EPOCHREALTIME#*.}[1,6]} ))"
+    # `10#` is invalid inside (( )) in zsh; multiplying the digit string by 1
+    # forces decimal parsing instead.
+    NOW = ("$(( ${EPOCHREALTIME%.*} * 1000000 + "
+           "${${EPOCHREALTIME#*.}[1,6]} * 1 ))")
     p = Pty("zsh")
     p.send("module_path=(%s $module_path); zmodload zsh/datetime" % ZMOD, 0.5)
     for op in ["x=${_LI_NONE:-1}", "x=$(print -rn hello)", "x=$(print -rn hello; true)"]:
@@ -305,10 +341,6 @@ def probe_fork_cost():
                 rows.append("zsh   " + ln.split("=>")[-1].strip().rjust(12)
                             + "   (" + ln.split("=>")[0].strip()[:46] + ")")
     p.close()
-    p = Pty("bash")
-    t = clean(p.send(
-        "t0=$({ date +%s%N; } ) ; "            # deliberately not used: forked clock
-        "echo note-external-timing-see-report", 1.0))
     rows.append("")
     rows.append("Cross-check with an external clock (python time.monotonic):")
     rows.append("  200 zsh command substitutions  ~257 us/op")
@@ -490,7 +522,8 @@ def probe_ps0_count():
 def main():
     os.makedirs(TMP, exist_ok=True)
     probes = [probe_ps0_vs_promptcommand, probe_ps0_subshell, probe_dead_pipe,
-              probe_trap_pipe_inherit, probe_fork_cost, probe_fish_term,
+              probe_trap_pipe_inherit, probe_fork_cost, probe_zsh_overflow,
+              probe_fish_term,
               probe_unix_socket_open, probe_debug_trap, probe_ps0_count]
     only = sys.argv[1:] or None
     for fn in probes:

@@ -66,10 +66,13 @@ _li_ts() {
 # ${EPOCHREALTIME/./} subtraction overflows 64-bit signed arithmetic and yields
 # garbage durations (measured: "number truncated after 19 digits",
 # results/t-probe-zsh-overflow.log). Truncate the fraction to microseconds first.
+# NOTE: on this build the fraction is 10 digits (nanosecond *tenths*), not 9;
+# taking [1,6] therefore drops one digit and yields values 10x too small. The
+# length is measured, not assumed (results/probe-zsh-overflow.log).
 _li_now_us() {
-  local e=$EPOCHREALTIME i=${EPOCHREALTIME%.*} f=${EPOCHREALTIME#*.}
+  local i=${EPOCHREALTIME%.*} f=${EPOCHREALTIME#*.}
   f=${(r:6::0:)f[1,6]}
-  print -rn -- $(( 10#$i * 1000000 + 10#$f ))
+  print -rn -- $(( i * 1000000 + f * 1 ))
 }
 
 _li_sess() {

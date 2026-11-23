@@ -11,17 +11,11 @@ ldd --version 2>&1 | head -n 1
 
 echo "--- artefact properties as seen from inside"
 for f in hello_dyn hello_static hello_newer; do
-    printf '%-14s size=%-9s ' "$f" "$(stat -c %s "/probe-bin/$f" 2>/dev/null || echo '?')"
-    if head -c 4 "/probe-bin/$f" 2>/dev/null | od -An -c | grep -q 'E   L   F'; then
-        printf 'ELF '
-    fi
-    if strings "/probe-bin/$f" 2>/dev/null | grep -q 'GLIBC_'; then
-        printf 'needs: '
-        strings "/probe-bin/$f" 2>/dev/null | grep -o 'GLIBC_2\.[0-9]*' | sort -uV | tail -3 | tr '\n' ' '
-    else
-        printf 'no GLIBC symbols (static)'
-    fi
-    echo
+    # Only tools guaranteed to exist in a minimal image are used here:
+    # no `file`, no `strings` (absent on Debian/Ubuntu images).
+    size="$(wc -c <"/probe-bin/$f" 2>/dev/null || echo '?')"
+    magic="$(head -c 4 "/probe-bin/$f" 2>/dev/null | tr -d '\000-\037' || true)"
+    printf '%-14s size=%-9s magic=%s\n' "$f" "$size" "${magic:-binary}"
 done
 
 echo "--- run 1/3: Rust dynamic (Arch glibc 2.44 build)"

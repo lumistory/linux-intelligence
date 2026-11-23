@@ -23,14 +23,24 @@ echo "--- TEST A: is BASH_VERSION set under /bin/sh ?"
 echo "--- TEST B: local builtin under /bin/sh"
 /bin/sh -c 'f() { local x=1; echo "LOCAL_OK x=$x"; }; f' 2>&1 | head -n 2
 
-echo "--- TEST C: echo -e under /bin/sh (od -c shows whether TAB is a real tab)"
-/bin/sh -c 'echo -e "a\tb"' 2>&1 | od -c | head -n 3
+# TEST C/D/E: echo -e vs echo vs printf.
+# od -c is the arbiter: it shows a real TAB as \t and a literal two-char
+# backslash-t as \ \ t. Byte counts are recorded as a cross-check, because
+# dash echoes the "-e" itself while bash consumes it -- different byte counts.
+echo "--- TEST C: echo -e (od -c)"
+/bin/sh -c 'echo -e "a\tb"' 2>&1 | od -c | head -n 2
+echo "--- TEST C: echo -e (byte count, includes trailing newline)"
+/bin/sh -c 'echo -e "a\tb"' 2>&1 | wc -c
 
-echo "--- TEST D: echo with backslash, no -e"
-/bin/sh -c 'echo "a\tb"' 2>&1 | od -c | head -n 3
+echo "--- TEST D: echo, no -e (od -c)"
+/bin/sh -c 'echo "a\tb"' 2>&1 | od -c | head -n 2
+echo "--- TEST D: echo, no -e (byte count)"
+/bin/sh -c 'echo "a\tb"' 2>&1 | wc -c
 
-echo "--- TEST E: printf (the portable way)"
-/bin/sh -c 'printf "a\tb\n"' 2>&1 | od -c | head -n 3
+echo "--- TEST E: printf (the portable way; identical everywhere)"
+/bin/sh -c 'printf "a\tb\n"' 2>&1 | od -c | head -n 2
+echo "--- TEST E: printf (byte count)"
+/bin/sh -c 'printf "a\tb\n"' 2>&1 | wc -c
 
 echo "--- TEST F: [[ ]] acceptance"
 /bin/sh -c 'if [[ 1 -eq 1 ]]; then echo DOUBLE_BRACKET_OK; else echo DOUBLE_BRACKET_FAIL; fi' 2>&1 | head -n 3

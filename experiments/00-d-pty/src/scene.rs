@@ -145,6 +145,27 @@ pub fn write_zsh_shim(workdir: &std::path::Path, module_root: &str) -> Result<st
     Ok(dir)
 }
 
+/// Resolve the placeholders in `ShellSpec::env` (currently only zsh's
+/// `ZDOTDIR` / `LI_ZSH_MODULE_ROOT`) against a concrete work directory.
+///
+/// Public so the responder-off control uses *exactly* the same environment as
+/// the real matrix; a control that changes two variables at once proves nothing.
+pub fn resolve_env(spec: &ShellSpec, workdir: &std::path::Path) -> Result<Vec<(String, String)>> {
+    let mut env: Vec<(String, String)> = spec.env.clone();
+    if spec.id == "zsh" {
+        let root = zsh_module_root(&spec.path);
+        let dir = write_zsh_shim(workdir, &root)?;
+        for (k, v) in env.iter_mut() {
+            if k == "ZDOTDIR" {
+                *v = dir.to_string_lossy().into_owned();
+            } else if k == "LI_ZSH_MODULE_ROOT" {
+                *v = root.clone();
+            }
+        }
+    }
+    Ok(env)
+}
+
 pub struct StepReport {
     pub name: &'static str,
     pub matched: bool,
@@ -247,21 +268,7 @@ pub fn run_shell(spec: &ShellSpec, workdir: &std::path::Path) -> Result<ShellRun
         v.extend(spec.args.iter().cloned());
         v
     };
-    // zsh only: provide an isolated ZDOTDIR whose .zshenv fixes module_path.
-    // The empty placeholders in `spec.env` are resolved here, once, so the
-    // ShellSpec stays a pure description.
-    let mut env: Vec<(String, String)> = spec.env.clone();
-    if spec.id == "zsh" {
-        let root = zsh_module_root(&spec.path);
-        let dir = write_zsh_shim(workdir, &root)?;
-        for (k, v) in env.iter_mut() {
-            if k == "ZDOTDIR" {
-                *v = dir.to_string_lossy().into_owned();
-            } else if k == "LI_ZSH_MODULE_ROOT" {
-                *v = root.clone();
-            }
-        }
-    }
+    let env = resolve_env(spec, workdir)?;
     let mut s = Session::spawn(SpawnSpec {
         name: spec.id,
         argv: &argv,

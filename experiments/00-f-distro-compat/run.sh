@@ -445,31 +445,66 @@ echo
 echo "=== stage 7: /bin/sh difference evidence"
 
 {
-  echo "### Same commands, different /bin/sh. Raw output in results/11_shell_*.log"
+  echo "### Same commands, different /bin/sh.  Raw output: results/11_shell_*.log"
+  echo "### TEST C = echo -e 'a<TAB>b' ; TEST D = echo 'a<TAB>b' ; TEST E = printf"
+  echo "### C/D bytes: 4 = TAB expanded (3 chars + newline);"
+  echo "###            7 = the literal 2-char '\\t' plus a stray '-e' (5+2)"
+  echo "###            5 = literal backslash-t (4+1); debian-style 7 = '-e a\\tb'"
   echo
-  printf '%-12s %-9s %-15s %-16s %-13s %-11s\n' \
-    DISTRO bin_sh BASH_VERSION local echo_-e pipefail
+  printf '%-12s %-7s %-16s %-11s %-9s %-9s %-9s %-9s\n' \
+    DISTRO bin_sh BASH_VERSION local C_bytes D_bytes E_bytes pipefail
   for image in "${IMAGES[@]}"; do
     label="$(label_for "$image")"
     f="$RAW/11_shell_${label}.log"
     [ -f "$f" ] || continue
     sh="$(jget "$RAW/20_probe_${label}.json" '.shells.bin_sh_impl')"
-    bv="$(grep -m1 -oE 'BASH_VERSION_SET=[^ ]*|BASH_VERSION_EMPTY' "$f")"
-    lc="$(grep -m1 -oE 'LOCAL_OK|local: not found|local: [a-z]+' "$f")"
-    ee="$(sed -n '/TEST C/,/TEST D/p' "$f" |
-      grep -m1 -oE 'a \\t b|a\tb|a \\\\ t b' || echo '?')"
-    pf="$(grep -m1 -oE 'PIPEFAIL_SUPPORTED|PIPEFAIL_UNSUPPORTED' "$f")"
-    printf '%-12s %-9s %-15s %-16s %-13s %-11s\n' \
-      "$label" "$sh" "${bv:--}" "${lc:--}" "${ee:--}" \
-      "${pf#PIPEFAIL_}"
+
+    bv="$(grep -m1 -oE 'BASH_VERSION_SET=[^ ]*|BASH_VERSION_EMPTY' "$f" || true)"
+    case "$bv" in
+      BASH_VERSION_SET=*) bv="set(${bv#BASH_VERSION_SET=})" ;;
+      BASH_VERSION_EMPTY) bv="EMPTY" ;;
+      *) bv="?" ;;
+    esac
+
+    lc="$(grep -m1 -oE 'LOCAL_OK|local: not found|local: [A-Za-z]+' "$f" || true)"
+    [ -n "$lc" ] || lc="?"
+
+    cb="$(sed -n '/TEST C: echo -e (byte count/,+1p' "$f" | tail -1 | tr -d '[:space:]')"
+    db="$(sed -n '/TEST D: echo, no -e (byte count/,+1p' "$f" | tail -1 | tr -d '[:space:]')"
+    eb="$(sed -n '/TEST E: printf (byte count)/,+1p' "$f" | tail -1 | tr -d '[:space:]')"
+
+    pf="$(grep -m1 -oE 'PIPEFAIL_SUPPORTED|PIPEFAIL_UNSUPPORTED' "$f" || true)"
+    pf="${pf#PIPEFAIL_}"
+    [ -n "$pf" ] || pf="?"
+
+    printf '%-12s %-7s %-16s %-11s %-9s %-9s %-9s %-9s\n' \
+      "$label" "$sh" "$bv" "$lc" "${cb:--}" "${db:--}" "${eb:--}" "$pf"
   done
+
   echo
-  echo "### raw echo -e output, byte-exact (od -c), per distro:"
+  echo "### bashisms accepted by /bin/sh (should be REJECTED everywhere if POSIX)"
+  printf '%-12s %-18s %-16s %-16s\n' DISTRO '[[ ]]' 'source' 'set -o pipefail'
+  for image in "${IMAGES[@]}"; do
+    label="$(label_for "$image")"
+    f="$RAW/11_shell_${label}.log"
+    [ -f "$f" ] || continue
+    db2="$(grep -m1 -oE 'DOUBLE_BRACKET_OK|DOUBLE_BRACKET_FAIL' "$f" || true)"
+    sr="$(grep -c 'SOURCE_RAN' "$f" || true)"
+    echo "$db2" | grep -q OK && db2=ACCEPTED || db2=REJECTED
+    # SOURCE_RAN appears twice only if `source` itself worked
+    if [ "${sr:-0}" -ge 2 ]; then sr="ACCEPTED($sr)"; else sr="REJECTED(${sr:-0})"; fi
+    pf2="$(grep -m1 -oE 'PIPEFAIL_SUPPORTED|PIPEFAIL_UNSUPPORTED' "$f" || true)"
+    pf2="${pf2#PIPEFAIL_}"
+    printf '%-12s %-18s %-16s %-16s\n' "$label" "$db2" "$sr" "${pf2:-?}"
+  done
+
+  echo
+  echo "### raw od -c output for TEST C/D/E, per distro (the arbiter):"
   for image in "${IMAGES[@]}"; do
     label="$(label_for "$image")"
     echo "--- $label"
-    sed -n '/TEST C/,/TEST D/p' "$RAW/11_shell_${label}.log" |
-      grep -vE '^--- TEST|^$'
+    grep -E '^0000000|^--- TEST [CDE]:' "$RAW/11_shell_${label}.log" |
+      sed 's/^/    /'
   done
 } >"$RAW/33_shell_matrix.log" 2>&1
 echo "-> 33_shell_matrix.log"
