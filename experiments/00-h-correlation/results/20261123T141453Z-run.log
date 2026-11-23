@@ -91,3 +91,16 @@ busy_timeout_ms=0
 === SQLite: kill -9 a writer mid-transaction ===
 
 === SQLite: retention — trim then VACUUM on 100k rows ===
+retention(mode=time fk_indexes=no):
+before rows=100000 file_bytes=32161792
+trim removed=10000 elapsed_ms=101914 rows_now=90000 file_bytes=32161792
+vacuum elapsed_ms=65 file_bytes=27811840 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+retention(mode=time fk_indexes=yes):
+fk_child_indexes_created elapsed_ms=0
+before rows=100000 file_bytes=33169408
+trim removed=10000 elapsed_ms=77 rows_now=90000 file_bytes=33169408
+vacuum elapsed_ms=71 file_bytes=28618752 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok

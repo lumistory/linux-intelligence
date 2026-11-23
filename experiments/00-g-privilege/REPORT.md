@@ -59,7 +59,7 @@ No sudo password exists, so **no real privileged operation was performed**.
 | T3 | helper rejection matrix | 8 traversal/symlink attempts, 12 metacharacter paths, 8 opcode abuses, 4 oversize frames, 1 oversized argument, 3 controls. |
 | T3b | uid authorisation | the two gates measured separately: kernel socket mode, and the `SO_PEERCRED` allowlist. |
 | T4 | audit under concurrency | 100 clients × 20 requests, then assert count, sequence density, sequence-to-file order, JSON validity, mode. |
-| T5 | capability inventory | 20 commands, each run, each result recorded. |
+| T5 | capability inventory | 19 commands, each run, each result recorded. |
 | T6 | no arbitrary execution | `strace -f -e trace=execve,execveat` over a hostile battery, plus a source audit. |
 | T7 | liveness limitation | a half frame, measured on purpose. |
 
@@ -89,13 +89,13 @@ are in `results/superseded-drafts/` and are **not** cited below.
 ### 4.1 T1 — SO_PEERCRED is frozen; the pid is not an identity
 
 ```
-{"case":"toctou_snapshot","client_fork_pid":282726,"client_zombie_state":"Z","clk_tck":100,
- "cred_after_delay":{"gid":1000,"pid":282726,"uid":1000},
- "cred_at_accept":{"gid":1000,"pid":282726,"uid":1000},
- "cred_is_frozen":true,"delay_ms":1000,"elapsed_between_probes_ns":1000245131,
+{"case":"toctou_snapshot","client_fork_pid":292550,"client_zombie_state":"Z","clk_tck":100,
+ "cred_after_delay":{"gid":1000,"pid":292550,"uid":1000},
+ "cred_at_accept":{"gid":1000,"pid":292550,"uid":1000},
+ "cred_is_frozen":true,"delay_ms":1000,"elapsed_between_probes_ns":1000130860,
  "pid_dir_exists_after_delay":true,"pid_liveness_after_delay":"alive_same_process",
- "starttime_at_accept":1265594,"starttime_now":1265594}
-{"case":"toctou_after_reap","client_pid":282726,"liveness_after_reap":"gone",
+ "starttime_at_accept":1281599,"starttime_now":1281599}
+{"case":"toctou_after_reap","client_pid":292550,"liveness_after_reap":"gone",
  "note":"the socket is still open; SO_PEERCRED still reports this pid",
  "pid_dir_exists_after_reap":false,"reaped_by_server":true}
 ```
@@ -105,7 +105,7 @@ Impostor case, inside a private pid namespace:
 ```
 {"case":"toctou_impostor","detail":{"attempted":true,
  "cred_on_same_socket_still_says_pid":2,"cred_pid_now_names_the_impostor":true,
- "impostor_pid":2,"impostor_starttime":1265799,
+ "impostor_pid":2,"impostor_starttime":1281803,
  "naive_pid_only_identity_confusion":true,"ok":true,
  "pid_equals_dead_client":true,"starttime_differs_from_client":true,
  "starttime_source":"field 22 of /proc/<pid>/stat"}}
@@ -114,7 +114,7 @@ Impostor case, inside a private pid namespace:
 Same-tick collision:
 
 ```
-{"case":"same_tick_summary","clk_tck":100,"collisions":20,
+{"case":"same_tick_summary","clk_tck":100,"collisions":19,
  "forks_at_target_pid":20,"target_pid":4242,"trials":20,
  "verdict":"pid_starttime_is_not_a_unique_key_within_one_tick"}
 ```
@@ -277,7 +277,7 @@ per-connection and not a server-wide hang.
 ### 5.1 H1 — CONFIRMED, and worse than "stale"
 
 `SO_PEERCRED` is a snapshot: `cred_at_accept == cred_after_delay` byte for byte,
-while the peer has already exited. Between the two probes 1 000 245 131 ns
+while the peer has already exited. Between the two probes 1 000 130 860 ns
 elapsed and the credential did not change.
 
 The "pid still exists after 1 s" reading is a trap: the process is a **zombie**
@@ -298,8 +298,14 @@ field fit for authorisation is `uid`, because the kernel enforced it at
 
 ### 5.2 H2 — FALSIFIED as stated, and the falsification is the useful part
 
-20 of 20 trials collided: two distinct processes, same pid, same `starttime`,
+19 of 20 trials collided: two distinct processes, same pid, same `starttime`,
 `CLK_TCK=100`. `(pid, starttime)` is therefore **not** a unique key.
+
+The rate is a race, not a constant: across the four independent driver runs of
+this experiment the count was 20, 19, 20, 19 out of 20. That variation is itself
+evidence — the collision depends on whether both forks land in the same jiffy,
+which is exactly what a timing-dependent identity collision looks like. A test
+that reported only "20/20 every time" would be overstating the determinism.
 
 This does not make `starttime` useless. It means the honest claim is:
 

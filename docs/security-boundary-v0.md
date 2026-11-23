@@ -74,7 +74,7 @@ changed by a later `chmod`; the application gate is code that can be reviewed.
 
 Measured, `T1-peercred`:
 
-- `cred_is_frozen: true` — the credential returned after a 1 000 245 131 ns
+- `cred_is_frozen: true` — the credential returned after a 1 000 130 860 ns
   delay is byte-identical to the one read at `accept()`. It is a snapshot, not a
   lookup.
 - After the server reaps the client, `liveness_after_reap: "gone"`
@@ -95,12 +95,12 @@ contain so a human can later answer "which process was this".
 It is **not** an authorisation mechanism, and the measurement is unambiguous:
 
 ```
-clk_tck=100, trials=20, forks_at_target_pid=20, collisions=20
+clk_tck=100, trials=20, forks_at_target_pid=20, collisions=19
 verdict: pid_starttime_is_not_a_unique_key_within_one_tick
 ```
 
-In 20 of 20 forced-reuse trials, two distinct processes inside one 10 ms tick
-shared both `pid` and `starttime`. In
+In 19 of 20 forced-reuse trials, two distinct processes inside one 10 ms tick
+shared both `pid` and `starttime` (across four driver runs: 20, 19, 20, 19). In
 normal operation the pair does separate reuse (the impostor test shows
 `starttime_differs_from_client: true` for reuse 150 ms later), so the pair is
 *good evidence* and *bad proof*.

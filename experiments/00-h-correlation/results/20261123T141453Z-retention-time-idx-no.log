@@ -1,2 +1,7 @@
 inserted=100000 wall_ms=761 per_row_us=7.62 rows_per_s=131265
 before rows=100000 file_bytes=32161792
+trim_by_time batch=5000 removed=10000
+trim removed=10000 elapsed_ms=101914 rows_now=90000 file_bytes=32161792
+vacuum elapsed_ms=65 file_bytes=27811840 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok

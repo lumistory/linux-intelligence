@@ -103,3 +103,44 @@ trim removed=10000 elapsed_ms=208 rows_now=90000 file_bytes=33169408
 vacuum elapsed_ms=134 file_bytes=28618752 rows=90000
 incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
 integrity_check=ok
+retention(mode=size fk_indexes=no):
+before rows=100000 file_bytes=32161792
+trim removed=10000 elapsed_ms=107406 rows_now=90000 file_bytes=32161792
+vacuum elapsed_ms=72 file_bytes=27811840 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+retention(mode=size fk_indexes=yes):
+fk_child_indexes_created elapsed_ms=0
+before rows=100000 file_bytes=33169408
+trim removed=10000 elapsed_ms=87 rows_now=90000 file_bytes=33169408
+vacuum elapsed_ms=82 file_bytes=28618752 rows=90000
+incremental_vacuum auto_vacuum_mode=0 elapsed_ms=0
+integrity_check=ok
+
+=== summary ===
+results directory: results
+20261123T141251Z-all.log
+20261123T141251Z-bench-100k.log
+20261123T141251Z-causality.log
+20261123T141251Z-confidence.log
+20261123T141251Z-context.log
+20261123T141251Z-dedup.log
+20261123T141251Z-kill9.log
+20261123T141251Z-kill9-migrate.log
+20261123T141251Z-mig-after.log
+20261123T141251Z-mig-populate-v1.log
+20261123T141251Z-mig-v1.log
+20261123T141251Z-mig-v1-verify.log
+20261123T141251Z-mig-v2.log
+20261123T141251Z-pidns-anchor.log
+20261123T141251Z-pidreuse.log
+20261123T141251Z-redact.log
+20261123T141251Z-reorder.log
+20261123T141251Z-retention-size-idx-no.log
+20261123T141251Z-retention-size-idx-yes.log
+20261123T141251Z-retention-time-idx-no.log
+20261123T141251Z-retention-time-idx-yes.log
+20261123T141251Z-run.log
+20261123T141251Z-wal-concurrency.log
+
+OK: all steps completed

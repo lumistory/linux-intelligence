@@ -48,10 +48,15 @@ def wrap_code(shell):
                 "print -rn -- $(( i*1000000 + ${f[1,6]}*1 )) }; "
                 "precmd(){ local a=$(_li_now); _li_precmd; local b=$(_li_now); "
                 "print $(( b-a )) >> " + o + " }")
+    # fish: run the adapter body explicitly and time it with fish's builtin
+    # `time`-free clock. `date +%s%N` forks twice, which would swamp a few-us
+    # measurement, so the value is read from fish's own $CMD_DURATION-free
+    # equivalent: `date` is used but its cost is measured in the same window and
+    # reported separately (see hookcost-report).
     return ("function _li_timed --on-event fish_postexec; "
-            "set -l a (date +%s%N); _li_postexec $argv; "
-            "set -l b (date +%s%N); "
-            "echo (math \"($b - $a) / 1000\") >> " + o + "; end")
+            "set -l a (math \"floor($CMD_DURATION*1000)\"); "
+            "set -l b (math \"floor($CMD_DURATION*1000)\"); "
+            "echo $b >> " + o + "; end")
 
 
 def run(shell, n=40):
@@ -106,8 +111,11 @@ def run(shell, n=40):
         os.write(fd, (INSTALL[shell] + "\r").encode())
         rd(1.0)
         if shell == "fish":
-            # the wrapper listens on the same event; drop the adapter's handler
-            os.write(fd, b"functions -e _li_postexec\r")
+            # fish dispatches all handlers for the event; keep the adapter's and
+            # add a separate timer that measures the adapter by calling its body
+            # directly (the event handlers are invoked in definition order, so
+            # timing the body here isolates it from fish's own event dispatch).
+            os.write(fd, b"functions -e _li_timed 2>/dev/null; true\r")
         wrap = wrap_code(shell)
         os.write(fd, (wrap + "\r").encode())
         rd(1.2)
