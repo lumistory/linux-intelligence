@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="LumiStory" width="160">
-
 # linux-intelligence
 
 **Linux 系统观察、操作审计与恢复基础设施。**
