@@ -5,10 +5,20 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
-# spec §1: li-hook must build with `panic = "abort"`. A profile can only be
-# declared at the workspace root, so this is deferred to the batch that gives
-# this crate its first line of code (it also needs the dependency-light rules:
-# no Tokio, and a hand-rolled encoder may replace serde derive).
+# spec §1 asks for `panic = "abort"` on this crate alone. P1-10 is `[阻塞]`
+# because Cargo cannot express it: `[profile.<name>.package.<pkg>]` rejects
+# `panic` (measured — `cargo build` on a scratch workspace fails with
+# "`panic` may not be specified in a `package` profile"), and the Cargo book's
+# Profiles chapter states overrides "cannot specify the `panic`, `lto`, or
+# `rpath` settings". The only working expression is a global
+# `[profile.release] panic = "abort"`, which changes every crate in the
+# workspace — out of scope for this batch and a user decision.
+# See `adapters/README.md` §P1-10.
+
+[dependencies]
+li-proto = { path = "../li-proto" }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [lints]
 workspace = true
