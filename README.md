@@ -53,12 +53,15 @@
 
 ## 现在到哪一步
 
-Phase 1（核心基础设施）进行中。已完成 `li-proto`（事件信封、消息帧、版本门、JSON 编解码，63 条测试）。
+Phase 1（核心基础设施）进行中。已完成 `li-proto`（事件信封、消息帧、版本门、JSON 编解码，63 条测试）
+和 `li-journal`（schema、前向迁移、单写线程、脱敏，44 条测试）。
+
+逐任务的状态、每个阶段的验收标准与「明确不做的事」在 [`docs/PLAN.md`](docs/PLAN.md)。
 
 ```
 crates/
   li-proto/     # ✅ 事件信封、消息类型、版本协商。零 I/O
-  li-journal/   # ⬜ SQLite schema、迁移、追加式写入
+  li-journal/   # ✅ SQLite schema、迁移、追加式写入、脱敏（保留策略未做）
   li-hook/      # ⬜ shell 适配器用的极小程序，不依赖 tokio
   li-daemon/    # ⬜ tokio 守护进程：socket、摄取、观察者
   li-cli/       # ⬜ 用户命令 li run / li query / li checkpoint
@@ -76,9 +79,10 @@ crates/
 
 | 文件 | 内容 |
 |---|---|
+| [`docs/PLAN.md`](docs/PLAN.md) | **总计划**：六层架构、Phase 0–6 状态、12 条硬约束、明确不做的事、判断点 |
 | [`docs/reports/PHASE0-REPORT.md`](docs/reports/PHASE0-REPORT.md) | Phase 0 完成报告 |
 | [`docs/adr/`](docs/adr/) | 六份架构决策记录 |
-| [`docs/spec/phase1-implementation-spec.md`](docs/spec/phase1-implementation-spec.md) | Phase 1 施工图，含 12 条从实测来的硬约束 |
+| [`docs/spec/phase1-implementation-spec.md`](docs/spec/phase1-implementation-spec.md) | Phase 1 施工图（accepted），含 12 条从实测来的硬约束 |
 | [`docs/ipc-protocol-v0.md`](docs/ipc-protocol-v0.md) | 线格式 |
 | [`docs/security-boundary-v0.md`](docs/security-boundary-v0.md) | 信任边界 |
 
