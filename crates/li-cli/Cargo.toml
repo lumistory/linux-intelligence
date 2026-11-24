@@ -1,0 +1,9 @@
+[package]
+name = "li-cli"
+description = "The user-facing `li` command."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,9 @@
+[package]
+name = "li-daemon"
+description = "User daemon: sockets, ingest, observers, scheduler."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true

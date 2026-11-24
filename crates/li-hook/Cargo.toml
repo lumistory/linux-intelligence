@@ -1,0 +1,14 @@
+[package]
+name = "li-hook"
+description = "Tiny, no-Tokio client binary invoked from shell adapters."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+# spec §1: li-hook must build with `panic = "abort"`. A profile can only be
+# declared at the workspace root, so this is deferred to the batch that gives
+# this crate its first line of code (it also needs the dependency-light rules:
+# no Tokio, and a hand-rolled encoder may replace serde derive).
+
+[lints]
+workspace = true

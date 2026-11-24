@@ -1,0 +1,9 @@
+[package]
+name = "li-journal"
+description = "SQLite schema, migrations and the append-only event writer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
