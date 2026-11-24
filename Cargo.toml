@@ -25,6 +25,7 @@ rust-version = "1.88"
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+rusqlite = { version = "0.32", features = ["bundled"] }
 
 [workspace.lints.rust]
 # Phase 1 needs no unsafe anywhere (ADR 0001, spec §1). If that ever changes it
