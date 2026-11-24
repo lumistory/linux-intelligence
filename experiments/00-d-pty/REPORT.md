@@ -427,3 +427,6 @@ Conditions before Phase 1 depends on it:
 7. **Measure the responder against vim/less/top**, and against a program known
    to block indefinitely, before declaring the query set complete. Only fish was
    characterised here (6.1).
+
+> **路径替换说明**：本次公开前对 `results/` 与脚本里的绝对路径做了字符串替换，换成两个占位符 `<WORKSPACE>` 与 `<HOME>`。
+> 规则、未改动的量、以及原始形态见 [`../SCRUB-NOTICE.md`](../SCRUB-NOTICE.md)。

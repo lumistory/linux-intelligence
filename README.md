@@ -93,6 +93,10 @@ cargo fmt --check
 
 `experiments/` 下是 Phase 0 的八个独立 Cargo 包，各自能单独构建（workspace 里用 `exclude` 挡住了）。
 
+实验日志里保留了运行时原样观测到的字节，包括采集机器的绝对路径。公开前这些路径被替换成
+`<WORKSPACE>` / `<HOME>`，所有被测量的量（时间戳、PID、时序、退出码、计数）一字未动。
+规则与原始形态见 [`experiments/SCRUB-NOTICE.md`](experiments/SCRUB-NOTICE.md)。
+
 ---
 
 <sub>独立项目。Lumi 是它的第一个预期使用者，但不是它的前提。</sub>

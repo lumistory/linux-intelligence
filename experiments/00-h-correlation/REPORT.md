@@ -663,3 +663,6 @@ made it.
    capability record honest that the alias is modelled.
 4. Decide `synchronous=FULL` vs `NORMAL` on measurement, not on this report: the
    `kill -9` result here is `NORMAL` only.
+
+> **路径替换说明**：本次公开前对 `results/` 与脚本里的绝对路径做了字符串替换，换成两个占位符 `<WORKSPACE>` 与 `<HOME>`。
+> 规则、未改动的量、以及原始形态见 [`../SCRUB-NOTICE.md`](../SCRUB-NOTICE.md)。

@@ -271,3 +271,6 @@ Rejected approaches and why: **bash DEBUG trap** — fires per simple command (2
 **PS0 as the event source** — lags one command and cannot carry state out of its
 subshell. **Self-dialling from the hook** — impossible without an extra
 executable, which costs ~600-900 µs per command.
+
+> **路径替换说明**：本次公开前对 `results/` 与脚本里的绝对路径做了字符串替换，换成两个占位符 `<WORKSPACE>` 与 `<HOME>`。
+> 规则、未改动的量、以及原始形态见 [`../SCRUB-NOTICE.md`](../SCRUB-NOTICE.md)。

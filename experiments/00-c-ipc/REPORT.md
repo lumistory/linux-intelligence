@@ -393,3 +393,6 @@ and `sequence` must advance on drop.
    protocol versions on one socket.
 10. **Not blocking, but open:** `SOCK_SEQPACKET` comparison, `nofile` scaling
     beyond 50 clients, hour-scale soak, journal I/O error handling.
+
+> **路径替换说明**：本次公开前对 `results/` 与脚本里的绝对路径做了字符串替换，换成两个占位符 `<WORKSPACE>` 与 `<HOME>`。
+> 规则、未改动的量、以及原始形态见 [`../SCRUB-NOTICE.md`](../SCRUB-NOTICE.md)。

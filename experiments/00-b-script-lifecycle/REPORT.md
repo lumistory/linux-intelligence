@@ -364,3 +364,6 @@ Conditions before Phase 1 relies on it:
    design mistake available here.
 7. **Test the tty `^C` path** (0-D does) and **daemonizing scripts** before
    claiming descendant completeness.
+
+> **路径替换说明**：本次公开前对 `results/` 与脚本里的绝对路径做了字符串替换，换成两个占位符 `<WORKSPACE>` 与 `<HOME>`。
+> 规则、未改动的量、以及原始形态见 [`../SCRUB-NOTICE.md`](../SCRUB-NOTICE.md)。

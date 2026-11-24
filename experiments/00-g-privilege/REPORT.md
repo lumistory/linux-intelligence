@@ -579,3 +579,6 @@ These are non-negotiable and each is backed by a measurement above.
 A sixth, conditional on constraint 1 being relaxed for any reason: never map
 `SO_PEERCRED.pid` to `/proc/<pid>` for a permission decision. The impostor test
 exists specifically to make that failure mode impossible to forget (§4.1).
+
+> **路径替换说明**：本次公开前对 `results/` 与脚本里的绝对路径做了字符串替换，换成两个占位符 `<WORKSPACE>` 与 `<HOME>`。
+> 规则、未改动的量、以及原始形态见 [`../SCRUB-NOTICE.md`](../SCRUB-NOTICE.md)。

@@ -499,3 +499,6 @@ shell-level rather than container-level:
   container images carry genuine Debian/Ubuntu dash and Fedora/Arch bash.
 - The glibc ABI failure mode and its exact error message.
 - The validity of `/proc/1/comm` as the init test.
+
+> **路径替换说明**：本次公开前对 `results/` 与脚本里的绝对路径做了字符串替换，换成两个占位符 `<WORKSPACE>` 与 `<HOME>`。
+> 规则、未改动的量、以及原始形态见 [`../SCRUB-NOTICE.md`](../SCRUB-NOTICE.md)。
