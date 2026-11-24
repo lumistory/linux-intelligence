@@ -5,5 +5,10 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+[dependencies]
+li-proto = { path = "../li-proto" }
+serde_json = { workspace = true }
+rusqlite = { version = "0.32", features = ["bundled"] }
+
 [lints]
 workspace = true
