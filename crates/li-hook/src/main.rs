@@ -24,7 +24,14 @@ fn run(opts: Options) {
     let mut sink = match &opts.endpoint {
         Endpoint::None => Sink::dead(),
         Endpoint::Inherited => {
-            let mut s = Sink::inherited();
+            let mut s = match Sink::inherited() {
+                Ok(s) => s,
+                Err(e) => {
+                    return note(&format!(
+                        "li-hook: inherited sink unavailable ({e}); staying silent"
+                    ));
+                }
+            };
             if let Err(e) = s.probe(u64::from(std::process::id())) {
                 return note(&format!("li-hook: sink probe failed ({e}); staying silent"));
             }
@@ -80,7 +87,9 @@ impl Options {
     fn from_env_and_args() -> Result<Self, String> {
         let exported = Exported {
             adapter: std::env::var("LI_ADAPTER").ok(),
-            socket: std::env::var("LI_SOCKET").ok(),
+            // A socket path is never an implicit sink: only an explicit
+            // diagnostic/test `--sink=socket` may make li-hook dial one.
+            socket: None,
             session: std::env::var(li_hook::SESSION_ENV).ok(),
         };
         Self::parse(std::env::args().skip(1), exported)
@@ -130,11 +139,8 @@ impl Options {
                 Some(p) => Endpoint::Socket(p),
                 None => return Err("--sink=socket needs --socket or LI_SOCKET".into()),
             },
-            // Prefer an explicit socket; otherwise use the inherited launcher fd.
-            _ => match socket {
-                Some(p) => Endpoint::Socket(p),
-                None => Endpoint::Inherited,
-            },
+            // Production default is launcher inheritance, not client-side open.
+            _ => Endpoint::Inherited,
         };
         let session = session.ok_or_else(|| format!("no session: set {}", li_hook::SESSION_ENV))?;
         Ok(Options {

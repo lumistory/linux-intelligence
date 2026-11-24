@@ -97,7 +97,7 @@ Status: **authoritative plan, 2026-11-24**. 分支 `master`，基线提交 `619f
 | 阶段 | 目标 | 当前状态 | 关键交付物 | 门禁（什么算通过） |
 |---|---|---|---|---|
 | **Phase 0** | 用实测确定「哪些能观察、代价多少、哪里一定会丢」 | **完成**：8/8 实验通过各自的门禁。按各实验 REPORT §7 原文：0-D 是 **PASS**，其余七个（0-A/0-B/0-C/0-E/0-F/0-G/0-H）都是 **PASS-WITH-LIMITS**。限制逐条写在 §5 | `experiments/00-a..00-h`（8 套 README + run.sh + src + results + REPORT）、6 份 ADR、`ipc-protocol-v0.md`、`security-boundary-v0.md`、Phase 1 施工图 | 每个实验 `run.sh` 退出 0 且 REPORT 八节齐全；被证伪的假设**保留在记录里**（0-E H2/H6、0-A H-A6 都不改写） |
-| **Phase 1** | 核心基础设施：事件从 shell 进得来、存得住、查得出来，且丢的时候知道自己丢了 | **进行中**：`li-proto` + `li-journal` 已实现（63 + 44 = 107 条测试通过）；`li-hook` / `li-daemon` / `li-cli` 只有空 `main()`，实现未开始 | 5 个 crate 可用 + `li run`/`query`/`checkpoint` | spec §6 七条，全部是测量而非声称（详见 §4.1.4） |
+| **Phase 1** | 核心基础设施：事件从 shell 进得来、存得住、查得出来，且丢的时候知道自己丢了 | **进行中**：`li-proto` + `li-journal` 已实现（63 + 44 = 107 条测试通过）；`li-hook` 与批次 C（P1-16 至 P1-19）已完成，`li-daemon` / `li-cli` 及后续任务仍在进行 | 5 个 crate 可用 + `li run`/`query`/`checkpoint` | spec §6 七条，全部是测量而非声称（详见 §4.1.4） |
 | **Phase 2** | 系统观察者：进程与文件自动被观察，能力边界写进能力记录 | **未开始** | procfs poller、inotify watcher、能力记录发布、eBPF 必要性判定 | 200 ms 轮询下 CPU ≤ 5 % 单核、RSS ≤ 10 MB（本计划设的门槛；0-E A4 实测 3.93 % / 2 744 kB）；`IN_Q_OVERFLOW` 触发重扫；10 000 事件 10 分钟零无法解释缺口 |
 | **Phase 3** | 深度采集：PTY 会话、脚本、条件性特权 helper | **未开始** | PTY 监督者 + terminal-query responder、`li-hook` 产品化、helper（**仅在门禁满足时**） | fish 会话启动 ≤ 200 ms（本计划设的门槛：0-D 实测有 responder 时 49 ms、无 responder 时 10 064 ms）；4 并发会话零串扰；helper 启动后 `execve` 次数 = 0 |
 | **Phase 4** | 关联与上下文：把事实变成带等级的关系 | **未开始** | 两级去重、late-arrival reorderer、R0–R7 分级器、多对多操作归属 | 24/24 场景在产品代码复现、单调性 0 违例、文件归因 ≤ `Probable`、输出 "caused" 出现 0 次 |
@@ -152,14 +152,14 @@ Phase 1 结束时，一个新的 bash/zsh/fish 交互 shell 可以把「每一�
 | P1-14 | `li-daemon`：epoch / boot-id 对账（`ts_mono_ns` 跨启动不可比） | `[待做]` | B1 §9.3 要求 journal 把 boot id 与它配对 |
 | P1-15 | 把 `check_inbound_frame_len` 接进真实 reader | `[待做]` | B1 §6：「一个没有调用者的上限不是上限」 |
 
-**批次 C — 适配器与脚本（待做）**
+**批次 C — 适配器与脚本（已完成）**
 
 | # | 任务 | 状态 | 验收 / 验证方式 |
 |---|---|---|---|
-| P1-16 | `shell/bash/`：`PROMPT_COMMAND` + `builtin history 1`，PS0 只做 start tick | `[待做]` | 0-A 13 用例矩阵逐条过；hook body 不得引入 `$( )`（C9） |
-| P1-17 | `shell/zsh/`：`preexec`/`precmd`，含 `module_path` 修复与 10 位小数截断到 6 位 | `[待做]` | 0-A：不截断会 64 位溢出（"number truncated"） |
-| P1-18 | `shell/fish/`：`fish_preexec`/`fish_postexec` | `[待做]` | 0-A §8 门禁：sink 写必须带守卫；fish 的 dead-sink 行为在 `capabilities/fish.json` 里就是 `"hook_can_kill_shell_if_sink_dies": "unknown:fish_is_not_killed_by_SIGPIPE_in_this_setup_untested"`，产品能力记录必须原样保留这条 `unknown`，不许因为「bash 那边已经解决了」就假设 fish 也解决 |
-| P1-19 | 能力记录随 `SessionStarted` 发布，未测项一律 `unknown` | `[待做]` | 0-A `capabilities/*.json` 逐字段搬，`partial:` 原样保留 |
+| P1-16 | `shell/bash/`：`PROMPT_COMMAND` + `builtin history 1`，PS0 只做 start tick | `[已完成]` | `docs/reports/PHASE1-BATCH3-REPORT.md`；`python3 shell/test_matrix.py`：13 用例 × 3 shell = 39/39；hook body 不得引入 `$( )`（C9） |
+| P1-17 | `shell/zsh/`：`preexec`/`precmd`，含 `module_path` 修复与 10 位小数截断到 6 位 | `[已完成]` | `docs/reports/PHASE1-BATCH3-REPORT.md`；`python3 shell/test_matrix.py`：13 用例 × 3 shell = 39/39；`zsh -n` 通过且小数截断避免 64 位溢出 |
+| P1-18 | `shell/fish/`：`fish_preexec`/`fish_postexec` | `[已完成]` | `docs/reports/PHASE1-BATCH3-REPORT.md`；`python3 shell/test_matrix.py`：13 用例 × 3 shell = 39/39；sink 写有守卫，fish dead-sink 能力按要求保留 `unknown` |
+| P1-19 | 能力记录随 `SessionStarted` 发布，未测项一律 `unknown` | `[已完成]` | `docs/reports/PHASE1-BATCH3-REPORT.md`；`python3 shell/test_matrix.py`：39/39，逐项核对 `capabilities/{bash,zsh,fish}.json`，`partial:` 原样保留 |
 | P1-20 | `li run -- cmd`：`setsid` + leader-record-at-spawn + `wait4`；能力记录写 `internal_script_commands: false` | `[待做]` | 0-B：4 000 次命令调用产出 **2** 个事件；不做 leader-record 则每个 <3 ms 脚本报 0 进程 |
 | P1-21 | 脚本观察的两层**不得合并成一个事件类型** | `[待做]` | C8 / 0-B §4.6–4.7 |
 

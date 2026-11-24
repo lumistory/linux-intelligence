@@ -19,6 +19,7 @@ rust-version.workspace = true
 li-proto = { path = "../li-proto" }
 serde = { workspace = true }
 serde_json = { workspace = true }
+rustix = { version = "^1", features = ["net"] }
 
 [lints]
 workspace = true

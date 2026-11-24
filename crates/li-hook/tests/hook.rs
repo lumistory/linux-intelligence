@@ -5,7 +5,7 @@
 // and only the sender's `dropped` covers it - which is why 0-C §8 point 7 asks
 
 use std::io::{BufRead, BufReader, Write};
-use std::os::unix::net::UnixListener;
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -240,6 +240,46 @@ fn a_clean_stream_is_dense_and_gap_free() {
     assert!(got.len() >= 32, "expected 32 frames, got {}", got.len());
     assert_eq!(sequences(&got), (0..32).collect::<Vec<u64>>());
     assert_eq!(counter(&report, "dropped"), 0);
+}
+
+#[test]
+fn default_sink_uses_the_launchers_inherited_socket() {
+    use std::os::fd::OwnedFd;
+
+    let d = FakeDaemon::start("inherited", None, false);
+    let client = UnixStream::connect(&d.path).unwrap();
+    let (code, report) = run_hook_with_stdout(
+        &["--adapter=bash", "--session=s"],
+        &(req(0) + "\n"),
+        Stdio::from(OwnedFd::from(client)),
+    );
+    assert_eq!(code, Some(0), "{report}");
+    assert_eq!(counter(&report, "delivered"), 1);
+    let got = d.collect(2); // probe Ping + one event
+    assert_eq!(sequences(&got), vec![0]);
+}
+
+fn run_hook_with_stdout(args: &[&str], stdin: &str, stdout: Stdio) -> (Option<i32>, String) {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_li-hook"))
+        .args(args)
+        .env("LI_HOOK_VERBOSE", "1")
+        .stdin(Stdio::piped())
+        .stdout(stdout)
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(stdin.as_bytes())
+        .unwrap();
+    drop(child.stdin.take());
+    let output = child.wait_with_output().unwrap();
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
 }
 
 #[test]

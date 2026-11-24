@@ -1,9 +1,9 @@
 //! Request framing, bounded transport, and loss accounting for shell adapters.
 
-use std::io::{BufRead, Write};
+use std::io::{BufRead, IsTerminal, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Receiver, Sender, channel};
+use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use li_proto::{
@@ -234,53 +234,10 @@ pub trait FrameSink {
     fn is_live(&self) -> bool;
 }
 
-/// One writer thread: the only place a blocking write may park, so a stalled
-/// daemon cannot stall the shell. Never joined - on timeout it *is* the thing stuck
-/// in `write(2)`, and cancelling it needs a syscall this crate may not make.
-struct DeadlineWriter {
-    frames: Sender<String>,
-    acks: Receiver<Result<(), SinkError>>,
-}
-
-impl DeadlineWriter {
-    fn spawn() -> Option<Self> {
-        let (frames, frame_rx) = channel::<String>();
-        let (ack_tx, acks) = channel::<Result<(), SinkError>>();
-        std::thread::Builder::new()
-            .name("li-writer".into())
-            .spawn(move || {
-                let mut out = std::io::stdout();
-                while let Ok(line) = frame_rx.recv() {
-                    let r = out
-                        .write_all(line.as_bytes())
-                        .and_then(|()| out.write_all(b"\n"))
-                        .and_then(|()| out.flush())
-                        .map_err(|e| SinkError::Write(e.to_string()));
-                    let failed = r.is_err();
-                    let _ = ack_tx.send(r);
-                    if failed {
-                        return;
-                    }
-                }
-            })
-            .ok()?;
-        Some(DeadlineWriter { frames, acks })
-    }
-
-    fn write(&mut self, line: &str) -> Result<(), SinkError> {
-        if self.frames.send(line.to_string()).is_err() {
-            return Err(SinkError::Dead);
-        }
-        match self.acks.recv_timeout(SEND_TIMEOUT) {
-            Ok(r) => r,
-            Err(_) => Err(SinkError::Timeout),
-        }
-    }
-}
-
 enum Inner {
-    /// Launcher-supplied connection on stdout (C10 / P1-08).
-    Inherited(Option<DeadlineWriter>),
+    /// Launcher-supplied socket on stdout (C10 / P1-08). The launcher, not the
+    /// shell or this process, owns the `connect(2)`.
+    Inherited(std::io::Stdout),
     /// Our own connection, bounded by a real `SO_SNDTIMEO`.
     Stream(UnixStream),
     Dead,
@@ -288,13 +245,13 @@ enum Inner {
 
 /// The outbound side. One per process, never re-created after a failure.
 ///
-/// Two shapes, because C1 and C10 pull apart. Self-dialling gives a real
-/// `SO_SNDTIMEO`, so only it meets C1 exactly. An inherited fd cannot be given a
-/// timeout without `FromRawFd` (i.e. `unsafe`, forbidden here), so it gets a
-/// one-shot probe plus the deadline writer; the remaining gap is in
-/// adapters/README.md §C10. Either way a failure is **permanent and silent**:
-/// retrying turns a stall into a shell-side stall (0-C T4: a blocking write to a
-/// `SIGSTOP`ed daemon had not returned after 2 s).
+/// Both shapes set a 5 ms kernel send timeout. The inherited path can do that
+/// despite `unsafe_code = "forbid"` because stdout is a `Stdout` handle whose
+/// `AsFd` is safe; `SO_SNDTIMEO` then applies to the socket the launcher put
+/// there. A self-dial remains only for diagnostics/tests (`--sink=socket`), never
+/// as the default. A failure is **permanent and silent**: retrying turns a stall
+/// into a shell-side stall (0-C T4: a blocking write to a `SIGSTOP`ed daemon had
+/// not returned after 2 s).
 pub struct Sink {
     inner: Inner,
     pub written: u64,
@@ -319,11 +276,27 @@ impl Sink {
         }
     }
 
-    pub fn inherited() -> Self {
-        Sink {
-            inner: Inner::Inherited(None),
-            written: 0,
+    /// Adopt the launcher's socket on stdout and bound every write to 5 ms.
+    ///
+    /// `ENOTSOCK` is deliberate: a terminal or an ordinary pipe is not a sink.
+    /// Without this check li-hook would write protocol frames to a user's tty.
+    pub fn inherited() -> Result<Self, SinkError> {
+        let out = std::io::stdout();
+        if out.is_terminal() {
+            return Err(SinkError::Write(
+                "inherited sink is a terminal, not a launcher socket".into(),
+            ));
         }
+        rustix::net::sockopt::set_socket_timeout(
+            &out,
+            rustix::net::sockopt::Timeout::Send,
+            Some(SEND_TIMEOUT),
+        )
+        .map_err(|e| SinkError::Write(format!("SO_SNDTIMEO on inherited sink: {e}")))?;
+        Ok(Sink {
+            inner: Inner::Inherited(out),
+            written: 0,
+        })
     }
 
     /// Dials `path` with a bounded connect, then `SO_SNDTIMEO = 5 ms`.
@@ -362,15 +335,11 @@ impl FrameSink for Sink {
                 .and_then(|()| s.write_all(b"\n"))
                 .and_then(|()| s.flush())
                 .map_err(|e| SinkError::Write(e.to_string())),
-            Inner::Inherited(slot) => {
-                if slot.is_none() {
-                    *slot = DeadlineWriter::spawn();
-                }
-                match slot.as_mut() {
-                    Some(w) => w.write(line),
-                    None => Err(SinkError::Write("no writer thread".into())),
-                }
-            }
+            Inner::Inherited(s) => s
+                .write_all(line.as_bytes())
+                .and_then(|()| s.write_all(b"\n"))
+                .and_then(|()| s.flush())
+                .map_err(|e| SinkError::Write(e.to_string())),
         };
         match result {
             Ok(()) => {
@@ -392,8 +361,8 @@ impl FrameSink for Sink {
 }
 
 /// `unix connect` normally completes without a handshake, but a listener with a
-/// full accept backlog blocks - the 0-C T4 class of hang. Same leaked-thread
-/// tradeoff as [`DeadlineWriter`].
+/// full accept backlog blocks - the 0-C T4 class of hang. The thread bounds that
+/// wait, and a timed-out connect is never retried.
 fn connect_with_deadline(path: &Path, timeout: Duration) -> Result<UnixStream, SinkError> {
     let (tx, rx) = channel();
     let owned: PathBuf = path.to_path_buf();
@@ -504,6 +473,20 @@ mod tests {
         // The receiver sees only sequence 0, so it computes 3 - 1 = 2.
         assert_eq!((r.receiver_gap(), r.dropped), (2, 2));
         assert_eq!(r.accepted, r.delivered + r.dropped);
+    }
+
+    #[test]
+    fn one_dropped_middle_event_produces_exactly_one_receiver_gap() {
+        let mut q = Queue::new(1);
+        assert!(q.accept("seq0".into()));
+        assert!(!q.accept("seq1".into()));
+        assert_eq!(q.next_sequence(), 2);
+        assert_eq!(q.pop().as_deref(), Some("seq0"));
+        assert!(q.accept("seq2".into()));
+        let received = [0u64, 2];
+        let receiver_gap = received.last().unwrap() + 1 - received.len() as u64;
+        assert_eq!(receiver_gap, 1);
+        assert_eq!(q.report().dropped, 1);
     }
 
     #[test]

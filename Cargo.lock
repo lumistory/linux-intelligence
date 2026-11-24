@@ -108,6 +108,7 @@ name = "li-hook"
 version = "0.1.0"
 dependencies = [
  "li-proto",
+ "rustix",
  "serde",
  "serde_json",
 ]
