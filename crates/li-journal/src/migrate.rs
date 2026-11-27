@@ -31,6 +31,11 @@ pub const MIGRATIONS: &[Migration] = &[
         name: "add_redaction_ledger",
         body: include_str!("../migrations/0002_add_redaction_ledger.sql"),
     },
+    Migration {
+        version: 3,
+        name: "add_new_path_index",
+        body: include_str!("../migrations/0003_add_new_path_index.sql"),
+    },
 ];
 
 #[derive(Debug, Clone, Copy)]

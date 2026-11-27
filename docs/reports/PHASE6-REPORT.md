@@ -11,6 +11,8 @@ Scope: User-authorized completion of `PLAN.md §8.1` gates (`D1` privileged help
 | Phase 5 `BtrfsProvider` & `LvmProvider` (`P5-04..05`, `D2`) | Completed (sandbox / probe) | `crates/li-daemon/src/recovery.rs`, `crates/li-daemon/tests/recovery.rs`: `/tmp` sandbox `BtrfsProvider` using `mkfs.btrfs -q -r` + `btrfs inspect-internal dump-super` + unprivileged `btrfs restore -o` without touching host subvolumes or `mount -o loop`; `LvmProvider` probes `/usr/bin/{lvs,lvcreate}` and degrades explicitly when absent |
 | Phase 6 POSIX Capability Probe & Systemd Unit (`P6-01..08`) | Completed (host Arch x86_64) | `packaging/probe.sh` (strict POSIX `sh`, `cat` on procfs, `/proc/1/comm == systemd`), `packaging/systemd/li-daemon.service`, `packaging/README.md` |
 | ADR & Spec Finalization (`D5`, `P6-09`) | Completed | `docs/adr/README.md`, `docs/adr/0001..0006.md`, `docs/ipc-protocol-v0.md`, `docs/security-boundary-v0.md` promoted from `proposed`/`draft` to `accepted` with implemented deviations documented inline; `docs/PLAN.md` and `README.md` updated |
+| `P1-28` (`v3` `$.new_path` Index) | Completed | `crates/li-journal/migrations/0003_add_new_path_index.sql`, `read.rs`, `tests/{migrate,schema}.rs`: `EXPLAIN QUERY PLAN` confirms multi-index `idx_events_payload_path` + `idx_events_payload_new_path` without `SCAN events` |
+| `P6-07` (1,000-Client Burst) | Completed | `crates/li-daemon/tests/daemon.rs::concurrent_1000_clients_under_semaphore_keeps_daemon_healthy` verifies 1,000 concurrent UDS connects cleanly bounded by `MAX_CONCURRENT_CLIENTS = 256` with healthy post-burst `Pong` |
 
 Not completed / explicitly `NOT TESTED` on this host:
 - `P6-05`: Cross-compilation or live testing on `ARM64`, `x86_64-unknown-linux-musl` / Alpine, or NixOS (`NOT TESTED`: system uses distro `rustc` without `rustup`/musl targets).
@@ -25,6 +27,8 @@ Not completed / explicitly `NOT TESTED` on this host:
 | `crates/li-daemon/src/{lib.rs,helper.rs,bin/li-helper.rs}` | `li-helper` hardened library module and binary entrypoint |
 | `crates/li-daemon/tests/helper.rs` | 6 integration/security boundary tests for `li-helper` |
 | `crates/li-daemon/src/recovery.rs`, `crates/li-daemon/tests/recovery.rs` | `BtrfsProvider` (sandbox image), `LvmProvider` (capability probe), `ProviderRegistry::with_defaults`, failure-audit verification |
+| `crates/li-journal/migrations/0003_add_new_path_index.sql`, `src/{migrate,read}.rs`, `tests/{migrate,schema}.rs` | `v3` `$.new_path` JSON expression index (`P1-28`) and rename path query routing |
+| `crates/li-daemon/tests/daemon.rs` | 1,000-concurrent-client UDS stress test (`P6-07`) |
 | `packaging/{probe.sh,README.md,systemd/li-daemon.service}` | POSIX capability probe, user systemd unit, static-vs-dynamic notes |
 | `docs/adr/{README.md,0001..0006.md}`, `docs/{ipc-protocol-v0.md,security-boundary-v0.md,PLAN.md}`, `README.md` | Truthful ADR/spec acceptance (`D5`) and project status synchronization |
 | `docs/reports/PHASE6-REPORT.md` | This completion report |
@@ -35,13 +39,13 @@ All verification commands ran offline after the final code and doc edits:
 
 1. `cargo fmt --check` — passed (0 diffs).
 2. `cargo clippy --offline --workspace --all-targets -- -D warnings` — passed (0 warnings, 0 errors).
-3. `cargo test --offline --workspace --all-targets` — **155 passed, 0 failed, 0 ignored**:
+3. `cargo test --offline --workspace --all-targets` — **157 passed, 0 failed, 0 ignored**:
    - `li-cli`: 3 unit + 1 integration (`cli_daemon`) = **4 passed**
-   - `li-daemon`: `correlation` 4 + `daemon` 6 + `e2e` 2 + `helper` 6 + `observers` 4 + `pty` 3 + `recovery` 3 = **28 passed**
+   - `li-daemon`: `correlation` 4 + `daemon` 7 + `e2e` 2 + `helper` 6 + `observers` 4 + `pty` 3 + `recovery` 3 = **29 passed**
    - `li-hook`: 5 unit + 9 integration (`hook`) = **14 passed**
-   - `li-journal`: 12 unit + 7 `concurrency` + 1 `crash` + 7 `migrate` + 5 `redaction` + 13 `schema` = **45 passed**
+   - `li-journal`: 12 unit + `concurrency` 7 + `crash` 1 + `migrate` 7 + `redaction` 5 + `schema` 14 = **46 passed**
    - `li-proto`: 13 unit + 51 `protocol` = **64 passed**
-4. `cargo build --offline --release` — built cleanly in 47.48s (`target/release/{li,li-daemon,li-helper,li-hook}`).
+4. `cargo build --offline --release` — built cleanly (`target/release/{li,li-daemon,li-helper,li-hook}`).
 5. `sh -n packaging/probe.sh && sh packaging/probe.sh` — exited 0 (`kernel_release: "7.3.5-zen1-1-zen"`, `systemd_is_pid1: true`, `libc: "glibc 2.44"`, `btrfs: true`, `mkfs_btrfs: true`, `lvs: false`, `lvcreate: false`, `dash: false`).
 6. `python3 shell/test_matrix.py --hook "$PWD/target/debug/li-hook" -v` — `Ran 1 test in 123.440s OK` (39/39 shell matrix cases across bash, zsh, and fish).
 

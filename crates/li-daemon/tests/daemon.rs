@@ -290,3 +290,84 @@ async fn drop_report_explains_tail_and_startup_reconciliation() {
     );
     let _ = fs::remove_dir_all(root);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn concurrent_1000_clients_under_semaphore_keeps_daemon_healthy() {
+    use li_daemon::server::{MAX_CONCURRENT_CLIENTS, run_accept_loop};
+    use tokio::sync::watch;
+    use tokio::task::JoinSet;
+
+    let root = tempdir("1000-clients");
+    let listener = bind(&root).unwrap();
+    let sock = socket_path(&root);
+    let j = Arc::new(open_journal(&root.join("journal.db")));
+    let st = Arc::new(DaemonState::new(Arc::clone(&j), "boot-1k".into()));
+    let uid = rustix::process::getuid().as_raw();
+    let (tx, rx) = watch::channel(false);
+    let srv = tokio::spawn(run_accept_loop(listener, st, uid, rx));
+
+    let mut set = JoinSet::new();
+    for i in 0..1_000_u64 {
+        let p = sock.clone();
+        set.spawn(async move {
+            let Ok(mut stream) = UnixStream::connect(&p).await else {
+                return false;
+            };
+            let ping = Ping {
+                schema_version: SchemaVersion::CURRENT,
+                nonce: i,
+            };
+            let Ok(mut line) = encode_frame(&ping) else {
+                return false;
+            };
+            line.push('\n');
+            if stream.write_all(line.as_bytes()).await.is_err() {
+                return false;
+            }
+            let mut resp = String::new();
+            let mut br = BufReader::new(stream);
+            match br.read_line(&mut resp).await {
+                Ok(n) if n > 0 => matches!(
+                    decode_server_message(&resp),
+                    Ok(ServerMessage::Pong(p)) if p.nonce == i
+                ),
+                _ => false,
+            }
+        });
+    }
+
+    let mut succeeded = 0usize;
+    while let Some(res) = set.join_next().await {
+        if res.unwrap_or(false) {
+            succeeded += 1;
+        }
+    }
+    assert!(
+        succeeded >= MAX_CONCURRENT_CLIENTS,
+        "expected >= {MAX_CONCURRENT_CLIENTS} pongs during 1000-client burst, got {succeeded}"
+    );
+
+    // Post-burst health check: daemon still serves cleanly after excess connects were dropped.
+    let mut after = UnixStream::connect(&sock).await.unwrap();
+    let mut ping_line = encode_frame(&Ping {
+        schema_version: SchemaVersion::CURRENT,
+        nonce: 9_999,
+    })
+    .unwrap();
+    ping_line.push('\n');
+    after.write_all(ping_line.as_bytes()).await.unwrap();
+    let mut after_resp = String::new();
+    let n = BufReader::new(after)
+        .read_line(&mut after_resp)
+        .await
+        .unwrap();
+    assert!(n > 0);
+    assert!(matches!(
+        decode_server_message(&after_resp),
+        Ok(ServerMessage::Pong(p)) if p.nonce == 9_999
+    ));
+
+    let _ = tx.send(true);
+    srv.await.unwrap().unwrap();
+    let _ = fs::remove_dir_all(root);
+}

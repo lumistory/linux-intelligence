@@ -177,7 +177,7 @@ Phase 1 结束时，一个新的 bash/zsh/fish 交互 shell 可以把「每一�
 |---|---|---|---|
 | P1-26 | retention / purge（ADR 0003 要求的审计式 purge） | `[已完成]` | `Journal::purge_before`（单事务临时拆建触发器 + `EventsPurged` 审计事件）+ `li purge` |
 | P1-27 | 建不建 `li-recovery` / `li-policy` | `[已决策延后]` | Phase 1 保持 5 个 crate，Phase 4/5 按需新建 |
-| P1-28 | `$.new_path` 的 JSON 索引（rename 查询） | `[待做]` | 等 `li query --path` 覆盖 rename 时随 v3 迁移做 |
+| P1-28 | `$.new_path` 的 JSON 索引（rename 查询） | `[已完成]` | `0003_add_new_path_index.sql` + `Reader::query_events` + `tests/schema.rs` 计划断言 |
 | P1-29 | spec §6 七条验收整体跑一遍并留下日志 | `[已完成]` | `docs/reports/PHASE1-REPORT.md`：135 Rust 测试 + 39/39 PTY 矩阵 + 10k 突发 + CLI-Daemon UDS 端到端全绿 |
 
 #### 4.1.3 依赖关系
@@ -344,7 +344,7 @@ helper 编译产物里不存在任何能到达 `exec` 的调用（`strace` 证�
 | P6-04 | init 判定只认 `/proc/1/comm == systemd` | `[已完成]` | `packaging/probe.sh`：输出 `init_comm=systemd` / `systemd_is_pid1: true` |
 | P6-05 | ARM64 / musl(Alpine) / NixOS 实测 | `[NOT TESTED]` | 本机未装跨架构与 Alpine/NixOS 环境，诚实标 `NOT TESTED` |
 | P6-06 | `hidepid` 主机实测 | `[NOT TESTED]` | 本机 `/proc` 无 `hidepid` 挂载选项 |
-| P6-07 | `nofile` 上限下的并发实测 | `[已完成部分]` | daemon/helper 分别有 256/64 并发上限，本机 `nofile_soft=524288`；1000 并发未重测 |
+| P6-07 | `nofile` 上限下的并发实测 | `[已完成]` | `tests/daemon.rs` 1,000 并发客户端突发测试在 256 信号量上限下全部正常响应与退避（`nofile_soft=524288`） |
 | P6-08 | 打包（单二进制 release 安装说明）与 systemd user unit | `[已完成]` | `packaging/systemd/li-daemon.service` + `packaging/README.md` + `cargo build --release --offline` |
 | P6-09 | 六份 ADR 状态收尾（`proposed` → `accepted`） | `[已完成（D5）]` | `docs/adr/0001..0006.md` + `README.md` + 两份 v0 规范全部转 `accepted` 并注明实测偏差 |
 

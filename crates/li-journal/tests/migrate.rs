@@ -72,13 +72,13 @@ fn v1_to_v2_keeps_every_row() {
         assert_eq!(n, 500);
     }
 
-    // Now the upgrade, over live data.
+    // Now the upgrade, over live data (v1 -> v3).
     let mut j = Journal::open(&db, Config::default()).unwrap();
     let applied = j.migrate().unwrap();
     assert_eq!(
         applied,
-        vec![2],
-        "exactly one step should have been applied"
+        vec![2, 3],
+        "v1 -> v3 should apply migrations 2 and 3"
     );
 
     let reader = j.reader().unwrap();
@@ -118,11 +118,13 @@ fn the_ledger_keeps_the_v1_checksum_after_the_upgrade() {
     j.migrate().unwrap();
     let reader = j.reader().unwrap();
     let ledger = li_journal::migrate::ledger(reader.connection()).unwrap();
-    assert_eq!(ledger.len(), 2);
+    assert_eq!(ledger.len(), 3);
     assert_eq!(ledger[0].0, 1);
     assert_eq!(ledger[0].1, "init");
     assert_eq!(ledger[1].0, 2);
     assert_eq!(ledger[1].1, "add_redaction_ledger");
+    assert_eq!(ledger[2].0, 3);
+    assert_eq!(ledger[2].1, "add_new_path_index");
 }
 
 /// Re-running migrate is a no-op that verifies, never a re-apply.
@@ -131,10 +133,10 @@ fn migrating_twice_applies_nothing_and_verifies() {
     let dir = fresh_dir("t-migrate-idempotent");
     let db = dir.join("journal.db");
     let mut j = Journal::open(&db, Config::default()).unwrap();
-    assert_eq!(j.migrate().unwrap(), vec![1, 2]);
+    assert_eq!(j.migrate().unwrap(), vec![1, 2, 3]);
     assert!(j.migrate().unwrap().is_empty());
-    assert_eq!(current_version(&Connection::open(&db).unwrap()).unwrap(), 2);
-    assert_eq!(known_version(), 2);
+    assert_eq!(current_version(&Connection::open(&db).unwrap()).unwrap(), 3);
+    assert_eq!(known_version(), 3);
 }
 
 /// A database written by a newer build must be refused, not read best-effort.

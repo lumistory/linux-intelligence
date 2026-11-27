@@ -240,8 +240,12 @@ impl Reader {
             params.push(Box::new(s.to_string()));
         }
         if let Some(p) = path {
-            // Exact expression matching `idx_events_payload_path` (0-H §7.4).
-            sql.push_str(" AND json_extract(payload, '$.path') = ?");
+            // Exact expressions matching `idx_events_payload_path` (0-H §7.4)
+            // and `idx_events_payload_new_path` (P1-28).
+            sql.push_str(
+                " AND (json_extract(payload, '$.path') = ? OR json_extract(payload, '$.new_path') = ?)",
+            );
+            params.push(Box::new(p.to_string()));
             params.push(Box::new(p.to_string()));
         }
         if let Some(t) = event_type {

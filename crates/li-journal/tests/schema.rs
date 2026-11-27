@@ -298,6 +298,64 @@ fn the_json_index_is_created_by_migration_0001() {
     );
 }
 
+/// P1-28: migration 0003 adds `idx_events_payload_new_path` and `query_events`
+/// resolves `$.new_path` lookups via the expression index without full scans.
+#[test]
+fn the_new_path_json_index_is_used_for_rename_queries() {
+    let dir = fresh_dir("t-new-path-index");
+    let j = open_migrated(&dir, Config::default());
+    let conn = Connection::open(j.path()).unwrap();
+    let tx = conn.unchecked_transaction().unwrap();
+    for i in 0..200 {
+        tx.execute(
+            "INSERT INTO events
+               (event_id, schema_version, source, session_id, sequence, ts_mono_ns,
+                ts_wall, type, type_class, payload, evidence_status, ingested_mono_ns)
+             VALUES (?1, 1, 'fs', NULL, 0, ?2, '2026-11-24T00:00:00.000Z',
+                     'FileRenamed', 'fs.rename', ?3, 'observed', 0)",
+            rusqlite::params![
+                format!("rn-{i}"),
+                i,
+                format!(r#"{{"path":"/tmp/old{i}.rs","new_path":"/tmp/new{i}.rs"}}"#)
+            ],
+        )
+        .unwrap();
+    }
+    tx.commit().unwrap();
+
+    let mut st = conn
+        .prepare(
+            "EXPLAIN QUERY PLAN
+             SELECT event_id FROM events
+             WHERE json_extract(payload, '$.path') = ?1
+                OR json_extract(payload, '$.new_path') = ?1",
+        )
+        .unwrap();
+    let plan: Vec<String> = st
+        .query_map(["/tmp/new42.rs"], |r| r.get::<_, String>(3))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    let joined = plan.join("\n");
+    assert!(
+        joined.contains("idx_events_payload_path")
+            && joined.contains("idx_events_payload_new_path"),
+        "expected both expression indexes in plan, got:\n{joined}"
+    );
+    assert!(
+        !joined.contains("SCAN events"),
+        "rename query must not fall back to SCAN events:\n{joined}"
+    );
+
+    let reader = j.reader().unwrap();
+    let hits = reader
+        .query_events(None, Some("/tmp/new42.rs"), None, 10)
+        .expect("query_events by new_path");
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0].event_id, "rn-42");
+    assert_eq!(hits[0].event_type, "FileRenamed");
+}
+
 /// 0-H §8.1.5: `caused_by` must be unrepresentable, and the DB is the last line.
 #[test]
 fn caused_by_cannot_be_stored_even_by_hand_written_sql() {
