@@ -29,7 +29,7 @@
 //!    the highest committed `ingest_seq`.
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender, sync_channel};
+use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
@@ -154,23 +154,20 @@ impl Drop for Writer {
 fn run(conn: Connection, rx: &Receiver<Command>, shared: &Shared, batch: usize) {
     let mut pending: Vec<Write> = Vec::with_capacity(batch);
     loop {
-        // Block for one command, then drain whatever else is already queued: one
-        // transaction per batch, not per event, is the difference between 193 432
-        // rows/s and a commit per row (0-H §7.4).
-        let first = match rx.recv_timeout(std::time::Duration::from_millis(50)) {
-            Ok(c) => Some(c),
-            Err(RecvTimeoutError::Timeout) => None,
-            Err(RecvTimeoutError::Disconnected) => break,
+        // Block cleanly while idle (zero periodic wakeups), then drain any queued
+        // items into one SQLite transaction batch (up to `batch`).
+        let first = match rx.recv() {
+            Ok(c) => c,
+            Err(_) => break,
         };
         match first {
-            None => continue,
-            Some(Command::Stop) => break,
-            Some(Command::Flush(reply)) => {
+            Command::Stop => break,
+            Command::Flush(reply) => {
                 flush_pending(&conn, &mut pending, shared);
                 let _ = reply.send(Ok(shared.watermark()));
                 continue;
             }
-            Some(Command::Row(w)) => pending.push(*w),
+            Command::Row(w) => pending.push(*w),
         }
         while pending.len() < batch {
             match rx.try_recv() {

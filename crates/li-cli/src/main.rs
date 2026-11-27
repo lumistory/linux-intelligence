@@ -276,19 +276,38 @@ fn dispatch(cmd: Command) -> Result<i32, String> {
             Ok(0)
         }
         Command::ShellInit { shell } => {
-            let snippet = match shell {
-                ShellKind::Bash => {
-                    "# Requires launcher-inherited FD 3 connected to li-hook:\n# source /path/to/linux-intelligence/shell/bash/bash.sh\n"
-                }
-                ShellKind::Zsh => {
-                    "# Requires launcher-inherited FD 3 connected to li-hook:\n# source /path/to/linux-intelligence/shell/zsh/zsh.zsh\n"
-                }
-                ShellKind::Fish => {
-                    "# Requires launcher-inherited FD 3 connected to li-hook:\n# source /path/to/linux-intelligence/shell/fish/fish.fish\n"
-                }
-            };
-            print!("{snippet}");
+            print!("{}", render_shell_init(shell));
             Ok(0)
+        }
+    }
+}
+
+/// Renders a self-contained, zero-checkout-dependency shell integration script
+/// with embedded capability declarations so `eval "$(li shell-init ...)"` or
+/// `li shell-init fish | source` works out of the box across terminals.
+fn render_shell_init(shell: ShellKind) -> String {
+    match shell {
+        ShellKind::Bash => {
+            let cap = include_str!("../../../capabilities/bash.json").trim();
+            let adapter = include_str!("../../../shell/bash/bash.sh");
+            format!(
+                "IFS= read -r _LI_CAP_RECORD <<'__LI_CAP_EOF__'\n{cap}\n__LI_CAP_EOF__\n{adapter}"
+            )
+        }
+        ShellKind::Zsh => {
+            let cap = include_str!("../../../capabilities/zsh.json").trim();
+            let adapter = include_str!("../../../shell/zsh/zsh.zsh");
+            format!(
+                "IFS= read -r _LI_CAP_RECORD <<'__LI_CAP_EOF__'\n{cap}\n__LI_CAP_EOF__\n{adapter}"
+            )
+        }
+        ShellKind::Fish => {
+            let cap = include_str!("../../../capabilities/fish.json")
+                .trim()
+                .replace('\\', "\\\\")
+                .replace('\'', "\\'");
+            let adapter = include_str!("../../../shell/fish/fish.fish");
+            format!("set -g _LI_CAP_RECORD '{cap}'\n{adapter}")
         }
     }
 }
@@ -380,5 +399,15 @@ mod tests {
         assert!(list.contains("not an atomic filesystem snapshot"));
 
         let _ = std::fs::remove_file(&db);
+    }
+
+    #[test]
+    fn shell_init_is_self_contained_and_free_of_downstream_coupling() {
+        for kind in [ShellKind::Bash, ShellKind::Zsh, ShellKind::Fish] {
+            let out = render_shell_init(kind);
+            assert!(out.contains("_LI_CAP_RECORD"));
+            assert!(out.contains("\"adapter\""));
+            assert!(!out.to_ascii_lowercase().contains("lumi"));
+        }
     }
 }

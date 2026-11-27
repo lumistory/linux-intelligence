@@ -366,7 +366,7 @@ pub async fn run_fs_watcher(
         let mut watcher = FsWatcher::new(roots)?;
         let timeout = Timespec {
             tv_sec: 0,
-            tv_nsec: 50_000_000,
+            tv_nsec: 250_000_000,
         };
         loop {
             if *shutdown.borrow() {

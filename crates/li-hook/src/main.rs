@@ -47,7 +47,7 @@ fn run(opts: Options) {
     let report = ingest(
         BufReader::new(stdin.lock()),
         &mut sink,
-        Queue::new(opts.queue_cap),
+        Queue::with_seq_start(opts.queue_cap, opts.seq_start),
         opts.adapter,
         &session,
     );
@@ -73,6 +73,7 @@ struct Options {
     endpoint: Endpoint,
     session: String,
     queue_cap: usize,
+    seq_start: u64,
 }
 
 // Environment values are separated so argument parsing remains deterministic.
@@ -102,6 +103,7 @@ impl Options {
         let mut sink_mode: Option<String> = None;
         let mut session = exported.session;
         let mut queue_cap = QUEUE_CAP_DEFAULT;
+        let mut seq_start: u64 = 0;
 
         for arg in args {
             let (key, value) = arg
@@ -127,6 +129,11 @@ impl Options {
                         .parse()
                         .map_err(|_| format!("queue cap `{value}` is not a number"))?;
                 }
+                "--seq-start" => {
+                    seq_start = value
+                        .parse()
+                        .map_err(|_| format!("seq start `{value}` is not a number"))?;
+                }
                 other => return Err(format!("unknown argument `{other}`")),
             }
         }
@@ -148,6 +155,7 @@ impl Options {
             endpoint,
             session,
             queue_cap,
+            seq_start,
         })
     }
 }

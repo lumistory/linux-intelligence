@@ -17,7 +17,7 @@ _LI_ESC=''
 _LI_LINE=''
 _LI_TS=''
 _LI_PGRP=0 _LI_SID=0 _LI_STARTTIME=0
-_LI_CAP_RECORD='{}'
+_LI_CAP_RECORD=${_LI_CAP_RECORD:-'{}'}
 _LI_HIST_FILE=${TMPDIR:-/tmp}/li-bash-history-$$
 _LI_HISTORY_RAW=''
 
@@ -134,14 +134,25 @@ _li_off() {
 }
 
 _li_sess
-_LI_CAP_FILE=${LI_CAPABILITY_FILE:-${BASH_SOURCE[0]%/*}/../../capabilities/bash.json}
-IFS= read -r _LI_CAP_RECORD < "$_LI_CAP_FILE" 2>/dev/null || _LI_CAP_RECORD='{}'
+if [[ $_LI_CAP_RECORD == '{}' ]]; then
+    _LI_CAP_FILE=${LI_CAPABILITY_FILE:-${BASH_SOURCE[0]%/*}/../../capabilities/bash.json}
+    IFS= read -r _LI_CAP_RECORD < "$_LI_CAP_FILE" 2>/dev/null || _LI_CAP_RECORD='{}'
+fi
 # The scratch file is intentionally left for the next prompt to truncate; an
 # EXIT trap would invoke external `rm` and violate the fork-free hot-path rule.
 
 # One-shot probe. `: >&3` writes nothing but still reports EBADF/EPIPE, so a
 # broken sink silences the adapter at load, not on the first command.
-if [[ -n ${LI_SINK_FD:-} ]] && : >&3 2>/dev/null; then _li_arm; fi
+if [[ -n ${LI_SINK_FD:-} ]] && : >&3 2>/dev/null; then
+    _li_arm
+elif [[ -z ${LI_SINK_FD:-} ]]; then
+    _LI_SOCK="${XDG_RUNTIME_DIR:-/tmp}/linux-intelligence/daemon.sock"
+    _LI_HOOK_BIN=$(command -v li-hook 2>/dev/null || true)
+    [[ -z $_LI_HOOK_BIN && -x "$HOME/.local/bin/li-hook" ]] && _LI_HOOK_BIN="$HOME/.local/bin/li-hook"
+    if [[ -n $_LI_HOOK_BIN && -S $_LI_SOCK ]] && exec 3> >("$_LI_HOOK_BIN" --adapter=bash --sink=socket --socket="$_LI_SOCK" --session="$_LI_SESSION_ID" 2>/dev/null); then
+        _li_arm
+    fi
+fi
 
 _LI_DUMMY=()
 # `history 1` and `read` are both builtins inside `_li_finish` AFTER `local rc=$?`

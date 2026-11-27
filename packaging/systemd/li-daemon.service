@@ -6,9 +6,11 @@ After=default.target
 [Service]
 Type=simple
 ExecStartPre=/bin/mkdir -p %h/.local/state/linux-intelligence %t/linux-intelligence
-ExecStart=%h/.local/bin/li-daemon --runtime-dir %t --journal-path %h/.local/state/linux-intelligence/journal.db
+ExecStart=%h/.local/bin/li-daemon --runtime-dir %t --journal-path %h/.local/state/linux-intelligence/journal.db --proc-poll-ms 500
 Restart=on-failure
 RestartSec=2
+Nice=10
+MemoryHigh=128M
 NoNewPrivileges=yes
 PrivateTmp=yes
 UMask=0077

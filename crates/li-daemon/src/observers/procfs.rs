@@ -29,7 +29,7 @@ pub struct ProcStat {
 }
 
 /// Parses `/proc/<pid>/stat`, anchoring on the last `)` so `comm` may contain
-/// spaces or parentheses.
+/// spaces or parentheses (zero heap `Vec` allocations).
 pub fn parse_stat(raw: &str) -> Option<ProcStat> {
     let open = raw.find('(')?;
     let close = raw.rfind(')')?;
@@ -38,14 +38,11 @@ pub fn parse_stat(raw: &str) -> Option<ProcStat> {
     }
     let pid: i32 = raw[..open].trim().parse().ok()?;
     let comm = raw[open + 1..close].to_string();
-    let f: Vec<&str> = raw[close + 1..].split_ascii_whitespace().collect();
-    // Field 3 (state) is f[0]; field 22 (starttime) is f[19].
-    if f.len() <= 19 {
-        return None;
-    }
-    let state = f[0].chars().next()?;
-    let ppid: i32 = f[1].parse().ok()?;
-    let starttime: u64 = f[19].parse().ok()?;
+    let mut f = raw[close + 1..].split_ascii_whitespace();
+    // Field 3 (state) is index 0; field 4 (ppid) is index 1; field 22 (starttime) is index 19.
+    let state = f.next()?.chars().next()?;
+    let ppid: i32 = f.next()?.parse().ok()?;
+    let starttime: u64 = f.nth(17)?.parse().ok()?;
     Some(ProcStat {
         pid,
         comm,
@@ -69,20 +66,39 @@ fn read_cmdline(pid: i32) -> Option<String> {
     (!joined.is_empty()).then_some(joined)
 }
 
-/// Scans `/proc` at `Stat` depth. Processes disappearing mid-scan are skipped.
+/// Scans `/proc` at `Stat` depth, reusing path/content buffers across PIDs.
 pub fn scan_proc_table() -> BTreeMap<i32, ProcStat> {
+    use std::fmt::Write as _;
+    use std::io::Read as _;
+
     let mut table = BTreeMap::new();
     let Ok(entries) = fs::read_dir("/proc") else {
         return table;
     };
+    let mut path_buf = String::with_capacity(32);
+    let mut raw_buf = String::with_capacity(512);
     for entry in entries.flatten() {
-        let Ok(pid) = entry.file_name().to_string_lossy().parse::<i32>() else {
+        let fname = entry.file_name();
+        let bytes = fname.as_encoded_bytes();
+        if bytes.is_empty() || !bytes.iter().all(u8::is_ascii_digit) {
+            continue;
+        }
+        let Ok(pid_str) = std::str::from_utf8(bytes) else {
             continue;
         };
-        let Ok(raw) = fs::read_to_string(format!("/proc/{pid}/stat")) else {
+        let Ok(pid) = pid_str.parse::<i32>() else {
             continue;
         };
-        if let Some(st) = parse_stat(&raw) {
+        path_buf.clear();
+        let _ = write!(&mut path_buf, "/proc/{pid_str}/stat");
+        let Ok(mut file) = fs::File::open(&path_buf) else {
+            continue;
+        };
+        raw_buf.clear();
+        if file.read_to_string(&mut raw_buf).is_err() {
+            continue;
+        }
+        if let Some(st) = parse_stat(&raw_buf) {
             table.insert(pid, st);
         }
     }
@@ -163,13 +179,13 @@ impl ProcPoller {
 
         let emit_events = self.primed || self.emit_initial_baseline;
 
-        // 1. Detect exited pids.
-        let gone: Vec<i32> = self
-            .active
-            .keys()
-            .filter(|pid| !table.contains_key(pid))
-            .copied()
-            .collect();
+        // 1. Detect exited pids without allocating on quiet ticks.
+        let mut gone = Vec::new();
+        for &pid in self.active.keys() {
+            if !table.contains_key(&pid) {
+                gone.push(pid);
+            }
+        }
         for pid in gone {
             if let Some(prev) = self.active.remove(&pid) {
                 if let Some(ks) = self.keys.get_mut(&(prev.stat.pid, prev.stat.starttime)) {

@@ -9,21 +9,23 @@ typeset -g _LI_ZSH_ON=1
 
 # Only used when zsh is unpacked outside a standard prefix; a system zsh needs
 # neither line and both are no-ops.
-if [[ -n ${LI_ZSH_MODULE_PATH:-} ]]; then
+if [[ -n ${LI_ZSH_MODULE_PATH:-} && -d $LI_ZSH_MODULE_PATH ]]; then
   typeset -ga module_path=($LI_ZSH_MODULE_PATH $module_path)
 elif [[ ${ZSH_VERSION:-} == 5.9* ]]; then
-  typeset -ga module_path=("${${(%):-%N}:A:h}/../../experiments/toolchain/root/usr/lib/zsh/5.9.2" $module_path)
+  local _li_zmod="${${(%):-%N}:A:h}/../../experiments/toolchain/root/usr/lib/zsh/5.9.2"
+  [[ -d $_li_zmod ]] && typeset -ga module_path=($_li_zmod $module_path)
 fi
-if [[ -n ${LI_ZSH_FPATH:-} ]]; then
+if [[ -n ${LI_ZSH_FPATH:-} && -d $LI_ZSH_FPATH ]]; then
   typeset -ga fpath=($LI_ZSH_FPATH $fpath)
 elif [[ ${ZSH_VERSION:-} == 5.9* ]]; then
-  typeset -ga fpath=("${${(%):-%N}:A:h}/../../experiments/toolchain/root/usr/share/zsh/functions/Misc" $fpath)
+  local _li_zfp="${${(%):-%N}:A:h}/../../experiments/toolchain/root/usr/share/zsh/functions/Misc"
+  [[ -d $_li_zfp ]] && typeset -ga fpath=($_li_zfp $fpath)
 fi
 zmodload zsh/datetime 2>/dev/null || true
 
 typeset -g _LI_EMIT=0 _LI_T0=0 _LI_BUSY=0 _LI_SID=0 _LI_PGRP=0 _LI_STARTTIME=0
 typeset -g _LI_CMD='' _LI_ESC='' _LI_LINE='' _LI_TS='' _LI_TTY=none
-typeset -g _LI_CAP_RECORD='{}'
+[[ -z ${_LI_CAP_RECORD:-} ]] && typeset -g _LI_CAP_RECORD='{}'
 
 _li_sess() {
     typeset -g _LI_PID=$$
@@ -144,10 +146,21 @@ _li_off() {
 }
 
 _li_sess
-_LI_CAP_FILE=${LI_CAPABILITY_FILE:-${${(%):-%N}:A:h}/../../capabilities/zsh.json}
-IFS= read -r _LI_CAP_RECORD < "$_LI_CAP_FILE" 2>/dev/null || _LI_CAP_RECORD='{}'
+if [[ $_LI_CAP_RECORD == '{}' ]]; then
+    _LI_CAP_FILE=${LI_CAPABILITY_FILE:-${${(%):-%N}:A:h}/../../capabilities/zsh.json}
+    IFS= read -r _LI_CAP_RECORD < "$_LI_CAP_FILE" 2>/dev/null || _LI_CAP_RECORD='{}'
+fi
 # One-shot probe: `: >&3` writes nothing but still reports a bad fd or a dead peer.
-if [[ -n ${LI_SINK_FD:-} ]] && : >&3 2>/dev/null; then _li_arm; fi
+if [[ -n ${LI_SINK_FD:-} ]] && : >&3 2>/dev/null; then
+    _li_arm
+elif [[ -z ${LI_SINK_FD:-} ]]; then
+    _LI_SOCK="${XDG_RUNTIME_DIR:-/tmp}/linux-intelligence/daemon.sock"
+    _LI_HOOK_BIN=$(command -v li-hook 2>/dev/null || true)
+    [[ -z $_LI_HOOK_BIN && -x "$HOME/.local/bin/li-hook" ]] && _LI_HOOK_BIN="$HOME/.local/bin/li-hook"
+    if [[ -n $_LI_HOOK_BIN && -S $_LI_SOCK ]] && exec 3> >("$_LI_HOOK_BIN" --adapter=zsh --sink=socket --socket="$_LI_SOCK" --session="$_LI_SESSION_ID" 2>/dev/null); then
+        _li_arm
+    fi
+fi
 # Register into the raw arrays (see the header: add-zsh-hook would erase them).
 typeset -ga preexec_functions precmd_functions
 [[ ${preexec_functions[(r)_li_preexec]} == _li_preexec ]] || preexec_functions+=( _li_preexec )

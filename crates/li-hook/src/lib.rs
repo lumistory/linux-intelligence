@@ -110,11 +110,15 @@ pub struct Queue {
 
 impl Queue {
     pub fn new(cap: usize) -> Self {
+        Self::with_seq_start(cap, 0)
+    }
+
+    pub fn with_seq_start(cap: usize, seq_start: u64) -> Self {
         let cap = cap.max(1);
         Queue {
             cap,
             pending: std::collections::VecDeque::with_capacity(cap),
-            next_seq: 0,
+            next_seq: seq_start,
             delivered: 0,
             dropped: 0,
             malformed: 0,
