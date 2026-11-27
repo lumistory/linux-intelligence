@@ -1,7 +1,11 @@
 # ADR 0006 — Recovery provider abstraction
 
-- Status: proposed
+- Status: accepted (2026-11-27; supported by 0-F + Phase 5 implementation, D2 sandboxed)
 - Date: 2026-11-23
+
+## Implementation notes (D5)
+
+- Delivered in `li_daemon::recovery`: `ProviderRegistry` enforces non-empty `caveats`; `FileBackupProvider`, `GitProvider`, sandbox-image `BtrfsProvider` (`mkfs.btrfs -r` + `btrfs inspect-internal dump-super` + unprivileged `btrfs restore`, never touching host root subvolumes or `mount -o loop`), and capability-probing `LvmProvider` (`lvs`/`lvcreate` absent on host -> clean degradation). `execute_restore` enforces `preview -> approval(scope_hash) -> restore -> verify`.
 
 ## Context
 

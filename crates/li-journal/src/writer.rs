@@ -337,6 +337,19 @@ fn apply(conn: &Connection, row: &Write) -> Result<RowOutcome> {
             ])?;
             Ok(RowOutcome::Inserted)
         }
+        Write::SessionEnd(se) => {
+            conn.prepare_cached(
+                "UPDATE sessions
+                 SET ended_wall = ?2, ended_mono_ns = ?3
+                 WHERE session_id = ?1",
+            )?
+            .execute(rusqlite::params![
+                se.session_id,
+                se.ended_wall,
+                se.ended_mono_ns
+            ])?;
+            Ok(RowOutcome::Inserted)
+        }
         Write::Process(p) => {
             conn.prepare_cached(
                 "INSERT INTO processes
@@ -475,6 +488,46 @@ fn apply(conn: &Connection, row: &Write) -> Result<RowOutcome> {
                 i64::from(ev.independent),
                 ev.confidence,
                 ev.detail,
+            ])?;
+            Ok(RowOutcome::Inserted)
+        }
+        Write::Checkpoint(cp) => {
+            conn.prepare_cached(
+                "INSERT INTO checkpoints
+                   (checkpoint_id, session_id, operation_id, created_wall,
+                    kind, reference, file_count, note)
+                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8)
+                 ON CONFLICT(checkpoint_id) DO NOTHING",
+            )?
+            .execute(rusqlite::params![
+                cp.checkpoint_id,
+                cp.session_id,
+                cp.operation_id,
+                cp.created_wall,
+                cp.kind,
+                cp.reference,
+                cp.file_count,
+                cp.note,
+            ])?;
+            Ok(RowOutcome::Inserted)
+        }
+        Write::Adapter(ad) => {
+            conn.prepare_cached(
+                "INSERT INTO adapter_registry
+                   (adapter, version, capabilities, verified_wall, notes)
+                 VALUES (?1,?2,?3,?4,?5)
+                 ON CONFLICT(adapter) DO UPDATE SET
+                    version = COALESCE(excluded.version, adapter_registry.version),
+                    capabilities = excluded.capabilities,
+                    verified_wall = COALESCE(excluded.verified_wall, adapter_registry.verified_wall),
+                    notes = COALESCE(excluded.notes, adapter_registry.notes)",
+            )?
+            .execute(rusqlite::params![
+                ad.adapter,
+                ad.version,
+                ad.capabilities,
+                ad.verified_wall,
+                ad.notes,
             ])?;
             Ok(RowOutcome::Inserted)
         }

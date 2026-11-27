@@ -1,7 +1,11 @@
 # ADR 0002 — IPC transport and encoding
 
-- Status: proposed — supported by experiment 0-C (PASS 10/10)
+- Status: accepted (2026-11-27; supported by 0-C + Phase 1/3 implementation)
 - Date: 2026-11-23
+
+## Implementation notes (D5)
+
+- Delivered in `li-proto`, `li-hook`, and `li-daemon`: `0700`/`0600` `$XDG_RUNTIME_DIR/linux-intelligence/daemon.sock`, `SO_SNDTIMEO = 5 ms`, bounded queue with `sequence` advancement + `DropReport`, real `Pong` watermark barrier, `SO_PEERCRED` UID enforcement, 2 s partial-frame timeout, and 256 concurrent client cap.
 
 ## Context
 

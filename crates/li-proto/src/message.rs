@@ -76,11 +76,81 @@ impl<'de> Deserialize<'de> for Ping {
     }
 }
 
+/// Out-of-band client drop summary so the daemon can distinguish intentional
+/// bounded-queue/timeout drops from unexplained transport loss (`0-C §8`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DropReport {
+    pub schema_version: SchemaVersion,
+    pub session_id: SessionId,
+    pub dropped: u64,
+    pub last_sequence: Option<u64>,
+    pub reason: String,
+}
+
+/// The literal `"DropReport"` token (`"type":"DropReport"` with no `event_id`).
+pub const DROP_REPORT_TYPE: &str = "DropReport";
+
+impl Serialize for DropReport {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let len = if self.last_sequence.is_some() { 6 } else { 5 };
+        let mut st = s.serialize_struct("DropReport", len)?;
+        st.serialize_field("schema_version", &self.schema_version)?;
+        st.serialize_field("type", DROP_REPORT_TYPE)?;
+        st.serialize_field("session_id", &self.session_id)?;
+        st.serialize_field("dropped", &self.dropped)?;
+        if let Some(last) = self.last_sequence {
+            st.serialize_field("last_sequence", &last)?;
+        }
+        st.serialize_field("reason", &self.reason)?;
+        st.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for DropReport {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Mirror {
+            schema_version: SchemaVersion,
+            #[serde(rename = "type")]
+            frame_type: String,
+            session_id: SessionId,
+            dropped: u64,
+            #[serde(default)]
+            last_sequence: Option<u64>,
+            reason: String,
+        }
+        use serde::de::Error as _;
+        let m = Mirror::deserialize(d)?;
+        if m.frame_type != DROP_REPORT_TYPE {
+            return Err(D::Error::custom(format!(
+                "expected type `{DROP_REPORT_TYPE}`, got `{}`",
+                m.frame_type
+            )));
+        }
+        if m.reason.is_empty() || m.reason.len() > 256 {
+            return Err(D::Error::custom("reason must be 1..=256 bytes"));
+        }
+        Ok(DropReport {
+            schema_version: m.schema_version,
+            session_id: m.session_id,
+            dropped: m.dropped,
+            last_sequence: m.last_sequence,
+            reason: m.reason,
+        })
+    }
+}
+
 /// Anything a client may send.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientMessage {
     Event(Box<Event>),
     Ping(Ping),
+    DropReport(DropReport),
 }
 
 impl ClientMessage {
@@ -88,6 +158,7 @@ impl ClientMessage {
         match self {
             ClientMessage::Event(_) => "Event",
             ClientMessage::Ping(_) => "Ping",
+            ClientMessage::DropReport(_) => "DropReport",
         }
     }
 }
@@ -104,6 +175,7 @@ impl Serialize for ClientMessage {
         match self {
             ClientMessage::Event(e) => e.serialize(s),
             ClientMessage::Ping(p) => p.serialize(s),
+            ClientMessage::DropReport(d) => d.serialize(s),
         }
     }
 }
@@ -365,6 +437,10 @@ pub fn decode_client_message(raw: &str) -> Result<ClientMessage, ProtocolError> 
                 schema_version: claimed,
                 nonce,
             }))
+        }
+        Some("DropReport") => {
+            let report: DropReport = serde_json::from_value(value).map_err(envelope_err)?;
+            Ok(ClientMessage::DropReport(report))
         }
         Some(_) => Err(ProtocolError::UnknownFrameType),
         None => Err(ProtocolError::MissingType),

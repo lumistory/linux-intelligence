@@ -1,0 +1,19 @@
+[Unit]
+Description=Linux Intelligence User Daemon (zero-privilege session & event recorder)
+Documentation=https://github.com/lumistory/linux-intelligence
+After=default.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/mkdir -p %h/.local/state/linux-intelligence %t/linux-intelligence
+ExecStart=%h/.local/bin/li-daemon --runtime-dir %t --journal-path %h/.local/state/linux-intelligence/journal.db
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+PrivateTmp=yes
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

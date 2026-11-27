@@ -1,7 +1,12 @@
 # ADR 0001 — Implementation language and async runtime
 
-- Status: proposed (awaiting Phase 0 evidence)
+- Status: accepted (2026-11-27; Phase 0 + Phase 1–6 verified)
 - Date: 2026-11-23
+
+## Implementation notes (D5)
+
+- Implemented with Rust 1.99 (`edition = "2024"`, `unsafe_code = "forbid"` workspace-wide), Tokio multi-thread reactor (`li-daemon`, `li-helper`), `rustix` safe Linux syscall bindings (`openat2`, `inotify`, `pty`, `sockopt`, `set_no_new_privs`) alongside `no-tokio` `li-hook`.
+- Blocking SQLite writes stay on the dedicated single writer thread; procfs scanning runs in a background timer task without blocking the async accept loop.
 
 ## Context
 

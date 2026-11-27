@@ -96,7 +96,7 @@ fn sequences(frames: &[String]) -> Vec<u64> {
         .iter()
         .filter_map(|l| match li_proto::decode_client_message(l).ok()? {
             li_proto::ClientMessage::Event(e) => Some(e.sequence),
-            li_proto::ClientMessage::Ping(_) => None,
+            li_proto::ClientMessage::Ping(_) | li_proto::ClientMessage::DropReport(_) => None,
         })
         .collect()
 }
@@ -167,7 +167,8 @@ fn run_shell(
         .unwrap()
         .parent()
         .unwrap()
-        .join("adapters")
+        .join("shell")
+        .join(shell)
         .join(agent);
     assert!(adapter.exists(), "{} must exist", adapter.display());
     std::fs::write(
@@ -620,10 +621,12 @@ fn matrix_for(shell: &str, adapter: &str) {
             f["payload"]["pid"].is_number(),
             "{shell}: frame without pid: {f}"
         );
-        assert!(
-            f["payload"]["exit_status"].is_i64(),
-            "{shell}: no numeric status: {f}"
-        );
+        if f["type"] == "CommandFinished" {
+            assert!(
+                f["payload"]["exit_status"].is_i64(),
+                "{shell}: no numeric status: {f}"
+            );
+        }
     }
     assert!(
         frames.len() >= cases.len(),

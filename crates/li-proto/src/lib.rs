@@ -41,8 +41,8 @@ pub use event::{
 };
 pub use json::{check_inbound_frame_len, encode_frame};
 pub use message::{
-    Ack, ClientMessage, Counts, ErrorCode, ErrorFrame, Ping, Pong, ServerMessage, Watermark,
-    decode_client_message, decode_server_message,
+    Ack, ClientMessage, Counts, DropReport, ErrorCode, ErrorFrame, Ping, Pong, ServerMessage,
+    Watermark, decode_client_message, decode_server_message,
 };
 pub use version::{CURRENT_SCHEMA_VERSION, SchemaVersion, negotiate};
 
@@ -78,7 +78,7 @@ pub enum ProtocolError {
     InvalidEnvelope { field: &'static str, reason: String },
     /// Neither `event_id` nor `type` is present.
     MissingType,
-    /// Has `type`, no `event_id`, and is not a `Ping`.
+    /// Has `type`, no `event_id`, and is neither `Ping` nor `DropReport`.
     UnknownFrameType,
     /// `schema_version` is not [`CURRENT_SCHEMA_VERSION`]. Rejected per frame,
     /// never silently accepted: a future field set would otherwise be read as
@@ -118,7 +118,7 @@ impl core::fmt::Display for ProtocolError {
             }
             ProtocolError::UnknownFrameType => write!(
                 f,
-                "unknown_frame_type: has `type`, no `event_id`, and is not `Ping`"
+                "unknown_frame_type: has `type`, no `event_id`, and is neither `Ping` nor `DropReport`"
             ),
             ProtocolError::SchemaVersionUnsupported(v) => write!(
                 f,

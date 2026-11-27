@@ -66,13 +66,10 @@ class ProductDriver(drive.Driver):
             try:
                 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
                 tx_fd = tx.fileno()
-                rx_fd = rx.fileno()
-                if rx_fd == 3:
-                    rx_fd = os.dup(rx_fd)
+                if rx.fileno() != tx_fd:
+                    rx.close()
                 os.dup2(tx_fd, 3); os.set_inheritable(3, True)
                 if tx_fd != 3: tx.close()
-                if rx.fileno() != 3: rx.close()
-                if rx_fd != 3: os.close(rx_fd)
                 os.execvpe(argv[0], argv, env)
             except BaseException: os._exit(111)
         tx.close(); self.pid, self.fd = pid, fd

@@ -1051,3 +1051,23 @@ fn a_full_session_exchange_decodes_end_to_end() {
     let expected = wm.highest_seen.unwrap() + 1 - p.counts.ingested;
     assert_eq!(expected, 1, "exactly one event was dropped by the client");
 }
+
+#[test]
+fn a_drop_report_round_trips_and_rejects_empty_reason() {
+    let report = ClientMessage::DropReport(li_proto::DropReport {
+        schema_version: SchemaVersion::CURRENT,
+        session_id: sid("sess-a"),
+        dropped: 12,
+        last_sequence: Some(41),
+        reason: "queue_full".to_string(),
+    });
+    let line = encode_frame(&report).unwrap();
+    assert!(line.contains(r#""type":"DropReport""#));
+    assert!(!line.contains("event_id"));
+    assert_eq!(decode_client_message(&line).unwrap(), report);
+
+    let bad =
+        r#"{"schema_version":1,"type":"DropReport","session_id":"sess-a","dropped":1,"reason":""}"#;
+    let err = decode_client_message(bad).unwrap_err();
+    assert_eq!(err.code(), ErrorCode::InvalidEnvelope);
+}

@@ -111,17 +111,48 @@ pub struct Evidence {
     pub detail: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct SessionEnd {
+    pub session_id: String,
+    pub ended_wall: String,
+    pub ended_mono_ns: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct Checkpoint {
+    pub checkpoint_id: String,
+    pub session_id: Option<String>,
+    pub operation_id: Option<String>,
+    pub created_wall: String,
+    pub kind: String,
+    pub reference: Option<String>,
+    pub file_count: Option<i64>,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdapterRecord {
+    pub adapter: String,
+    pub version: Option<String>,
+    pub capabilities: String,
+    pub verified_wall: Option<String>,
+    pub notes: Option<String>,
+}
+
 /// Everything the writer will accept. Nothing else in this crate opens the
 /// database for writing.
 #[derive(Debug, Clone)]
 pub enum Write {
     Session(Session),
+    SessionEnd(SessionEnd),
     Process(Process),
     Event(EventRow),
     Operation(Operation),
     OperationEdge(OperationEdge),
     Relation(Relation),
     Evidence(Evidence),
+    Checkpoint(Checkpoint),
+    Adapter(AdapterRecord),
 }
 
 impl Write {
@@ -129,12 +160,15 @@ impl Write {
     pub fn kind(&self) -> &'static str {
         match self {
             Write::Session(_) => "session",
+            Write::SessionEnd(_) => "session_end",
             Write::Process(_) => "process",
             Write::Event(_) => "event",
             Write::Operation(_) => "operation",
             Write::OperationEdge(_) => "operation_edge",
             Write::Relation(_) => "relation",
             Write::Evidence(_) => "evidence",
+            Write::Checkpoint(_) => "checkpoint",
+            Write::Adapter(_) => "adapter",
         }
     }
 }

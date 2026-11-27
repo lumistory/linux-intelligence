@@ -1,7 +1,11 @@
 # ADR 0004 — Shell adapter boundary
 
-- Status: proposed
+- Status: accepted (2026-11-27; supported by 0-A/0-B + Phase 1/3/6 implementation)
 - Date: 2026-11-23
+
+## Implementation notes (D5)
+
+- Consolidated adapters under `shell/{bash,zsh,fish}` with `capabilities/*.json`; `shell/test_matrix.py` 39/39 assertions verified (`$?` preserved after `history 1` moved into `_li_finish`). Non-interactive script internals remain explicitly uncaptured (`internal_script_commands: false` in `li run`).
 
 ## Context
 

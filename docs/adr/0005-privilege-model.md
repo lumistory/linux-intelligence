@@ -1,7 +1,11 @@
 # ADR 0005 — Privilege model
 
-- Status: proposed
+- Status: accepted (2026-11-27; supported by 0-G + Phase 1/3 implementation)
 - Date: 2026-11-23
+
+## Implementation notes (D5)
+
+- `li-daemon` runs strictly unprivileged as the invoking uid; optional zero-exec `li-helper` implements closed numeric opcodes (`1..3`; `4` `BtrfsSnapshot` disabled by design), `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS|RESOLVE_NO_MAGICLINKS)`, `PR_SET_NO_NEW_PRIVS`, 2 s half-frame timeout (`P3-08`), 64-client semaphore, and dense `0600` JSONL audit logging explicitly labeled `mode_0600_owner_not_tamper_proof` (`P3-09`).
 
 ## Context
 

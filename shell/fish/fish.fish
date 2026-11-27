@@ -1,5 +1,5 @@
-# adapters/fish.fish - product fish adapter (P1-18).  source adapters/fish.fish
-# Reasoning: adapters/README.md. fish_preexec/fish_postexec; $CMD_DURATION is
+# shell/fish/fish.fish - product fish adapter (P1-18).  source shell/fish/fish.fish
+# Reasoning: shell/README.md. fish_preexec/fish_postexec; $CMD_DURATION is
 # used as the duration. fish's dead-sink behaviour stays `unknown` in
 # capabilities/fish.json - bash solving SIGPIPE says nothing about fish.
 

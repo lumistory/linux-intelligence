@@ -1,9 +1,6 @@
-# Security boundary — v0
+# Security boundary — v0 (accepted)
 
-Status: **draft**, derived from the measurements in
-`experiments/00-g-privilege/REPORT.md`. Every rule below cites the measurement
-that justifies it. Where a rule is a design choice rather than a measurement,
-it says so.
+Status: **accepted** (2026-11-27; derived from `experiments/00-g-privilege/REPORT.md` and enforced in `li-daemon::helper` + `li-helper` with `P3-08` 2 s partial-frame timeout / 64-client cap and `P3-09` explicit `mode_0600_owner_not_tamper_proof` non-tamper-proof declaration). Every rule below cites the measurement that justifies it. Where a rule is a design choice rather than a measurement, it says so.
 
 This document defines: what we trust, how we identify a caller, what an
 interface may accept, what we must log, and what we deliberately refuse to build.

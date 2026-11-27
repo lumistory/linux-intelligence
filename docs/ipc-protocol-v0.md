@@ -1,8 +1,6 @@
-# Linux Intelligence IPC Protocol — v0 (draft)
+# Linux Intelligence IPC Protocol — v0 (accepted)
 
-Status: **draft**, derived from the measurements in
-`experiments/00-c-ipc/REPORT.md`. Every numeric limit below is either copied
-from a measured result or marked `TBD` because it was not measured.
+Status: **accepted** (2026-11-27; derived from `experiments/00-c-ipc/REPORT.md` and implemented across `li-proto`, `li-hook`, and `li-daemon`, including `DropReport` frame and `Pong` watermark barrier). Every numeric limit below is either copied from a measured result or marked `TBD` because it was not measured.
 
 Transport assumptions under test: `AF_UNIX`, `SOCK_STREAM`, one JSON object per
 line, socket at `$XDG_RUNTIME_DIR/li-phase0-ipc/ipc.sock`, directory mode

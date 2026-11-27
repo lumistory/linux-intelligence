@@ -6,7 +6,7 @@
 
 *Linux System Observability & Operation Recovery Infrastructure.*
 
-![phase](https://img.shields.io/badge/phase-1%20in%20progress-orange)
+![phase](https://img.shields.io/badge/phase-0--6%20implemented-green)
 ![rust](https://img.shields.io/badge/rust-2024%20edition-orange)
 ![license](https://img.shields.io/badge/license-not%20yet%20chosen-lightgrey)
 
@@ -53,25 +53,26 @@
 
 ## 现在到哪一步
 
-Phase 1（核心基础设施）进行中。已完成 `li-proto`（事件信封、消息帧、版本门、JSON 编解码，63 条测试）
-和 `li-journal`（schema、前向迁移、单写线程、脱敏，44 条测试）。
+Phase 0–6（含 D1 受限零-exec `li-helper`、D2 `/tmp` 沙盒 `BtrfsProvider` / 探针 `LvmProvider`、D5 ADR/协议转 `accepted`、Phase 6 POSIX `probe.sh` 与 systemd user unit）已在本机完成实现与验证；跨架构/musl/`hidepid` 等本机未覆盖项在各报告与 [`packaging/README.md`](packaging/README.md) 中诚实标注 `NOT TESTED`。
 
 逐任务的状态、每个阶段的验收标准与「明确不做的事」在 [`docs/PLAN.md`](docs/PLAN.md)。
 
 ```
 crates/
-  li-proto/     # ✅ 事件信封、消息类型、版本协商。零 I/O
-  li-journal/   # ✅ SQLite schema、迁移、追加式写入、脱敏（保留策略未做）
-  li-hook/      # ⬜ shell 适配器用的极小程序，不依赖 tokio
-  li-daemon/    # ⬜ tokio 守护进程：socket、摄取、观察者
-  li-cli/       # ⬜ 用户命令 li run / li query / li checkpoint
+  li-proto/     # ✅ 事件信封、消息类型（含 DropReport）、版本协商。零 I/O
+  li-journal/   # ✅ SQLite schema、迁移、追加式写入、脱敏、审计式 purge
+  li-hook/      # ✅ shell 适配器用的无 Tokio 客户端，继承 FD 5ms 超时与 DropReport
+  li-daemon/    # ✅ Tokio UDS 守护进程、procfs/inotify、PTY+responder、关联引擎、恢复提供者、li-helper
+  li-cli/       # ✅ 用户命令 li run / query / checkpoint / purge / correlate / status / ping / shell-init
+shell/          # ✅ bash / zsh / fish 适配器与能力表（39/39 PTY 矩阵通过）
+packaging/      # ✅ 严格 POSIX 能力探测 probe.sh、systemd user unit 与打包说明
 ```
 
 ## 明确不做的事
 
 - **没有 AI**。不调模型、不含提示词逻辑。接口默认只读。
-- **没有特权 helper**。Phase 1 是零特权的用户守护进程。特权辅助推迟到 Phase 3 最早，且只有 Phase 2 实测出「非它不可」的能力才做。
-- **没有破坏性恢复**。Phase 1 只创建检查点，不恢复。真实系统上的恢复实验只在临时环境里做。
+- **用户守护进程默认零特权**。`li-daemon` 以普通用户身份运行；可选受限辅助进程 `li-helper` 零 `execve`、闭集 opcode、`openat2(BENEATH|NO_SYMLINKS|NO_MAGICLINKS)` 与 `PR_SET_NO_NEW_PRIVS`。
+- **不在真实宿主机执行破坏性恢复**。`BtrfsProvider` 仅在沙盒镜像（`/tmp`）创建/恢复与验真，绝不触碰宿主机真卷；`LvmProvider` 按能力探测诚实降级。
 - **不做文件到进程的归因**。见上面「为什么难」。
 - **不碰 eBPF、不碰内核 audit**。
 
@@ -80,11 +81,11 @@ crates/
 | 文件 | 内容 |
 |---|---|
 | [`docs/PLAN.md`](docs/PLAN.md) | **总计划**：六层架构、Phase 0–6 状态、12 条硬约束、明确不做的事、判断点 |
-| [`docs/reports/PHASE0-REPORT.md`](docs/reports/PHASE0-REPORT.md) | Phase 0 完成报告 |
-| [`docs/adr/`](docs/adr/) | 六份架构决策记录 |
+| [`docs/reports/`](docs/reports/) | Phase 0 及 Phase 1–6 各阶段验收报告 |
+| [`docs/adr/`](docs/adr/) | 六份架构决策记录（`accepted`） |
 | [`docs/spec/phase1-implementation-spec.md`](docs/spec/phase1-implementation-spec.md) | Phase 1 施工图（accepted），含 12 条从实测来的硬约束 |
-| [`docs/ipc-protocol-v0.md`](docs/ipc-protocol-v0.md) | 线格式 |
-| [`docs/security-boundary-v0.md`](docs/security-boundary-v0.md) | 信任边界 |
+| [`docs/ipc-protocol-v0.md`](docs/ipc-protocol-v0.md) | 线格式（`accepted`） |
+| [`docs/security-boundary-v0.md`](docs/security-boundary-v0.md) | 信任边界（`accepted`） |
 
 ## 开发
 

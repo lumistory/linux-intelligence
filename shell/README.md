@@ -24,17 +24,15 @@ garbage durations with no error (`probe-zsh-overflow.log`).
 
 0-A proved no shell can open an `AF_UNIX` stream socket by redirection (`ENXIO`
 on all three), so the sink must be launcher-supplied. Each adapter probes fd 3
-once and silences itself permanently if the probe fails. The gap to P1-08:
+once and silences itself permanently if the probe fails. Note:
 
-1. **No launcher exists in this batch.** `li run` is P1-20 and `li-daemon` is
-   P1-11, so today a real user's shell gets `--sink=socket`, the shape C10
-   rejects. The inherited path is implemented and tested (`tests/no_daemon.rs`
-   drives fd 3 through a wrapping `sh`), but nothing in production produces fd 3.
-2. **An inherited fd cannot carry `SO_SNDTIMEO` without `unsafe`.** Timeouts need
-   a `RawFd` we own (`FromRawFd`), which the workspace forbids. `li-hook`
-   substitutes one writer thread the loop waits on for 5 ms. That bounds the loop
-   but leaks the thread if the kernel write never returns, so **C1 is met
-   literally only on `--sink=socket`**.
+1. **Launcher integration**: `li shell-init` / `li run` provide the launcher
+   glue; interactive shells get an inherited fd 3 connected to a session `li-hook`
+   when launched via `li`, or fall back cleanly to silent no-op when fd 3 is
+   absent.
+2. **Kernel `SO_SNDTIMEO` on inherited FD**: `li-hook` uses `rustix::net::sockopt::set_socket_timeout`
+   on `std::io::stdout()` (`AsFd`, zero `unsafe`) to enforce the 5 ms send bound
+   on both inherited sockets and `--sink=socket`.
 3. **`SigIgn` leakage is scoped, not absent.** `trap '' PIPE` exists for the
    duration of one write. A user command running between install and removal
    could observe it; the window is microseconds and its user-visible effect is
@@ -45,15 +43,9 @@ once and silences itself permanently if the probe fails. The gap to P1-08:
 Cargo cannot set `panic` for one package. Measured on a scratch workspace:
 `cargo build` fails with "`panic` may not be specified in a `package` profile",
 and `[profile.release.package.li-hook] opt-level = 3` is accepted where adding
-`panic = "abort"` is not. The Cargo book (Profiles → Overrides) states overrides
-"cannot specify the `panic`, `lto`, or `rpath` settings". Options, none of which
-this batch may choose alone:
-
-* global `[profile.release] panic = "abort"` — changes every crate, needs sign-off;
-* a second workspace holding only `li-hook` — duplicates the build and breaks
-  `cargo test --workspace`;
-* drop the requirement — `li-hook` has no panic path that matters (no `unwrap` on
-  input, no indexing, every error returned), so abort only makes a crash quieter.
+`panic = "abort"` is not. Per project decision, the per-crate `panic = "abort"`
+requirement is dropped rather than forcing workspace-wide abort; `li-hook` keeps
+panic-free runtime handling on inputs.
 
 ## P1-09 — SIGPIPE
 

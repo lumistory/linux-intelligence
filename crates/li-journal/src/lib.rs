@@ -29,13 +29,23 @@ use std::path::{Path, PathBuf};
 
 use crate::error::{JournalError, Result};
 use crate::redact::MASK;
-use crate::write::{EventRow, OperationEdge, Relation, Watermark, Write};
+use crate::write::{
+    AdapterRecord, Checkpoint, EventRow, OperationEdge, Relation, Session, SessionEnd, Watermark,
+    Write,
+};
 use crate::writer::Writer;
 
 pub use crate::db::{BUSY_TIMEOUT_MS, Config};
 pub use crate::migrate::{MIGRATIONS, Migration, current_version, known_version};
-pub use crate::read::Reader;
+pub use crate::read::{CheckpointRecord, EventRecord, Reader, RelationRecord, SessionRecord};
 pub use crate::writer::Accepted;
+
+/// Result of an audited retention purge (`ADR 0003` / P1-26).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PurgeStats {
+    pub deleted_events: u64,
+    pub audit_event_id: String,
+}
 
 /// The journal: one database file, one writer thread.
 pub struct Journal {
@@ -204,6 +214,100 @@ impl Journal {
         }))
     }
 
+    /// Records a checkpoint row through the single writer.
+    pub fn checkpoint(&self, cp: Checkpoint) -> Accepted {
+        self.submit(Write::Checkpoint(cp))
+    }
+
+    /// Records or updates an adapter's declared capability record.
+    pub fn adapter(&self, rec: AdapterRecord) -> Accepted {
+        self.submit(Write::Adapter(rec))
+    }
+
+    /// Registers a session through the single writer.
+    pub fn session(&self, session: Session) -> Accepted {
+        self.submit(Write::Session(session))
+    }
+
+    /// Marks the end time of an existing session.
+    pub fn session_end(&self, end: SessionEnd) -> Accepted {
+        self.submit(Write::SessionEnd(end))
+    }
+
+    /// Audited retention purge (ADR 0003, P1-26).
+    ///
+    /// Drains the writer, opens a dedicated `BEGIN IMMEDIATE` transaction, drops
+    /// the append-only triggers for the scope of the transaction only, deletes
+    /// `events` older than `cutoff_wall` (with dangling `duplicate_of` refs cleared
+    /// first), restores both triggers before commit, and inserts an `EventsPurged`
+    /// audit event in the same atomic transaction.
+    pub fn purge_before(&self, cutoff_wall: &str, reason: &str) -> Result<PurgeStats> {
+        if cutoff_wall.len() != 24 || !cutoff_wall.ends_with('Z') {
+            return Err(JournalError::Integrity(
+                "cutoff_wall must be 24-byte RFC 3339 UTC (`YYYY-MM-DDTHH:MM:SS.mmmZ`)".into(),
+            ));
+        }
+        self.writer.flush()?;
+        let conn = db::open(&self.path, &self.config)?;
+        conn.execute_batch("BEGIN IMMEDIATE")?;
+        let res = (|| -> Result<PurgeStats> {
+            conn.execute_batch(
+                "DROP TRIGGER IF EXISTS events_append_only_update;
+                 DROP TRIGGER IF EXISTS events_append_only_delete;",
+            )?;
+            // Clear self-referential `duplicate_of` links pointing into the purged slice
+            // so `PRAGMA foreign_keys=ON` does not reject the DELETE.
+            conn.execute(
+                "UPDATE events SET duplicate_of = NULL
+                 WHERE duplicate_of IN (SELECT event_id FROM events WHERE ts_wall < ?1)",
+                [cutoff_wall],
+            )?;
+            let deleted = conn.execute("DELETE FROM events WHERE ts_wall < ?1", [cutoff_wall])?;
+            conn.execute_batch(
+                "CREATE TRIGGER events_append_only_update BEFORE UPDATE ON events
+                 BEGIN
+                     SELECT RAISE(ABORT, 'append_only: events.UPDATE is rejected');
+                 END;
+                 CREATE TRIGGER events_append_only_delete BEFORE DELETE ON events
+                 BEGIN
+                     SELECT RAISE(ABORT, 'append_only: events.DELETE is rejected');
+                 END;",
+            )?;
+            let now_mono = clock::mono_ns().unwrap_or(0) as i64;
+            let now_wall = clock::wall_now_rfc3339_ms();
+            let audit_id = format!("events-purged-{}-{now_mono}", std::process::id());
+            let payload = serde_json::json!({
+                "cutoff_wall": cutoff_wall,
+                "deleted_events": deleted,
+                "reason": reason,
+            })
+            .to_string();
+            conn.execute(
+                "INSERT INTO events
+                   (event_id, schema_version, source, session_id, process_row_id,
+                    sequence, ts_mono_ns, ts_wall, type, type_class, payload,
+                    evidence_status, ingested_mono_ns)
+                 VALUES (?1, 1, 'policy', NULL, NULL, 0, ?2, ?3, 'EventsPurged',
+                         'other', ?4, 'observed', ?2)",
+                rusqlite::params![audit_id, now_mono, now_wall, payload],
+            )?;
+            Ok(PurgeStats {
+                deleted_events: deleted as u64,
+                audit_event_id: audit_id,
+            })
+        })();
+        match res {
+            Ok(stats) => {
+                conn.execute_batch("COMMIT")?;
+                Ok(stats)
+            }
+            Err(e) => {
+                let _ = conn.execute_batch("ROLLBACK");
+                Err(e)
+            }
+        }
+    }
+
     /// Opens a read-only view. Independent of the writer, so reads never queue
     /// behind ingest.
     pub fn reader(&self) -> Result<Reader> {
@@ -262,5 +366,84 @@ mod tests {
         // ProcessExec is not creation: merging them asserts a fork edge nobody
         // observed (0-H §4.4).
         assert_ne!(type_class("ProcessExec"), type_class("ProcessCreated"));
+    }
+
+    #[test]
+    fn checkpoints_queries_and_audited_purge_work_while_preserving_triggers() {
+        let path = temp_path("purge-and-query");
+        let _ = std::fs::remove_file(&path);
+        let mut j = Journal::open(&path, Config::default()).unwrap();
+        j.migrate().unwrap();
+
+        j.session(Session {
+            session_id: "s-purge".into(),
+            parent_session: None,
+            adapter: "bash".into(),
+            adapter_version: None,
+            shell_pid: Some(123),
+            started_wall: "2026-11-24T00:00:00.000Z".into(),
+            started_mono_ns: 1,
+            cwd: None,
+            host: None,
+            boot_id: None,
+        });
+        for (idx, wall) in [
+            (0u64, "2026-11-24T00:00:01.000Z"),
+            (1u64, "2026-11-24T12:00:00.000Z"),
+        ] {
+            let mut payload = serde_json::Map::new();
+            payload.insert("path".into(), serde_json::json!("/tmp/demo"));
+            let ev = li_proto::Event::new(
+                li_proto::EventId::new(format!("ev-purge-{idx}")).unwrap(),
+                li_proto::Source::ShellBash,
+                Some(li_proto::SessionId::new("s-purge").unwrap()),
+                idx,
+                idx + 10,
+                wall,
+                li_proto::EventType::new("CommandFinished").unwrap(),
+                payload,
+                li_proto::EvidenceStatus::Declared,
+            )
+            .unwrap();
+            j.event(&ev).unwrap();
+        }
+        j.checkpoint(Checkpoint {
+            checkpoint_id: "cp-1".into(),
+            session_id: Some("s-purge".into()),
+            operation_id: None,
+            created_wall: "2026-11-24T00:00:02.000Z".into(),
+            kind: "manual".into(),
+            reference: Some("ref-1".into()),
+            file_count: Some(1),
+            note: Some("note".into()),
+        });
+        j.flush().unwrap();
+
+        let r = j.reader().unwrap();
+        assert_eq!(
+            r.query_events(Some("s-purge"), Some("/tmp/demo"), None, 10)
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(r.list_checkpoints(10).unwrap().len(), 1);
+        drop(r);
+
+        let stats = j
+            .purge_before("2026-11-24T06:00:00.000Z", "retention_test")
+            .unwrap();
+        assert_eq!(stats.deleted_events, 1);
+
+        let r = j.reader().unwrap();
+        let remaining = r.query_events(None, None, None, 10).unwrap();
+        assert_eq!(remaining.len(), 2); // ev-purge-1 + EventsPurged audit row
+        assert!(remaining.iter().any(|e| e.event_type == "EventsPurged"));
+        assert_eq!(r.integrity_check().unwrap(), "ok");
+        drop(r);
+
+        // Append-only trigger must be back in place after purge.
+        let conn = db::open(&path, &Config::default()).unwrap();
+        assert!(conn.execute("DELETE FROM events", []).is_err());
+        let _ = std::fs::remove_file(&path);
     }
 }

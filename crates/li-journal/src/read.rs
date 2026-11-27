@@ -12,6 +12,63 @@ use rusqlite::{Connection, OpenFlags};
 use crate::db::Config;
 use crate::error::{JournalError, Result};
 
+use serde::Serialize;
+
+/// Read-only projection of a stored event, always carrying `evidence_status`.
+#[derive(Debug, Clone, Serialize)]
+pub struct EventRecord {
+    pub ingest_seq: i64,
+    pub event_id: String,
+    pub source: String,
+    pub session_id: Option<String>,
+    pub sequence: i64,
+    pub ts_mono_ns: i64,
+    pub ts_wall: String,
+    #[serde(rename = "type")]
+    pub event_type: String,
+    pub type_class: String,
+    pub evidence_status: String,
+    pub payload: serde_json::Value,
+    pub redaction_rules: Option<String>,
+}
+
+/// Read-only projection of a stored relation, always carrying its credibility level.
+#[derive(Debug, Clone, Serialize)]
+pub struct RelationRecord {
+    pub relation_id: i64,
+    pub from_event: String,
+    pub to_event: String,
+    pub kind: String,
+    pub credibility_level: String,
+    pub rule: String,
+    pub inferred_at_mono_ns: i64,
+}
+
+/// Read-only projection of a stored session.
+#[derive(Debug, Clone, Serialize)]
+pub struct SessionRecord {
+    pub session_id: String,
+    pub parent_session: Option<String>,
+    pub adapter: String,
+    pub shell_pid: Option<i64>,
+    pub started_wall: String,
+    pub ended_wall: Option<String>,
+    pub boot_id: Option<String>,
+}
+
+/// Read-only projection of a stored checkpoint.
+#[derive(Debug, Clone, Serialize)]
+pub struct CheckpointRecord {
+    pub checkpoint_id: String,
+    pub session_id: Option<String>,
+    pub operation_id: Option<String>,
+    pub created_wall: String,
+    pub kind: String,
+    pub reference: Option<String>,
+    pub file_count: Option<i64>,
+    pub note: Option<String>,
+}
+
 pub struct Reader {
     conn: Connection,
     path: PathBuf,
@@ -161,5 +218,151 @@ impl Reader {
             }
         }
         Ok(gaps)
+    }
+
+    /// Queries events ordered by `ingest_seq` descending, optionally filtered by
+    /// session, `payload->>'$.path'`, or `type`. Every row carries `evidence_status`.
+    pub fn query_events(
+        &self,
+        session_id: Option<&str>,
+        path: Option<&str>,
+        event_type: Option<&str>,
+        limit: i64,
+    ) -> Result<Vec<EventRecord>> {
+        let mut sql = String::from(
+            "SELECT ingest_seq, event_id, source, session_id, sequence, ts_mono_ns,
+                    ts_wall, type, type_class, evidence_status, payload, redaction_rules
+             FROM events WHERE 1=1",
+        );
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        if let Some(s) = session_id {
+            sql.push_str(" AND session_id = ?");
+            params.push(Box::new(s.to_string()));
+        }
+        if let Some(p) = path {
+            // Exact expression matching `idx_events_payload_path` (0-H §7.4).
+            sql.push_str(" AND json_extract(payload, '$.path') = ?");
+            params.push(Box::new(p.to_string()));
+        }
+        if let Some(t) = event_type {
+            sql.push_str(" AND type = ?");
+            params.push(Box::new(t.to_string()));
+        }
+        sql.push_str(" ORDER BY ingest_seq DESC LIMIT ?");
+        params.push(Box::new(limit.max(1)));
+
+        let refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|b| b.as_ref()).collect();
+        let mut st = self.conn.prepare(&sql)?;
+        let rows = st
+            .query_map(refs.as_slice(), |r| {
+                let payload_raw: String = r.get(10)?;
+                let payload: serde_json::Value =
+                    serde_json::from_str(&payload_raw).unwrap_or(serde_json::Value::Null);
+                Ok(EventRecord {
+                    ingest_seq: r.get(0)?,
+                    event_id: r.get(1)?,
+                    source: r.get(2)?,
+                    session_id: r.get(3)?,
+                    sequence: r.get(4)?,
+                    ts_mono_ns: r.get(5)?,
+                    ts_wall: r.get(6)?,
+                    event_type: r.get(7)?,
+                    type_class: r.get(8)?,
+                    evidence_status: r.get(9)?,
+                    payload,
+                    redaction_rules: r.get(11)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(rows)
+    }
+
+    /// Queries stored relations, each carrying its credibility level.
+    pub fn query_relations(
+        &self,
+        event_id: Option<&str>,
+        limit: i64,
+    ) -> Result<Vec<RelationRecord>> {
+        let (sql, param): (&str, Option<String>) = match event_id {
+            Some(eid) => (
+                "SELECT relation_id, from_event, to_event, kind, level, rule, inferred_at_mono_ns
+                 FROM event_relations
+                 WHERE from_event = ?1 OR to_event = ?1
+                 ORDER BY relation_id DESC LIMIT ?2",
+                Some(eid.to_string()),
+            ),
+            None => (
+                "SELECT relation_id, from_event, to_event, kind, level, rule, inferred_at_mono_ns
+                 FROM event_relations
+                 ORDER BY relation_id DESC LIMIT ?1",
+                None,
+            ),
+        };
+        let mut st = self.conn.prepare(sql)?;
+        let map_row = |r: &rusqlite::Row<'_>| {
+            Ok(RelationRecord {
+                relation_id: r.get(0)?,
+                from_event: r.get(1)?,
+                to_event: r.get(2)?,
+                kind: r.get(3)?,
+                credibility_level: r.get(4)?,
+                rule: r.get(5)?,
+                inferred_at_mono_ns: r.get(6)?,
+            })
+        };
+        let rows = match param {
+            Some(eid) => st
+                .query_map(rusqlite::params![eid, limit.max(1)], map_row)?
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+            None => st
+                .query_map(rusqlite::params![limit.max(1)], map_row)?
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+        };
+        Ok(rows)
+    }
+
+    pub fn list_sessions(&self, limit: i64) -> Result<Vec<SessionRecord>> {
+        let mut st = self.conn.prepare_cached(
+            "SELECT session_id, parent_session, adapter, shell_pid, started_wall, ended_wall, boot_id
+             FROM sessions
+             ORDER BY started_mono_ns DESC LIMIT ?1",
+        )?;
+        let rows = st
+            .query_map([limit.max(1)], |r| {
+                Ok(SessionRecord {
+                    session_id: r.get(0)?,
+                    parent_session: r.get(1)?,
+                    adapter: r.get(2)?,
+                    shell_pid: r.get(3)?,
+                    started_wall: r.get(4)?,
+                    ended_wall: r.get(5)?,
+                    boot_id: r.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(rows)
+    }
+
+    pub fn list_checkpoints(&self, limit: i64) -> Result<Vec<CheckpointRecord>> {
+        let mut st = self.conn.prepare_cached(
+            "SELECT checkpoint_id, session_id, operation_id, created_wall, kind, reference, file_count, note
+             FROM checkpoints
+             ORDER BY created_wall DESC LIMIT ?1",
+        )?;
+        let rows = st
+            .query_map([limit.max(1)], |r| {
+                Ok(CheckpointRecord {
+                    checkpoint_id: r.get(0)?,
+                    session_id: r.get(1)?,
+                    operation_id: r.get(2)?,
+                    created_wall: r.get(3)?,
+                    kind: r.get(4)?,
+                    reference: r.get(5)?,
+                    file_count: r.get(6)?,
+                    note: r.get(7)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(rows)
     }
 }

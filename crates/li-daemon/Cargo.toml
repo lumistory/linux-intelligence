@@ -1,6 +1,6 @@
 [package]
 name = "li-daemon"
-description = "User daemon: sockets, ingest, observers, scheduler."
+description = "User daemon: Tokio UDS server, bounded ingest, session reconciliation, observer host."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,6 +11,11 @@ workspace = true
 [dependencies]
 li-proto = { path = "../li-proto" }
 li-journal = { path = "../li-journal" }
+serde = { workspace = true }
 serde_json = { workspace = true }
 rusqlite = { workspace = true }
-rustix = { version = "^1", features = ["net", "process"] }
+rustix = { version = "^1", features = ["net", "process", "fs", "event", "pty", "termios", "thread"] }
+tokio = { version = "1.54", features = ["rt-multi-thread", "net", "io-util", "sync", "time", "macros", "signal"] }
+
+[dev-dependencies]
+li-hook = { path = "../li-hook" }

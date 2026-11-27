@@ -1,5 +1,5 @@
-# adapters/zsh.zsh - product zsh adapter (P1-17).  . adapters/zsh.zsh
-# Reasoning: adapters/README.md. preexec/precmd; the `*_functions` arrays are
+# shell/zsh/zsh.zsh - product zsh adapter (P1-17).  . shell/zsh/zsh.zsh
+# Reasoning: shell/README.md. preexec/precmd; the `*_functions` arrays are
 # appended to directly because add-zsh-hook would erase an already-defined
 # function (0-A F14); EPOCHREALTIME's 10-digit fraction is truncated first.
 

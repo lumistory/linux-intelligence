@@ -1,5 +1,5 @@
 # shell/bash/bash.sh - product bash adapter (P1-16).  . shell/bash/bash.sh
-# Reasoning, rejected alternatives and C10/P1-09 detail: adapters/README.md.
+# Reasoning, rejected alternatives and C10/P1-09 detail: shell/README.md.
 # Short version: PROMPT_COMMAND + `builtin history 1` only (PS0 lags one
 # command and DEBUG fires per simple command); no fork per command; every write
 # guarded by `trap '' PIPE` plus a load-time probe that silences it.
@@ -87,6 +87,8 @@ _li_finish() {
     local rc=$? hc=${HISTCMD:-0} text dur=0 src extra
     (( _LI_PEND == _LI_SEEN )) && return 0          # blank line / ^C at prompt
     _LI_SEEN=$_LI_PEND
+    HISTTIMEFORMAT= builtin history 1 >"$_LI_HIST_FILE" 2>/dev/null
+    IFS= read -r _LI_HISTORY_RAW <"$_LI_HIST_FILE" 2>/dev/null
     if [[ -n $_LI_HISTORY_RAW ]]; then
         text=${_LI_HISTORY_RAW#"${_LI_HISTORY_RAW%%[![:space:]]*}"}
         text=${text#"${text%%[!0-9]*}"}              # history number
@@ -142,9 +144,9 @@ IFS= read -r _LI_CAP_RECORD < "$_LI_CAP_FILE" 2>/dev/null || _LI_CAP_RECORD='{}'
 if [[ -n ${LI_SINK_FD:-} ]] && : >&3 2>/dev/null; then _li_arm; fi
 
 _LI_DUMMY=()
-# `history 1` and `read` are both builtins, so this costs no fork (C9). The
-# file is truncated by the redirect on every prompt and removed once at exit.
-PROMPT_COMMAND="HISTTIMEFORMAT= builtin history 1 >\"$_LI_HIST_FILE\" 2>/dev/null; IFS= read -r _LI_HISTORY_RAW <\"$_LI_HIST_FILE\" 2>/dev/null; _li_finish${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+# `history 1` and `read` are both builtins inside `_li_finish` AFTER `local rc=$?`
+# so the user's exit status is preserved before builtin redirections run (C9).
+PROMPT_COMMAND="_li_finish${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
 _LI_PS0_TICK='${_LI_DUMMY[$((_LI_PEND+=1,_LI_T0=${EPOCHREALTIME/./}))]}'
 PS0=$_LI_PS0_TICK
 _li_session_started

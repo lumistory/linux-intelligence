@@ -7,8 +7,8 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use li_proto::{
-    CURRENT_SCHEMA_VERSION, Event, EventId, EventType, EvidenceStatus, Ping, ProtocolError,
-    SchemaVersion, SessionId, Source, encode_frame,
+    CURRENT_SCHEMA_VERSION, DropReport, Event, EventId, EventType, EvidenceStatus, Ping,
+    ProtocolError, SchemaVersion, SessionId, Source, encode_frame,
 };
 
 /// Bound the amount of queued work when the daemon falls behind.
@@ -422,7 +422,20 @@ pub fn ingest<R: BufRead, S: FrameSink>(
             }
         }
     }
-    queue.report()
+    let report = queue.report();
+    if report.dropped > 0 && sink.is_live() {
+        let drop_frame = DropReport {
+            schema_version: SchemaVersion(CURRENT_SCHEMA_VERSION),
+            session_id: session.clone(),
+            dropped: report.dropped,
+            last_sequence: report.last_sequence,
+            reason: "queue_full".to_string(),
+        };
+        if let Ok(encoded) = encode_frame(&drop_frame) {
+            let _ = sink.write_frame(&encoded);
+        }
+    }
+    report
 }
 
 #[cfg(test)]

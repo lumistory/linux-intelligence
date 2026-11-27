@@ -1,7 +1,11 @@
 # ADR 0003 — Event storage and schema versioning
 
-- Status: proposed
+- Status: accepted (2026-11-27; supported by 0-H + Phase 1/4 implementation)
 - Date: 2026-11-23
+
+## Implementation notes (D5)
+
+- Delivered in `li-journal`: WAL mode with `synchronous=NORMAL` default (D8), `BEFORE UPDATE/DELETE` append-only triggers on `events`, audited single-transaction `Journal::purge_before` emitting `EventsPurged`, forward migrations (`0001`..`0002`) with `idx_events_payload_path`, and many-to-many `event_operations` / `event_relations`.
 
 ## Context
 

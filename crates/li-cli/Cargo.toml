@@ -1,9 +1,24 @@
 [package]
 name = "li-cli"
-description = "The user-facing `li` command."
+description = "The user-facing `li` command (run, query, checkpoint, purge, status, ping)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+[[bin]]
+name = "li"
+path = "src/main.rs"
+
 [lints]
 workspace = true
+
+[dependencies]
+li-proto = { path = "../li-proto" }
+li-journal = { path = "../li-journal" }
+li-daemon = { path = "../li-daemon" }
+clap = { version = "4.6", features = ["derive"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "sync"] }

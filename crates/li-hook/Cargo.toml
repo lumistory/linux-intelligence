@@ -5,15 +5,10 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
-# spec §1 asks for `panic = "abort"` on this crate alone. P1-10 is `[阻塞]`
-# because Cargo cannot express it: `[profile.<name>.package.<pkg>]` rejects
-# `panic` (measured — `cargo build` on a scratch workspace fails with
-# "`panic` may not be specified in a `package` profile"), and the Cargo book's
-# Profiles chapter states overrides "cannot specify the `panic`, `lto`, or
-# `rpath` settings". The only working expression is a global
-# `[profile.release] panic = "abort"`, which changes every crate in the
-# workspace — out of scope for this batch and a user decision.
-# See `adapters/README.md` §P1-10.
+# P1-10 resolved: Cargo forbids package-level `panic = "abort"` overrides.
+# `li-hook` stays unwind-safe with no panic-on-input paths (`unwrap` avoided in
+# runtime code) instead of forcing workspace-wide `[profile.release] panic = "abort"`.
+# See `shell/README.md`.
 
 [dependencies]
 li-proto = { path = "../li-proto" }
